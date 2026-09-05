@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ate — App de Gestão para Artesãos — Apresentação Final (15 min)</title>
+<style>
+  :root { --bg: #0f172a; --fg: #f1f5f9; --accent: #d97706; --muted: #94a3b8; --card: #1e293b; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--fg); overflow: hidden; height: 100vh;
+  }
+  .deck { position: relative; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    justify-content: center; padding: 6vh 8vw; opacity: 0; transition: opacity .25s ease;
+  }
+  .slide.active { display: flex; opacity: 1; }
+  .slide h1 { font-size: 2.6rem; margin: 0 0 1rem; color: var(--accent); }
+  .slide h2 { font-size: 1.8rem; margin: 0 0 1.2rem; color: var(--accent); }
+  .slide h2 .num { color: var(--muted); font-weight: 400; font-size: 1.1rem; margin-right: .6rem; }
+  .slide ul { font-size: 1.25rem; line-height: 1.7; margin: 0; padding-left: 1.4rem; }
+  .slide li { margin-bottom: .3rem; }
+  .slide p.lead { font-size: 1.4rem; color: var(--muted); }
+  .slide p.note { font-size: 1rem; color: var(--muted); margin-top: 1rem; }
+  .cols { display: flex; gap: 2.5rem; }
+  .cols > div { flex: 1; background: var(--card); border-radius: 10px; padding: 1rem 1.2rem; }
+  .cols h3 { margin: 0 0 .5rem; font-size: 1.2rem; color: var(--accent); }
+  .cols ul { font-size: 1.1rem; }
+  .kanban { display: flex; gap: 1rem; margin-top: 1rem; }
+  .kanban .col { flex: 1; background: var(--card); border-radius: 10px; padding: .8rem; text-align: center; }
+  .kanban .col strong { display: block; margin-bottom: .5rem; color: var(--accent); }
+  .kanban .card { background: #334155; border-radius: 6px; padding: .5rem; margin: .4rem 0; font-size: 1rem; }
+  .kanban .card.lock { border: 2px dashed var(--accent); }
+  .mermaid-wrap { display: flex; justify-content: center; align-items: center; max-height: 58vh; overflow: auto; background: rgba(255,255,255,.03); border-radius: 10px; padding: .5rem; }
+  pre.mermaid { background: transparent; font-size: .85rem; }
+  .controls {
+    position: fixed; bottom: 1.5rem; right: 2rem; display: flex; gap: 1rem;
+    align-items: center; font-size: 1rem; color: var(--muted);
+  }
+  .controls button {
+    background: var(--accent); color: #1e1e1e; border: none; border-radius: 6px;
+    width: 2.4rem; height: 2.4rem; font-size: 1.2rem; cursor: pointer;
+  }
+  .controls button:hover { opacity: .85; }
+  .progress { position: fixed; bottom: 0; left: 0; height: 4px; background: var(--accent); width: 0; }
+  @media print {
+    body { overflow: visible; height: auto; }
+    .slide { position: static; display: flex; opacity: 1; page-break-after: always; height: 100vh; }
+    .controls, .progress { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <section class="slide active" data-index="0">
+    <h1>ate — App de Gestão para Artesãos</h1>
+    <p class="lead">Apresentação final · ~15 min · Disciplina de Desenvolvimento Mobile (6 meses)</p>
+    <ul>
+      <li>Do pedido no WhatsApp à obra entregue — tudo num só lugar</li>
+      <li>Offline-first, com regra rígida: sem foto, sem concluir</li>
+    </ul>
+    <p class="note">Produto de portfólio/aprendizado — sem fins comerciais · 1 usuário por negócio no MVP</p>
+  </section>
+
+  <section class="slide" data-index="1">
+    <h2><span class="num">02/14</span>O problema</h2>
+    <ul>
+      <li>Pedidos espalhados: Instagram, WhatsApp, telefone, presencial</li>
+      <li>Controle informal: papel, memória, fotos soltas no celular</li>
+      <li>Sem visão da produção: o que está a fazer, fazendo, feito?</li>
+      <li>Estoque de feira no escuro: levar o quê, quantas unidades?</li>
+      <li>Preço de material sem histórico → compra no chute</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="2">
+    <h2><span class="num">03/14</span>Quem usa</h2>
+    <ul>
+      <li>Artesão independente — esculturas em madeira, feiras de rua</li>
+      <li>Letramento digital básico: usa redes sociais, nada profissional</li>
+      <li>Exige UX guiada: labels explícitos, confirmações visuais claras</li>
+      <li>Trabalha sem internet na feira/oficina → app não pode travar</li>
+      <li>Estende-se a artesãos do mesmo ramo com a mesma dor</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="3">
+    <h2><span class="num">04/14</span>A solução — visão geral</h2>
+    <ul>
+      <li><strong>Em 1 frase:</strong> unificar pedidos, produção e estoque num app móvel offline-first.</li>
+      <li>Kanban de pedidos (A Fazer / Fazendo / Feito)</li>
+      <li>Estoque de obras únicas + em série · histórico de preços</li>
+      <li>Cadastro rápido de cliente + pedido na feira · mapa de eventos</li>
+      <li>Sync automático com Supabase quando a rede volta</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="4">
+    <h2><span class="num">05/14</span>Fluxo central de uso</h2>
+    <ul>
+      <li>Pedido chega por qualquer canal → registrado num só Kanban</li>
+      <li>Arrasta o card: A Fazer → Fazendo → Feito</li>
+      <li>Diferencial: Fazendo → Feito <strong>exige foto da obra pronta</strong> (sem bypass)</li>
+      <li>Foto gera histórico visual e comprovante de entrega</li>
+    </ul>
+    <div class="kanban">
+      <div class="col"><strong>A Fazer</strong><div class="card">Águia p/ João</div><div class="card">Coruja ×5</div></div>
+      <div class="col"><strong>Fazendo</strong><div class="card">Águia p/ João</div></div>
+      <div class="col"><strong>Feito 📷</strong><div class="card lock">Coruja entregue + foto</div></div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="5">
+    <h2><span class="num">06/14</span>Casos de uso — escopo funcional</h2>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart LR
+    Artesao((Artesão))
+    MonitorRede(("Monitor de Rede"))
+    Supabase(("Supabase"))
+
+    subgraph CORE["Escopo central do MVP"]
+        UC01["UC01 Realizar Login"]
+        UC03["UC03 Visualizar Kanban"]
+        UC05["UC05 Concluir Pedido"]
+        UC07["UC07 Registrar Novo Pedido"]
+        UC12["UC12 Consultar Estoque"]
+        UC14["UC14 Registrar Preço"]
+        UC16["UC16 Cadastrar Evento"]
+        UC19["UC19 Sincronizar Dados"]
+    end
+
+    Artesao --> UC01
+    Artesao --> UC03
+    Artesao --> UC05
+    Artesao --> UC07
+    Artesao --> UC12
+    Artesao --> UC14
+    Artesao --> UC16
+    MonitorRede --> UC19
+    UC01 --> Supabase
+    UC19 --> Supabase
+    UC05 -. include .-> UC06F["UC06 Fotografar Obra"]
+    UC19 -. include .-> UC20F["UC20 Upload de Imagens"]
+      </pre>
+    </div>
+    <p class="note">Versão simplificada (nós centrais) para legibilidade — diagrama completo com 29 UCs + include/extend está no documento-software §2.</p>
+  </section>
+
+  <section class="slide" data-index="6">
+    <h2><span class="num">07/14</span>Ciclo de vida do Pedido</h2>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> A_FAZER : registrarNovoPedido()
+    A_FAZER --> FAZENDO : moverParaFazendo()
+    A_FAZER --> [*] : cancelar() / removerRegistro()
+    FAZENDO --> FEITO : concluir() [possui foto de conclusão]
+    FAZENDO --> [*] : cancelar() / removerRegistro()
+    FEITO --> [*] : arquivamento automático (estado final útil)
+      </pre>
+    </div>
+    <p class="note">Cópia exata do documento-software §5.1 · RF05/RNF12: a guarda [possui foto] é rígida, sem bypass.</p>
+  </section>
+
+  <section class="slide" data-index="7">
+    <h2><span class="num">08/14</span>Offline-first — por que e como</h2>
+    <ul>
+      <li>Por que: feira/oficina sem internet — app precisa funcionar sempre</li>
+      <li>Tudo grava local primeiro: SQLite + <code>status_sync = 'pendente'</code></li>
+      <li>Fila de sync (FilaSync) esvazia em background ao voltar a rede</li>
+      <li>Imagens: comprime → FileSystem → Storage; depois upsert no banco</li>
+      <li>Conflitos: vale o <strong>server timestamp</strong> (Supabase), nunca o relógio local</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="8">
+    <h2><span class="num">09/14</span>Arquitetura — componentes</h2>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart TD
+    Artesao(("Artesão<br/>(Usuário)"))
+
+    subgraph MobileApp ["Aplicação Mobile / Dispositivo (Expo - React Native)"]
+
+        subgraph Presentation [Camada de Apresentação]
+            Telas[Telas e Componentes de UI]
+            Hooks[Hooks e Gerência de Estado]
+        end
+
+        subgraph ApplicationDomain ["Núcleo da Aplicação (Application / Domain)"]
+            UseCases["Casos de Uso<br/>(Lógica da Aplicação)"]
+            Entities[Entidades e Regras de Negócio]
+        end
+
+        subgraph InterfaceAdapters [Adaptadores de Interface]
+            Repo[Repositórios Locais]
+            SyncWorker[Worker de Sincronização<br/>em Background]
+            NetListener[Monitor de Conectividade]
+            SupabaseAdapter[Adaptadores REST API / SDK]
+        end
+
+        subgraph LocalInfra ["Infraestrutura Local (Offline-First)"]
+            SQLite[(SQLite Database<br/>Dados Relacionais)]
+            FS[Expo File System<br/>Cache de Imagens]
+        end
+
+        %% Fluxo interno da arquitetura Limpa
+        Telas --> Hooks
+        Hooks --> UseCases
+        UseCases --> Entities
+        UseCases --> Repo
+
+        %% Gravação Local
+        Repo --> SQLite
+        Repo --> FS
+
+        %% Mecânica de Sincronização
+        NetListener -.->|"Gatilho (Online)"| SyncWorker
+        SyncWorker --> Repo
+        SyncWorker --> SupabaseAdapter
+    end
+
+    subgraph BackendCloud ["Backend as a Service (Supabase)"]
+        S_Auth["Supabase Auth<br/>(Gestão de Sessão e Identidade)"]
+        S_DB[(Supabase Database<br/>PostgreSQL + Regras RLS)]
+        S_Storage["Supabase Storage<br/>(Buckets para Fotos de Obras e Referências)"]
+    end
+
+    %% Integrações com a Nuvem
+    Artesao -->|"Interação (Toque/Gestos)"| Telas
+    Hooks -->|Login/Logout Direto| S_Auth
+    SupabaseAdapter -->|"Sincronização Assíncrona (Criação, Edição, Deleção)"| S_DB
+    SupabaseAdapter -->|Upload Compressado| S_Storage
+
+    %% Estilização
+    classDef cloud fill:#e6f7ff,stroke:#69c0ff,stroke-width:2px;
+    classDef localinfra fill:#f6ffed,stroke:#b7eb8f,stroke-width:2px;
+
+    class BackendCloud cloud;
+    class LocalInfra localinfra;
+      </pre>
+    </div>
+    <p class="note">Cópia exata do documento-software §9.1 · UI só fala com o SQLite local; SyncWorker faz a ponte com a nuvem.</p>
+  </section>
+
+  <section class="slide" data-index="9">
+    <h2><span class="num">10/14</span>Escopo do MVP — fronteiras</h2>
+    <div class="cols">
+      <div>
+        <h3>Dentro da v1</h3>
+        <ul>
+          <li>Kanban + foto rígida · clientes + pedidos</li>
+          <li>Estoque única/série · preços · mapa com pins</li>
+          <li>Offline-first + upload de imagens</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Fora da v1</h3>
+        <ul>
+          <li>Multi-usuário, push, calendário → v1.1</li>
+          <li>Marketplaces, relatórios, exportação → v2</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-index="10">
+    <h2><span class="num">11/14</span>Stack tecnológica</h2>
+    <ul>
+      <li>Expo / React Native (iOS + Android) + Expo Router (tabs + stacks)</li>
+      <li>SQLite local + FileSystem (imagens comprimidas) · Supabase (Auth/DB/Storage)</li>
+      <li>Clean Architecture + DDD: domain puro, sem importar banco/UI</li>
+      <li>TDD em 3 fases: entidades → use cases (mocks) → repositórios/SQLite</li>
+      <li>Cabe no Free tier: &lt; 30 obras/ano, sem paginação no MVP</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="11">
+    <h2><span class="num">12/14</span>Rastreabilidade e qualidade</h2>
+    <ul>
+      <li>28 RFs + 12 RNFs, todos mapeados a UCs (tabela UC ↔ RF §2.3)</li>
+      <li>UCs → BCE (boundary/control/entity) → sequência → teste</li>
+      <li>Ex.: RF05 (foto obrigatória) → UC05 → ConcluirPedidoUseCase → teste sem foto falha</li>
+      <li>RLS por usuário · 1 dispositivo · guards em `Pedido.concluir()` e `Obra.reservar()`</li>
+      <li>Detalhe completo na documentação; aqui só a cadeia de rigor</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="12">
+    <h2><span class="num">13/14</span>Próximos passos / roadmap</h2>
+    <ul>
+      <li>Código na ordem: setup Expo → domain → application → SQLite → UI → Supabase/sync</li>
+      <li>v1.1 (se viável): ajudantes com login, push de eventos, calendário</li>
+      <li>v2: integração Elo7/Etsy (canal enum já prevê), analytics, exportação</li>
+      <li>Métrica de sucesso: arquitetura completa + app funcionando minimamente</li>
+    </ul>
+  </section>
+
+  <section class="slide" data-index="13">
+    <h2><span class="num">14/14</span>Encerramento</h2>
+    <ul>
+      <li>ate: profissionaliza o artesão sem complicar a rotina da feira</li>
+      <li>Decisões-chave: foto rígida · offline-first · server timestamp · `negocio` agnóstica</li>
+      <li>Obrigado! Perguntas?</li>
+    </ul>
+    <p class="note">Plano B sem internet: exportar esta página em PDF ou trocar os blocos Mermaid por capturas já renderizadas.</p>
+  </section>
+
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="controls">
+  <button id="prevBtn" aria-label="Anterior">‹</button>
+  <span id="counter">1 / 14</span>
+  <button id="nextBtn" aria-label="Próximo">›</button>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "loose" });
+
+  const slides = document.querySelectorAll(".slide");
+  const counter = document.getElementById("counter");
+  const progress = document.getElementById("progress");
+  let current = 0;
+
+  async function renderMermaidIn(slide) {
+    const blocks = slide.querySelectorAll("pre.mermaid:not([data-rendered])");
+    for (const el of blocks) {
+      el.setAttribute("data-rendered", "true");
+      const code = el.textContent;
+      const id = "m-" + Math.random().toString(36).slice(2);
+      try {
+        const { svg } = await mermaid.render(id, code);
+        el.innerHTML = svg;
+      } catch (e) {
+        el.innerHTML = "<p style='color:#f87171'>Erro ao renderizar diagrama: " + e.message + "</p>";
+      }
+    }
+  }
+
+  function showSlide(idx) {
+    current = Math.max(0, Math.min(idx, slides.length - 1));
+    slides.forEach((s, i) => s.classList.toggle("active", i === current));
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    progress.style.width = ((current + 1) / slides.length * 100) + "%";
+    renderMermaidIn(slides[current]);
+  }
+
+  document.getElementById("nextBtn").addEventListener("click", () => showSlide(current + 1));
+  document.getElementById("prevBtn").addEventListener("click", () => showSlide(current - 1));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") showSlide(current + 1);
+    if (e.key === "ArrowLeft") showSlide(current - 1);
+  });
+
+  showSlide(0);
+</script>
+</body>
+</html>
