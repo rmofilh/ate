@@ -3,363 +3,303 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ate — App de Gestão para Artesãos — Apresentação Final (15 min)</title>
+<title>ate — Gestão para Artesãos · Apresentação (15 min)</title>
 <style>
-  :root { --bg: #0f172a; --fg: #f1f5f9; --accent: #d97706; --muted: #94a3b8; --card: #1e293b; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    background: var(--bg); color: var(--fg); overflow: hidden; height: 100vh;
+  :root{
+    --noite:#0A1E3C; --azul:#1E4FD8; --azul-esc:#153AA3;
+    --branco:#FFFFFF; --gelo:#EAF0FB;
+    --dourado:#C9A227; --dourado-cl:#F2D675; --dourado-esc:#8A6F14;
+    --tx-dark:#FFFFFF; --tx2-dark:#D7E1F2;
+    --tx-light:#0F2340; --tx2-light:#3C4C68;
   }
-  .deck { position: relative; width: 100vw; height: 100vh; }
-  .slide {
-    position: absolute; inset: 0; display: none; flex-direction: column;
-    justify-content: center; padding: 6vh 8vw; opacity: 0; transition: opacity .25s ease;
-  }
-  .slide.active { display: flex; opacity: 1; }
-  .slide h1 { font-size: 2.6rem; margin: 0 0 1rem; color: var(--accent); }
-  .slide h2 { font-size: 1.8rem; margin: 0 0 1.2rem; color: var(--accent); }
-  .slide h2 .num { color: var(--muted); font-weight: 400; font-size: 1.1rem; margin-right: .6rem; }
-  .slide ul { font-size: 1.25rem; line-height: 1.7; margin: 0; padding-left: 1.4rem; }
-  .slide li { margin-bottom: .3rem; }
-  .slide p.lead { font-size: 1.4rem; color: var(--muted); }
-  .slide p.note { font-size: 1rem; color: var(--muted); margin-top: 1rem; }
-  .cols { display: flex; gap: 2.5rem; }
-  .cols > div { flex: 1; background: var(--card); border-radius: 10px; padding: 1rem 1.2rem; }
-  .cols h3 { margin: 0 0 .5rem; font-size: 1.2rem; color: var(--accent); }
-  .cols ul { font-size: 1.1rem; }
-  .kanban { display: flex; gap: 1rem; margin-top: 1rem; }
-  .kanban .col { flex: 1; background: var(--card); border-radius: 10px; padding: .8rem; text-align: center; }
-  .kanban .col strong { display: block; margin-bottom: .5rem; color: var(--accent); }
-  .kanban .card { background: #334155; border-radius: 6px; padding: .5rem; margin: .4rem 0; font-size: 1rem; }
-  .kanban .card.lock { border: 2px dashed var(--accent); }
-  .mermaid-wrap { display: flex; justify-content: center; align-items: center; max-height: 58vh; overflow: auto; background: rgba(255,255,255,.03); border-radius: 10px; padding: .5rem; }
-  pre.mermaid { background: transparent; font-size: .85rem; }
-  .controls {
-    position: fixed; bottom: 1.5rem; right: 2rem; display: flex; gap: 1rem;
-    align-items: center; font-size: 1rem; color: var(--muted);
-  }
-  .controls button {
-    background: var(--accent); color: #1e1e1e; border: none; border-radius: 6px;
-    width: 2.4rem; height: 2.4rem; font-size: 1.2rem; cursor: pointer;
-  }
-  .controls button:hover { opacity: .85; }
-  .progress { position: fixed; bottom: 0; left: 0; height: 4px; background: var(--accent); width: 0; }
-  @media print {
-    body { overflow: visible; height: auto; }
-    .slide { position: static; display: flex; opacity: 1; page-break-after: always; height: 100vh; }
-    .controls, .progress { display: none; }
-  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--noite);color:var(--tx-dark);overflow:hidden}
+  .deck{position:relative;width:100vw;height:100vh}
+  /* layout base: coluna flex que ocupa a tela toda, sem sobra embaixo */
+  .slide{position:absolute;inset:0;display:none;padding:3.2vh 5vw 7vh;overflow:hidden}
+  .slide.active{display:flex;flex-direction:column;justify-content:flex-start;z-index:1}
+  .slide::before{content:"";position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,var(--dourado),var(--dourado-cl),var(--dourado));z-index:2}
+  .slide.dark{background:radial-gradient(1000px 500px at 80% 0%,#143063 0%,var(--noite) 60%),var(--noite);color:var(--tx-dark)}
+  .slide.light{background:linear-gradient(180deg,var(--gelo),var(--branco));color:var(--tx-light)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+  .kicker{display:inline-block;font-size:.85rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;border-radius:999px;padding:.32rem .9rem;background:var(--dourado);color:#0A1E3C;white-space:nowrap}
+  .slide.light .kicker{background:var(--noite);color:#fff}
+  .timer{font-size:.85rem;font-weight:700;border-radius:999px;padding:.25rem .8rem;white-space:nowrap}
+  .slide.dark .timer{color:var(--tx2-dark);border:1px solid rgba(255,255,255,.35)}
+  .slide.light .timer{color:var(--tx2-light);border:1px solid rgba(15,35,64,.3)}
+  .body{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0;padding:.6rem 0}
+  h1{font-size:3.2rem;line-height:1.02;margin:.7rem 0 .3rem;color:var(--tx-dark)}
+  h1 .gold,.slide.dark h2 .gold{color:var(--dourado-cl)}
+  h2{font-size:1.85rem;margin:.5rem 0 .25rem}
+  .slide.light h2 .gold{color:var(--dourado-esc)}
+  .sub{font-size:1.1rem;line-height:1.5;max-width:76ch;margin:.3rem 0}
+  .slide.dark .sub{color:var(--tx2-dark)}
+  .slide.light .sub{color:var(--tx2-light)}
+  .ref{font-size:.88rem;padding-top:.5rem;border-top:1px solid rgba(201,162,39,.35)}
+  .slide.dark .ref{color:var(--tx2-dark)}
+  .slide.light .ref{color:var(--tx2-light)}
+  .ref b{color:var(--dourado-esc)}
+  .slide.dark .ref b{color:var(--dourado-cl)}
+  /* componentes */
+  .grid{display:grid;gap:.8rem}
+  .card{border-radius:12px;padding:.9rem 1rem}
+  .slide.dark .card{background:#12294F;border:1px solid rgba(242,214,117,.35)}
+  .slide.light .card{background:#fff;border:1px solid #c4d3ec;box-shadow:0 6px 18px rgba(10,30,60,.08)}
+  .card h3{margin:.1rem 0 .25rem;font-size:1.08rem;color:inherit}
+  .card p{margin:.15rem 0;font-size:.98rem;line-height:1.5}
+  .slide.dark .card p{color:var(--tx2-dark)}
+  .slide.light .card p{color:var(--tx2-light)}
+  .card p.micro{font-size:.86rem;opacity:.9;border-top:1px solid rgba(201,162,39,.3);padding-top:.35rem;margin-top:.4rem}
+  .tag{display:inline-block;font-size:.75rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;border-radius:999px;padding:.22rem .7rem;margin-bottom:.35rem;background:var(--dourado);color:#0A1E3C}
+  .slide.light .tag{background:var(--noite);color:#fff}
+  .ico{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--dourado),var(--dourado-cl));color:#0A1E3C;font-weight:800;margin-bottom:.35rem}
+  /* capa */
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:2rem;align-items:stretch;flex:1;min-height:0}
+  .hero-left{display:flex;flex-direction:column;justify-content:center}
+  .pills{display:flex;gap:.55rem;flex-wrap:wrap;margin-top:.9rem}
+  .pill{border-radius:999px;padding:.42rem .9rem;font-size:.95rem;font-weight:700;background:var(--dourado);color:#0A1E3C}
+  .factrow{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-top:1rem}
+  .fact{border-radius:10px;padding:.65rem .8rem;font-size:.9rem;font-weight:600}
+  .slide.dark .fact{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff}
+  .fact small{display:block;font-weight:400;font-size:.8rem;opacity:.85;margin-top:.15rem}
+  .phone{align-self:center;width:min(320px,100%);margin-left:auto;background:#060f22;border:2px solid var(--dourado);border-radius:26px;padding:.9rem;color:#fff}
+  .phone .notch{width:100px;height:18px;background:#000;border-radius:999px;margin:0 auto .6rem}
+  .phone .cap{text-align:center;font-size:.8rem;color:var(--dourado-cl);margin-top:.55rem}
+  .mini-kanban{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem}
+  .mini-col{background:#132c55;border-radius:9px;padding:.45rem;text-align:center;font-size:.75rem;color:#fff}
+  .mini-col strong{display:block;color:var(--dourado-cl);margin-bottom:.3rem;font-size:.72rem}
+  .mini-card{background:#fff;color:#0F2340;border-radius:7px;padding:.35rem .3rem;margin:.28rem 0;font-size:.72rem}
+  .mini-card.photo{border:2px dashed var(--dourado);background:#FFF6D6}
+  /* contexto */
+  .chan4{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;align-items:stretch}
+  .uxbar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;border-radius:12px;padding:.9rem 1rem;background:linear-gradient(90deg,var(--azul-esc),var(--azul));border:1px solid var(--dourado-cl);color:#fff}
+  .uxbar b{color:var(--dourado-cl)}
+  .uxbar span{font-size:.95rem}
+  /* fluxo + kanban */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;align-items:stretch}
+  .station{border-radius:12px;padding:.8rem}
+  .slide.dark .station{background:#12294F;border:1px solid rgba(242,214,117,.35);color:#fff}
+  .station .n{display:inline-flex;background:var(--dourado);color:#0A1E3C;font-weight:800;border-radius:50%;width:26px;height:26px;align-items:center;justify-content:center;font-size:.9rem;margin-bottom:.3rem}
+  .station h3{margin:.1rem 0 .15rem;font-size:1rem}
+  .station p{margin:0;font-size:.9rem}
+  .kanban{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;align-items:stretch}
+  .kcol{border-radius:11px;padding:.65rem;background:#060f22;border:1px solid var(--dourado);color:#fff}
+  .kcol strong{color:var(--dourado-cl);font-size:.9rem}
+  .kcol small{display:block;font-size:.78rem;opacity:.8;margin-bottom:.2rem}
+  .kcard{background:#fff;color:#0F2340;border-radius:7px;padding:.45rem .55rem;margin:.4rem 0;font-size:.88rem}
+  .kcard.lock{border:2px dashed var(--dourado);background:#FFF6D6}
+  /* regra */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;align-items:stretch}
+  .blocked{border:2px solid #FF7A7A !important}
+  .doneb{border:2px solid var(--dourado) !important}
+  .stamp{display:block;background:var(--dourado);color:#0A1E3C;font-weight:800;border-radius:7px;padding:.3rem .65rem;margin-top:.5rem;font-size:.88rem;text-align:center}
+  .trace{border-radius:10px;padding:.7rem .95rem;font-size:.93rem;background:var(--noite);color:#fff;border:1px dashed var(--dourado)}
+  .trace b{color:var(--dourado-cl)}
+  /* setas: losango CSS alinhado, sem glyph torto */
+  .pipe{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;gap:.5rem;align-items:stretch}
+  .step{border-radius:12px;padding:.8rem;text-align:center;display:flex;flex-direction:column;justify-content:center}
+  .slide.dark .step{background:#12294F;border:1px solid rgba(242,214,117,.4);color:#fff}
+  .step p{font-size:.88rem;margin:.25rem 0 0}
+  .arr{align-self:center;justify-self:center;width:14px;height:14px;border-top:3px solid var(--dourado);border-right:3px solid var(--dourado);transform:rotate(45deg)}
+  .islands{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;gap:.5rem;align-items:stretch}
+  .isl{border-radius:12px;padding:.75rem;text-align:center;font-size:.88rem;display:flex;flex-direction:column;justify-content:center}
+  .isl.a{background:#fff;color:#0F2340;border:1px solid var(--azul)}
+  .isl.b{background:linear-gradient(135deg,var(--azul-esc),var(--azul));color:#fff;border:1px solid var(--dourado-cl)}
+  .isl.c{background:#060f22;color:#fff;border:1px solid var(--dourado)}
+  .isl b{display:block;margin-bottom:.2rem}
+  .bandline{display:flex;align-items:center;gap:.6rem;border-radius:10px;padding:.6rem .9rem;font-size:.92rem;background:rgba(201,162,39,.14);border:1px dashed var(--dourado)}
+  .slide.light .bandline{background:#FFF6D6;color:var(--tx-light)}
+  /* escopo */
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;align-items:stretch}
+  .panel{border-radius:12px;padding:.9rem 1rem}
+  .panel.in{background:linear-gradient(135deg,#12306b,var(--azul));border:1px solid var(--dourado-cl);color:#fff}
+  .panel.build{background:#fff;border:1px solid #c4d3ec;color:var(--tx-light)}
+  .panel h3{margin:.1rem 0 .5rem;font-size:1.05rem}
+  .chip{display:block;border-radius:7px;padding:.42rem .55rem;margin:.34rem 0;font-size:.9rem;background:rgba(255,255,255,.14);border-left:5px solid var(--dourado-cl);color:#fff;line-height:1.4}
+  .panel.build .chip{background:var(--gelo);border:1px solid #c4d3ec;border-left:5px solid var(--azul);color:var(--tx-light)}
+  /* fecho */
+  .medals{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+  .medal{text-align:center;border-radius:12px;padding:.9rem;background:#12294F;border:1px solid rgba(242,214,117,.45);color:#fff}
+  .medal .m{width:42px;height:42px;margin:0 auto .4rem;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--dourado-cl),var(--dourado) 65%);display:flex;align-items:center;justify-content:center;font-weight:800;color:#0A1E3C}
+  .medal span{font-size:.9rem;color:var(--tx2-dark)}
+  .links{display:flex;gap:.7rem;flex-wrap:wrap}
+  .links a{color:#0A1E3C;background:var(--dourado-cl);border-radius:999px;padding:.55rem 1rem;text-decoration:none;font-weight:700;font-size:.92rem}
+  .links a.btn-ghost{background:transparent;color:var(--dourado-cl);border:1px solid var(--dourado)}
+  .controls{position:fixed;bottom:1rem;right:1.3rem;display:flex;gap:.6rem;align-items:center;color:var(--tx2-dark);z-index:10}
+  .controls button{background:var(--dourado);border:none;border-radius:8px;width:2.4rem;height:2.4rem;font-size:1.2rem;cursor:pointer;color:#0A1E3C;font-weight:800}
+  .progress{position:fixed;bottom:0;left:0;height:5px;background:linear-gradient(90deg,var(--dourado),var(--dourado-cl));width:0;z-index:10}
+  #notes{position:fixed;left:1.1rem;bottom:1rem;max-width:44vw;background:#000;border:1px solid var(--dourado);border-radius:10px;padding:.65rem .85rem;font-size:.9rem;display:none;z-index:11;color:#fff}
+  #notes.show{display:block}
+  @media print{body{overflow:visible}.slide{position:static;display:flex!important;page-break-after:always;height:100vh}.controls,.progress,#notes,.timer{display:none!important}}
+  @media (max-width:900px){.hero,.twocol,.split{grid-template-columns:1fr}.chan4,.flow{grid-template-columns:1fr 1fr}.pipe,.islands{grid-template-columns:1fr}.arr{transform:rotate(135deg)}.phone{margin:0}}
 </style>
 </head>
 <body>
-
 <div class="deck">
 
-  <section class="slide active" data-index="0">
-    <h1>ate — App de Gestão para Artesãos</h1>
-    <p class="lead">Apresentação final · ~15 min · Disciplina de Desenvolvimento Mobile (6 meses)</p>
-    <ul>
-      <li>Do pedido no WhatsApp à obra entregue — tudo num só lugar</li>
-      <li>Offline-first, com regra rígida: sem foto, sem concluir</li>
-    </ul>
-    <p class="note">Produto de portfólio/aprendizado — sem fins comerciais · 1 usuário por negócio no MVP</p>
-  </section>
-
-  <section class="slide" data-index="1">
-    <h2><span class="num">02/14</span>O problema</h2>
-    <ul>
-      <li>Pedidos espalhados: Instagram, WhatsApp, telefone, presencial</li>
-      <li>Controle informal: papel, memória, fotos soltas no celular</li>
-      <li>Sem visão da produção: o que está a fazer, fazendo, feito?</li>
-      <li>Estoque de feira no escuro: levar o quê, quantas unidades?</li>
-      <li>Preço de material sem histórico → compra no chute</li>
-    </ul>
-  </section>
-
-  <section class="slide" data-index="2">
-    <h2><span class="num">03/14</span>Quem usa</h2>
-    <ul>
-      <li>Artesão independente — esculturas em madeira, feiras de rua</li>
-      <li>Letramento digital básico: usa redes sociais, nada profissional</li>
-      <li>Exige UX guiada: labels explícitos, confirmações visuais claras</li>
-      <li>Trabalha sem internet na feira/oficina → app não pode travar</li>
-      <li>Estende-se a artesãos do mesmo ramo com a mesma dor</li>
-    </ul>
-  </section>
-
-  <section class="slide" data-index="3">
-    <h2><span class="num">04/14</span>A solução — visão geral</h2>
-    <ul>
-      <li><strong>Em 1 frase:</strong> unificar pedidos, produção e estoque num app móvel offline-first.</li>
-      <li>Kanban de pedidos (A Fazer / Fazendo / Feito)</li>
-      <li>Estoque de obras únicas + em série · histórico de preços</li>
-      <li>Cadastro rápido de cliente + pedido na feira · mapa de eventos</li>
-      <li>Sync automático com Supabase quando a rede volta</li>
-    </ul>
-  </section>
-
-  <section class="slide" data-index="4">
-    <h2><span class="num">05/14</span>Fluxo central de uso</h2>
-    <ul>
-      <li>Pedido chega por qualquer canal → registrado num só Kanban</li>
-      <li>Arrasta o card: A Fazer → Fazendo → Feito</li>
-      <li>Diferencial: Fazendo → Feito <strong>exige foto da obra pronta</strong> (sem bypass)</li>
-      <li>Foto gera histórico visual e comprovante de entrega</li>
-    </ul>
-    <div class="kanban">
-      <div class="col"><strong>A Fazer</strong><div class="card">Águia p/ João</div><div class="card">Coruja ×5</div></div>
-      <div class="col"><strong>Fazendo</strong><div class="card">Águia p/ João</div></div>
-      <div class="col"><strong>Feito 📷</strong><div class="card lock">Coruja entregue + foto</div></div>
-    </div>
-  </section>
-
-  <section class="slide" data-index="5">
-    <h2><span class="num">06/14</span>Casos de uso — escopo funcional</h2>
-    <div class="mermaid-wrap">
-      <pre class="mermaid">
-flowchart LR
-    Artesao((Artesão))
-    MonitorRede(("Monitor de Rede"))
-    Supabase(("Supabase"))
-
-    subgraph CORE["Escopo central do MVP"]
-        UC01["UC01 Realizar Login"]
-        UC03["UC03 Visualizar Kanban"]
-        UC05["UC05 Concluir Pedido"]
-        UC07["UC07 Registrar Novo Pedido"]
-        UC12["UC12 Consultar Estoque"]
-        UC14["UC14 Registrar Preço"]
-        UC16["UC16 Cadastrar Evento"]
-        UC19["UC19 Sincronizar Dados"]
-    end
-
-    Artesao --> UC01
-    Artesao --> UC03
-    Artesao --> UC05
-    Artesao --> UC07
-    Artesao --> UC12
-    Artesao --> UC14
-    Artesao --> UC16
-    MonitorRede --> UC19
-    UC01 --> Supabase
-    UC19 --> Supabase
-    UC05 -. include .-> UC06F["UC06 Fotografar Obra"]
-    UC19 -. include .-> UC20F["UC20 Upload de Imagens"]
-      </pre>
-    </div>
-    <p class="note">Versão simplificada (nós centrais) para legibilidade — diagrama completo com 29 UCs + include/extend está no documento-software §2.</p>
-  </section>
-
-  <section class="slide" data-index="6">
-    <h2><span class="num">07/14</span>Ciclo de vida do Pedido</h2>
-    <div class="mermaid-wrap">
-      <pre class="mermaid">
-stateDiagram-v2
-    [*] --> A_FAZER : registrarNovoPedido()
-    A_FAZER --> FAZENDO : moverParaFazendo()
-    A_FAZER --> [*] : cancelar() / removerRegistro()
-    FAZENDO --> FEITO : concluir() [possui foto de conclusão]
-    FAZENDO --> [*] : cancelar() / removerRegistro()
-    FEITO --> [*] : arquivamento automático (estado final útil)
-      </pre>
-    </div>
-    <p class="note">Cópia exata do documento-software §5.1 · RF05/RNF12: a guarda [possui foto] é rígida, sem bypass.</p>
-  </section>
-
-  <section class="slide" data-index="7">
-    <h2><span class="num">08/14</span>Offline-first — por que e como</h2>
-    <ul>
-      <li>Por que: feira/oficina sem internet — app precisa funcionar sempre</li>
-      <li>Tudo grava local primeiro: SQLite + <code>status_sync = 'pendente'</code></li>
-      <li>Fila de sync (FilaSync) esvazia em background ao voltar a rede</li>
-      <li>Imagens: comprime → FileSystem → Storage; depois upsert no banco</li>
-      <li>Conflitos: vale o <strong>server timestamp</strong> (Supabase), nunca o relógio local</li>
-    </ul>
-  </section>
-
-  <section class="slide" data-index="8">
-    <h2><span class="num">09/14</span>Arquitetura — componentes</h2>
-    <div class="mermaid-wrap">
-      <pre class="mermaid">
-flowchart TD
-    Artesao(("Artesão<br/>(Usuário)"))
-
-    subgraph MobileApp ["Aplicação Mobile / Dispositivo (Expo - React Native)"]
-
-        subgraph Presentation [Camada de Apresentação]
-            Telas[Telas e Componentes de UI]
-            Hooks[Hooks e Gerência de Estado]
-        end
-
-        subgraph ApplicationDomain ["Núcleo da Aplicação (Application / Domain)"]
-            UseCases["Casos de Uso<br/>(Lógica da Aplicação)"]
-            Entities[Entidades e Regras de Negócio]
-        end
-
-        subgraph InterfaceAdapters [Adaptadores de Interface]
-            Repo[Repositórios Locais]
-            SyncWorker[Worker de Sincronização<br/>em Background]
-            NetListener[Monitor de Conectividade]
-            SupabaseAdapter[Adaptadores REST API / SDK]
-        end
-
-        subgraph LocalInfra ["Infraestrutura Local (Offline-First)"]
-            SQLite[(SQLite Database<br/>Dados Relacionais)]
-            FS[Expo File System<br/>Cache de Imagens]
-        end
-
-        %% Fluxo interno da arquitetura Limpa
-        Telas --> Hooks
-        Hooks --> UseCases
-        UseCases --> Entities
-        UseCases --> Repo
-
-        %% Gravação Local
-        Repo --> SQLite
-        Repo --> FS
-
-        %% Mecânica de Sincronização
-        NetListener -.->|"Gatilho (Online)"| SyncWorker
-        SyncWorker --> Repo
-        SyncWorker --> SupabaseAdapter
-    end
-
-    subgraph BackendCloud ["Backend as a Service (Supabase)"]
-        S_Auth["Supabase Auth<br/>(Gestão de Sessão e Identidade)"]
-        S_DB[(Supabase Database<br/>PostgreSQL + Regras RLS)]
-        S_Storage["Supabase Storage<br/>(Buckets para Fotos de Obras e Referências)"]
-    end
-
-    %% Integrações com a Nuvem
-    Artesao -->|"Interação (Toque/Gestos)"| Telas
-    Hooks -->|Login/Logout Direto| S_Auth
-    SupabaseAdapter -->|"Sincronização Assíncrona (Criação, Edição, Deleção)"| S_DB
-    SupabaseAdapter -->|Upload Compressado| S_Storage
-
-    %% Estilização
-    classDef cloud fill:#e6f7ff,stroke:#69c0ff,stroke-width:2px;
-    classDef localinfra fill:#f6ffed,stroke:#b7eb8f,stroke-width:2px;
-
-    class BackendCloud cloud;
-    class LocalInfra localinfra;
-      </pre>
-    </div>
-    <p class="note">Cópia exata do documento-software §9.1 · UI só fala com o SQLite local; SyncWorker faz a ponte com a nuvem.</p>
-  </section>
-
-  <section class="slide" data-index="9">
-    <h2><span class="num">10/14</span>Escopo do MVP — fronteiras</h2>
-    <div class="cols">
-      <div>
-        <h3>Dentro da v1</h3>
-        <ul>
-          <li>Kanban + foto rígida · clientes + pedidos</li>
-          <li>Estoque única/série · preços · mapa com pins</li>
-          <li>Offline-first + upload de imagens</li>
-        </ul>
+  <section class="slide dark active">
+    <div class="topbar"><span class="kicker">Apresentação final · 15 min</span><span class="timer">01 / 07 · 1:30</span></div>
+    <div class="body">
+      <div class="hero">
+        <div class="hero-left">
+          <h1>ate <span class="gold">— do pedido à entrega</span></h1>
+          <p class="sub">A ideia em uma frase: <b>um só fluxo para encomenda, produção e entrega — funcionando mesmo sem internet.</b></p>
+          <div class="pills"><span class="pill">Kanban · A fazer / Fazendo / Feito</span><span class="pill">Offline-first</span><span class="pill">Sem foto, sem concluir</span></div>
+          <div class="factrow">
+            <div class="fact">Projeto acadêmico · 6 meses<small>Disciplina de mobile · portfólio</small></div>
+            <div class="fact">Sem fins comerciais<small>Escopo de aprendizado técnico</small></div>
+            <div class="fact">MVP: 1 usuário por negócio<small>Arquitetura já prevê expansão</small></div>
+          </div>
+        </div>
+        <div class="phone" aria-hidden="true"><div class="notch"></div>
+          <div class="mini-kanban">
+            <div class="mini-col"><strong>A FAZER</strong><div class="mini-card">Encomenda + cliente</div><div class="mini-card">Peça em série ×5</div></div>
+            <div class="mini-col"><strong>FAZENDO</strong><div class="mini-card">Peça em produção</div><div class="mini-card">Prazo 12/09</div></div>
+            <div class="mini-col"><strong>FEITO</strong><div class="mini-card photo">Entregue + foto</div></div>
+          </div>
+          <div class="cap">Kanban real do app — arrastar move, foto conclui</div>
+        </div>
       </div>
-      <div>
-        <h3>Fora da v1</h3>
-        <ul>
-          <li>Multi-usuário, push, calendário → v1.1</li>
-          <li>Marketplaces, relatórios, exportação → v2</li>
-        </ul>
-      </div>
+      <div class="ref">Foco da apresentação: o projeto e a ideia — sem expor pessoas.</div>
     </div>
   </section>
 
-  <section class="slide" data-index="10">
-    <h2><span class="num">11/14</span>Stack tecnológica</h2>
-    <ul>
-      <li>Expo / React Native (iOS + Android) + Expo Router (tabs + stacks)</li>
-      <li>SQLite local + FileSystem (imagens comprimidas) · Supabase (Auth/DB/Storage)</li>
-      <li>Clean Architecture + DDD: domain puro, sem importar banco/UI</li>
-      <li>TDD em 3 fases: entidades → use cases (mocks) → repositórios/SQLite</li>
-      <li>Cabe no Free tier: &lt; 30 obras/ano, sem paginação no MVP</li>
-    </ul>
+  <section class="slide dark">
+    <div class="topbar"><span class="kicker">1 · Contexto e para quem</span><span class="timer">02 / 07 · 2:30</span></div>
+    <div class="body">
+      <h2>Pedido espalhado, <span class="gold">controle informal</span></h2>
+      <div class="chan4">
+        <div class="card"><span class="tag">WhatsApp</span><h3>Pedido no chat</h3><p>Foto de referência perdida na conversa.</p><p class="micro">No app: vira pedido com cliente + prazo.</p></div>
+        <div class="card"><span class="tag">Instagram</span><h3>Pedido no direct</h3><p>Sem vínculo com cliente ou prazo.</p><p class="micro">No app: canal registrado no cadastro.</p></div>
+        <div class="card"><span class="tag">Presencial</span><h3>Pedido na feira</h3><p>Papel, sem estoque à vista.</p><p class="micro">No app: cadastro rápido + estoque ao lado.</p></div>
+        <div class="card"><span class="tag">Telefone</span><h3>Pedido de voz</h3><p>Preço decidido "de cabeça".</p><p class="micro">No app: histórico de preços na hora.</p></div>
+      </div>
+      <div class="uxbar"><span><b>Perfil anônimo:</b> artesão independente, uso básico de apps</span><span><b>Exige:</b> rótulo explícito · confirmação visual · passo a passo</span><span><b>Onde:</b> feira e ateliê sem sinal → nada pode travar</span></div>
+      <div class="ref">Detalhe em <b>docs/ate-fase1.md §1</b> — visão, público e letramento digital.</div>
+    </div>
   </section>
 
-  <section class="slide" data-index="11">
-    <h2><span class="num">12/14</span>Rastreabilidade e qualidade</h2>
-    <ul>
-      <li>28 RFs + 12 RNFs, todos mapeados a UCs (tabela UC ↔ RF §2.3)</li>
-      <li>UCs → BCE (boundary/control/entity) → sequência → teste</li>
-      <li>Ex.: RF05 (foto obrigatória) → UC05 → ConcluirPedidoUseCase → teste sem foto falha</li>
-      <li>RLS por usuário · 1 dispositivo · guards em `Pedido.concluir()` e `Obra.reservar()`</li>
-      <li>Detalhe completo na documentação; aqui só a cadeia de rigor</li>
-    </ul>
+  <section class="slide dark">
+    <div class="topbar"><span class="kicker">2 · A proposta em um fluxo</span><span class="timer">03 / 07 · 2:00</span></div>
+    <div class="body">
+      <h2>Encomenda → produção → <span class="gold">entrega</span></h2>
+      <div class="flow">
+        <div class="station"><span class="n">1</span><h3>Pedido</h3><p>Cliente + canal + prazo + foto de referência.</p></div>
+        <div class="station"><span class="n">2</span><h3>Produção</h3><p>Kanban: A fazer · Fazendo · Feito.</p></div>
+        <div class="station"><span class="n">3</span><h3>Estoque</h3><p>Peça única ou em série, baixa certa.</p></div>
+        <div class="station"><span class="n">4</span><h3>Feira</h3><p>Histórico de preços + mapa de eventos.</p></div>
+      </div>
+      <div class="kanban">
+        <div class="kcol"><strong>A FAZER</strong><small>entrada de todos os canais</small><div class="kcard">Encomenda + cliente · canal WhatsApp</div><div class="kcard">Peça em série · qtd 5</div></div>
+        <div class="kcol"><strong>FAZENDO</strong><small>produção em andamento</small><div class="kcard">Peça em produção · prazo 12/09</div><div class="kcard">Aguardando foto para concluir</div></div>
+        <div class="kcol"><strong>FEITO</strong><small>só com foto da peça</small><div class="kcard lock">Entregue + foto obrigatória</div></div>
+      </div>
+      <div class="ref">29 casos de uso completos em <b>docs/ate-fase2.md §2</b> — aqui só o fluxo central.</div>
+    </div>
   </section>
 
-  <section class="slide" data-index="12">
-    <h2><span class="num">13/14</span>Próximos passos / roadmap</h2>
-    <ul>
-      <li>Código na ordem: setup Expo → domain → application → SQLite → UI → Supabase/sync</li>
-      <li>v1.1 (se viável): ajudantes com login, push de eventos, calendário</li>
-      <li>v2: integração Elo7/Etsy (canal enum já prevê), analytics, exportação</li>
-      <li>Métrica de sucesso: arquitetura completa + app funcionando minimamente</li>
-    </ul>
+  <section class="slide light">
+    <div class="topbar"><span class="kicker">3 · A regra que diferencia</span><span class="timer">04 / 07 · 2:30</span></div>
+    <div class="body">
+      <h2>Sem foto, <span class="gold">sem "feito"</span></h2>
+      <p class="sub">Para concluir um pedido o app exige a foto da peça pronta. Sem bypass, sem configuração — regra de negócio, não enfeite.</p>
+      <div class="split">
+        <div class="card blocked"><span class="tag">Bloqueado</span><h3>Tentou arrastar sem foto</h3><p>Card permanece em "Fazendo" + aviso <i>"foto obrigatória para concluir"</i>.</p><p class="micro">Sem câmera ou sem permissão, a operação aborta com instrução de como habilitar.</p></div>
+        <div class="card doneb"><span class="tag">Liberado</span><h3>Fotografou → concluiu</h3><p>Imagem comprimida, salva no aparelho e vinculada ao pedido.</p><span class="stamp">comprovante + portfólio visual</span></div>
+      </div>
+      <div class="trace"><b>Cadeia de rigor:</b> RF05 / RNF12 → UC05 Concluir Pedido → <i>Pedido.concluir()</i> + <i>Obra.darBaixa()</i> → teste "sem foto, falha". Estados e sequência em <b>docs/ate-fase2.md §5.1 + §7.1</b>.</div>
+    </div>
   </section>
 
-  <section class="slide" data-index="13">
-    <h2><span class="num">14/14</span>Encerramento</h2>
-    <ul>
-      <li>ate: profissionaliza o artesão sem complicar a rotina da feira</li>
-      <li>Decisões-chave: foto rígida · offline-first · server timestamp · `negocio` agnóstica</li>
-      <li>Obrigado! Perguntas?</li>
-    </ul>
-    <p class="note">Plano B sem internet: exportar esta página em PDF ou trocar os blocos Mermaid por capturas já renderizadas.</p>
+  <section class="slide dark">
+    <div class="topbar"><span class="kicker">4 · Offline por dentro e por fora</span><span class="timer">05 / 07 · 3:00</span></div>
+    <div class="body">
+      <h2>Offline-first <span class="gold">que se sustenta</span></h2>
+      <div class="pipe">
+        <div class="step"><div class="ico">1</div><h3>Salva local</h3><p>SQLite + fila pendente · abre em &lt; 1s · banner avisa</p></div><div class="arr"></div>
+        <div class="step"><div class="ico">2</div><h3>Enfileira</h3><p>Criar / editar / deletar aguardam a rede em fundo</p></div><div class="arr"></div>
+        <div class="step"><div class="ico">3</div><h3>Sobe sozinho</h3><p>Foto → Storage, depois registro → banco · vale o servidor</p></div>
+      </div>
+      <div class="islands">
+        <div class="isl a"><b>App no celular</b><small>Telas + casos de uso + SQLite e fotos. Fonte imediata.</small></div><div class="arr"></div>
+        <div class="isl b"><b>Sincronizador</b><small>Monitor de rede + fila. Sem travar a tela.</small></div><div class="arr"></div>
+        <div class="isl c"><b>Nuvem Supabase</b><small>Login · banco com RLS · arquivos.</small></div>
+      </div>
+      <div class="bandline"><span><b>Tela nunca espera rede.</b> Regra de ouro: interface fala só com o celular; o sincronizador fala com a nuvem; o núcleo de regras não conhece nenhum dos dois.</span></div>
+      <div class="ref">Fluxo em <b>docs/ate-fase2.md §8</b> · camadas e componentes em <b>§6 + §9</b> · classes/DER em <b>§3–§4</b>.</div>
+    </div>
+  </section>
+
+  <section class="slide light">
+    <div class="topbar"><span class="kicker">5 · Escopo e construção</span><span class="timer">06 / 07 · 2:30</span></div>
+    <div class="body">
+      <h2>Honesto no escopo, <span class="gold">sólido no código</span></h2>
+      <div class="twocol">
+        <div class="panel in"><h3>Dentro da v1 / espera</h3>
+          <span class="chip"><b>Dentro:</b> Kanban + foto · clientes + pedidos · estoque única/série · preços · mapa pins · offline</span>
+          <span class="chip"><b>v1.1:</b> multi-usuário · push de eventos · calendário</span>
+          <span class="chip"><b>v2:</b> marketplaces (enum já prevê) · relatórios · exportação</span>
+          <span class="chip"><b>Volume:</b> &lt; 30 obras/ano — cabe no Free tier, sem paginação</span>
+        </div>
+        <div class="panel build"><h3>Do centro para as bordas</h3>
+          <span class="chip"><b>Base:</b> Expo + SQLite + Supabase · 1 app iOS/Android</span>
+          <span class="chip"><b>Regra no centro:</b> Clean + DDD, domínio puro, guards em <i>concluir()</i> e <i>reservar()</i></span>
+          <span class="chip"><b>TDD:</b> 1. entidade → 2. caso de uso (mock) → 3. SQLite + fila</span>
+          <span class="chip"><b>Segurança:</b> RLS por usuário · 1 dispositivo no MVP</span>
+        </div>
+      </div>
+      <div class="ref">Fronteiras em <b>docs/ate-fase1.md §7</b> · requisitos em <b>fase2 §1</b> · TDD e pastas em <b>fase2 §10</b>.</div>
+    </div>
+  </section>
+
+  <section class="slide dark">
+    <div class="topbar"><span class="kicker">6 · Fechamento</span><span class="timer">07 / 07 · 1:00</span></div>
+    <div class="body">
+      <h2>Simples na feira, <span class="gold">rigoroso no código</span></h2>
+      <p class="sub">Três decisões resumem o projeto — o resto está documentado e pode ser aberto nas perguntas. Métrica de sucesso: arquitetura completa + app funcionando minimamente.</p>
+      <div class="medals">
+        <div class="medal"><div class="m">◉</div><b>Foto obrigatória</b><br><span>prova e portfólio</span></div>
+        <div class="medal"><div class="m">⇅</div><b>Offline-first</b><br><span>nunca perde, nunca trava</span></div>
+        <div class="medal"><div class="m">1</div><b>Um usuário</b><br><span>MVP focado, expansível</span></div>
+      </div>
+      <div class="links"><a href="./ate-fase1.md">Abrir ideação (fase 1)</a><a href="./ate-fase2.md">Abrir estruturação (fase 2)</a><a class="btn-ghost" href="#" onclick="window.print();return false">Exportar PDF</a></div>
+      <div class="ref">Obrigado — perguntas? · Esta página funciona offline · PDF via impressão.</div>
+    </div>
   </section>
 
 </div>
-
+<div id="notes"></div>
 <div class="progress" id="progress"></div>
-<div class="controls">
-  <button id="prevBtn" aria-label="Anterior">‹</button>
-  <span id="counter">1 / 14</span>
-  <button id="nextBtn" aria-label="Próximo">›</button>
-</div>
-
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "loose" });
-
-  const slides = document.querySelectorAll(".slide");
-  const counter = document.getElementById("counter");
-  const progress = document.getElementById("progress");
-  let current = 0;
-
-  async function renderMermaidIn(slide) {
-    const blocks = slide.querySelectorAll("pre.mermaid:not([data-rendered])");
-    for (const el of blocks) {
-      el.setAttribute("data-rendered", "true");
-      const code = el.textContent;
-      const id = "m-" + Math.random().toString(36).slice(2);
-      try {
-        const { svg } = await mermaid.render(id, code);
-        el.innerHTML = svg;
-      } catch (e) {
-        el.innerHTML = "<p style='color:#f87171'>Erro ao renderizar diagrama: " + e.message + "</p>";
-      }
-    }
-  }
-
-  function showSlide(idx) {
-    current = Math.max(0, Math.min(idx, slides.length - 1));
-    slides.forEach((s, i) => s.classList.toggle("active", i === current));
-    counter.textContent = `${current + 1} / ${slides.length}`;
-    progress.style.width = ((current + 1) / slides.length * 100) + "%";
-    renderMermaidIn(slides[current]);
-  }
-
-  document.getElementById("nextBtn").addEventListener("click", () => showSlide(current + 1));
-  document.getElementById("prevBtn").addEventListener("click", () => showSlide(current - 1));
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight" || e.key === " ") showSlide(current + 1);
-    if (e.key === "ArrowLeft") showSlide(current - 1);
-  });
-
-  showSlide(0);
+<div class="controls"><button id="prevBtn" aria-label="Anterior">‹</button><span id="counter">1 / 7</span><button id="nextBtn" aria-label="Próximo">›</button></div>
+<script>
+const slides=[...document.querySelectorAll(".slide")];
+const counter=document.getElementById("counter"),progress=document.getElementById("progress"),notesEl=document.getElementById("notes");
+const NOTES=[
+ "1:30 — Frase-âncora. Tom leve e formal. Foco no projeto.",
+ "2:30 — Canais + faixa UX. Remeter fase 1 §1.",
+ "2:00 — 4 estações + Kanban. Remeter 29 UCs ao doc §2.",
+ "2:30 — Trava sem foto + cadeia RF→UC→teste. Remeter §5.1+§7.1.",
+ "3:00 — Pipeline + 3 ilhas. Remeter §8, §6+§9.",
+ "2:30 — Escopo honesto + TDD. Remeter fase1 §7, fase2 §1+§10.",
+ "1:00 — 3 decisões + métrica. Abrir perguntas com docs."
+];
+let cur=0;
+function show(i){cur=Math.max(0,Math.min(i,slides.length-1));
+ slides.forEach((s,k)=>s.classList.toggle("active",k===cur));
+ counter.textContent=(cur+1)+" / "+slides.length;
+ progress.style.width=((cur+1)/slides.length*100)+"%";
+ if(notesEl.classList.contains("show"))notesEl.textContent="["+NOTES[cur]+"]";
+ location.hash="s"+(cur+1);}
+document.getElementById("nextBtn").onclick=()=>show(cur+1);
+document.getElementById("prevBtn").onclick=()=>show(cur-1);
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowRight"||e.key===" "){e.preventDefault();show(cur+1);}
+ if(e.key==="ArrowLeft")show(cur-1);
+ if(e.key.toLowerCase()==="s")notesEl.classList.toggle("show");
+ if(e.key.toLowerCase()==="f")document.documentElement.requestFullscreen?.();
+});
+const m=location.hash.match(/s(\d+)/);show(m?+m[1]-1:0);
 </script>
 </body>
 </html>

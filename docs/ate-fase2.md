@@ -1,13 +1,6 @@
 # Documento de Software — App de Gestão para Artesãos
 ## Documento Consolidado Final (Tarefas 1 a 11 + Tarefa 12: Consolidação e Autocorreção)
 
-> Origem: fusão integral dos arquivos `docs/tarefas-fase2/tarefa-01-requisitos.md` a `tarefa-11-implementacao.md`, na ordem da skill `software-design-doc`.
-> Nenhum conteúdo textual, tabela ou observação foi resumido ou cortado — apenas reorganizado sob os títulos abaixo.
-> Tarefa 12 aplicou o Ciclo de Autocorreção e substituiu 3 blocos Mermaid com erro real de sintaxe (validados contra o parser oficial `mermaid`/npm + conferência visual em mermaid.live):
-> - Seção 6 (BCE), Fluxo 1 UC05 — causa raiz: parênteses `()` em rótulos de aresta/nó de `flowchart` sem aspas duplas; correção: envolver rótulo em aspas duplas.
-> - Seção 8 (Atividades) — mesma causa + `\n` literal trocado por `<br/>` (em `flowchart`, `\n` não gera quebra de linha real).
-> - Seção 9 (Componentes) — mesma causa + `\n` literal trocado por `<br/>`.
-
 ---
 
 # 1. Levantamento de Requisitos
