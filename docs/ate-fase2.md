@@ -49,6 +49,8 @@
 | RNF09 | **Manutenibilidade:** O código deve seguir os princípios de Clean Architecture e Domain-Driven Design, separando núcleo de regras de negócio (domain/application) das camadas externas (adapters/infra), sem importar libs de banco ou framework dentro de entidades ou use cases *(base: Etapa 1, Seção 6)* | Alta | Equipe técnica |
 | RNF10 | **Conformidade (usuário único):** O sistema suporta exatamente um usuário autenticado; todo dado operacional é escopado por `usuario_id` (`auth.uid()`); compartilhamento de contas não é suportado *(base: Etapa 1, Seção 4 / Decisão #1 / Decisão #3)* | Alta | Equipe técnica |
 | RNF11 | **Confiabilidade (imagem de conclusão):** A regra de exigir fotografia para fechar um pedido ("Fazendo" → "Feito") é uma restrição rígida do sistema — não pode ser contornada por configuração, permissão ou fluxo alternativo *(base: Etapa 1, Decisão #7)* | Alta | Equipe técnica |
+| RNF12 | **Permissões de dispositivo:** Permissões de câmera e de localização devem ser solicitadas apenas no momento do uso (nunca no cold start do app); se negadas, a operação correspondente é abortada com instrução visível para habilitar a permissão nas configurações do dispositivo, sem travar o restante do app *(base: Etapa 1, Seção 5; UC05 FA2, UC13 FA1)* | Alta | Equipe técnica |
+| RNF13 | **Armazenamento local:** Dado o volume estimado de dados (< 30 obras/ano — Decisão #10), não há necessidade de rotina de limpeza automática de registros já sincronizados nesta fase do projeto; registros com `status_sync = 'sincronizado'` permanecem no SQLite e no cache de imagens indefinidamente. Limite de espaço em disco não é uma restrição ativa do projeto, mas fica registrado como categoria avaliada *(base: Etapa 1, Decisão #10)* | Baixa | Equipe técnica |
 
 ---
 
@@ -410,6 +412,7 @@ classDiagram
         -contato: String
         -statusSync: StatusSync
         -criadoEmLocal: DateTime
+        -deletedAt: DateTime
         +editar(nome: String, contato: String) void
     }
 
@@ -424,6 +427,7 @@ classDiagram
         -fotoConclusaoPath: String
         -statusSync: StatusSync
         -criadoEmLocal: DateTime
+        -deletedAt: DateTime
         +moverParaFazendo() void
         +concluir(fotoConclusaoPath: String) void
         +editar(descricao: String, dataEntrega: Date) void
@@ -442,6 +446,7 @@ classDiagram
         -fotoPath: String
         -statusSync: StatusSync
         -criadoEmLocal: DateTime
+        -deletedAt: DateTime
         +reservar() void
         +liberar() void
         +darBaixa() void
@@ -458,12 +463,19 @@ classDiagram
         -nome: String
         -data: Date
         -endereco: String
-        -latitude: Double
-        -longitude: Double
+        -localizacao: Coordenada
         -observacoes: String
         -statusSync: StatusSync
         -criadoEmLocal: DateTime
-        +editar(nome: String, data: Date, endereco: String, lat: Double, lng: Double, obs: String) void
+        -deletedAt: DateTime
+        +editar(nome: String, data: Date, endereco: String, localizacao: Coordenada, obs: String) void
+    }
+
+    class Coordenada {
+        <<valueObject>>
+        -latitude: Double
+        -longitude: Double
+        +validar() bool
     }
 
     class FilaSync {
@@ -533,6 +545,7 @@ classDiagram
     Cliente "1" -- "0..*" Pedido : origina
 
     Pedido "0..*" --> "0..1" Obra : vincula
+    Evento "1" *-- "1" Coordenada : possui
 
     Pedido --> CanalOrigem
     Pedido --> StatusPedido
@@ -549,6 +562,11 @@ classDiagram
 | `Usuario -- Cliente/Pedido/Obra/Evento` | Associação 1–0..* | Todo dado operacional é escopado por `usuario_id`; sem entidade intermediária *(base: Etapa 1, Decisão #3 / RNF10)* |
 | `Cliente -- Pedido` | Associação 1–0..* | Pedido pertence a um cliente; cliente pode existir sem pedidos |
 | `Pedido --> Obra` | Associação 0..*–0..1 | Pedido pode ou não estar vinculado a uma obra do estoque; para `UNICA`, regra de negócio em `Obra.reservar()` limita a 1 vínculo ativo; para `SERIE`, múltiplos pedidos podem referenciar a mesma obra |
+| `Evento *-- Coordenada` | Composição 1–1 | `Coordenada` é Value Object (sem identidade própria, imutável); `validar()` garante `latitude` ∈ [-90, 90] e `longitude` ∈ [-180, 180] antes da criação do `Evento`; persistida como colunas embutidas (`latitude`, `longitude`) tanto no SQLite quanto no Supabase *(base: Etapa 1, Seção 5)* |
+
+### Campo `deletedAt` (transversal — soft delete)
+
+`Cliente`, `Pedido`, `Obra` e `Evento` possuem a coluna `deletedAt DateTime` (nullable). Nenhuma dessas entidades é excluída fisicamente do SQLite antes da confirmação do delete pelo Supabase: ao remover/cancelar um registro (UC20/UC21, UC22/UC23, UC24/UC25), o sistema preenche `deletedAt` localmente, enfileira a operação `DELETAR` na `FilaSync` e só remove a linha física após o servidor confirmar. Isso evita perda de dados em caso de delete feito offline que precise ser revertido antes da sincronização *(base: skill mobile-design-doc, Seção 3 — "nunca deletar linha fisicamente antes de confirmar sync")*.
 
 ### Restrições de negócio nos métodos de `Obra`
 
@@ -569,7 +587,7 @@ classDiagram
 | `moverParaFazendo()` | Válido somente se `status = A_FAZER` |
 | `concluir(fotoConclusaoPath)` | Válido somente se `status = FAZENDO` e `fotoConclusaoPath` não nulo/vazio *(regra rígida — base: Etapa 1, Decisão #7 / RNF11)* |
 | `editar(...)` | Válido somente se `status = A_FAZER` *(base: RF19)* |
-| `cancelar()` | Disponível em qualquer status, com confirmação explícita; dispara `Obra.liberar()` se obra `UNICA` vinculada, ou `Obra.incrementarUnidades()` se `SERIE` *(base: RF20)* |
+| `cancelar()` | Disponível em qualquer status, com confirmação explícita; dispara `Obra.liberar()` se obra `UNICA` vinculada, ou `Obra.incrementarUnidades()` se `SERIE`; preenche `deletedAt` (soft delete) em vez de remover a linha fisicamente, enfileirando `DELETAR` na `FilaSync` *(base: RF20; deletedAt transversal — Seção 3.1)* |
 | `vincularObra(obraId)` | Válido somente se `status = A_FAZER`; delega regra de baixa ao tipo da obra |
 
 ## 3.2 Tabela de Persistência
@@ -580,7 +598,7 @@ classDiagram
 | `Cliente` | Sim | SQLite: `clientes`; Supabase: `clientes`; PK `id` UUID, FK `usuario_id` UUID | Offline-first *(base: Etapa 1, Seção 3)* |
 | `Pedido` | Sim | SQLite: `pedidos`; Supabase: `pedidos`; PK `id` UUID, FK `usuario_id` UUID, FK `cliente_id` UUID, FK `obra_id` UUID (nullable) | Foto conclusão: path local (`foto_conclusao_path`) + URL remota pós-sync (`foto_conclusao_url`) *(base: Etapa 1, Seção 5)* |
 | `Obra` | Sim | SQLite: `obras`; Supabase: `obras`; PK `id` UUID, FK `usuario_id` UUID; colunas `tipo` (enum string), `quantidade` INT, `status_obra` (enum string) *(base: Etapa 1, Seção 3 / Decisão #8)* | Foto catálogo: path local + URL remota pós-sync |
-| `Evento` | Sim | SQLite: `eventos`; Supabase: `eventos`; PK `id` UUID, FK `usuario_id` UUID; colunas `latitude` DOUBLE, `longitude` DOUBLE *(base: Etapa 1, Seção 5)* | Lista funciona offline; tiles do mapa exigem rede |
+| `Evento` | Sim | SQLite: `eventos`; Supabase: `eventos`; PK `id` UUID, FK `usuario_id` UUID; colunas `latitude` DOUBLE, `longitude` DOUBLE (colunas embutidas do VO `Coordenada` — Seção 3.1) *(base: Etapa 1, Seção 5)* | Lista funciona offline; tiles do mapa exigem rede |
 | `FilaSync` | Sim (local only) | SQLite: `fila_sync`; **não replicada no Supabase** — tabela de controle interno de sync; colunas `tipo_operacao`, `entidade`, `entidade_id` UUID, `payload` JSON, `status` enum string, `criado_em_local` | *(base: Etapa 1, Seção 3)* |
 | `CanalOrigem` | Não (enum) | Coluna `canal_origem` TEXT em `pedidos`; valores: `INSTAGRAM`, `WHATSAPP`, `PRESENCIAL`, `TELEFONE`, `OUTROS` | *(base: RF07)* |
 | `StatusPedido` | Não (enum) | Coluna `status` TEXT em `pedidos`; valores: `A_FAZER`, `FAZENDO`, `FEITO` | — |
@@ -593,9 +611,9 @@ classDiagram
 
 Todas as tabelas offline-first (`clientes`, `pedidos`, `obras`, `eventos`) possuem a coluna `created_at_local DATETIME` preenchida pelo dispositivo no momento da criação. Usada **exclusivamente para rastreabilidade** — não substitui o server timestamp como critério de desempate em conflitos *(base: Etapa 1, Seção 4 / Decisão #2 / RNF04)*.
 
-## 3.3 Diagrama Entidade-Relacionamento (DER)
+## 3.3 Diagrama Entidade-Relacionamento (DER) — SQLite (Local)
 
-Este diagrama materializa a visão relacional do banco de dados (SQLite local e Supabase remoto), derivada da Tabela de Persistência (Seção 3.2).
+Seguindo a skill `mobile-design-doc`, o DER é feito em dois diagramas estruturalmente equivalentes nas tabelas de domínio — um para o schema local (SQLite) e um para o schema remoto (Supabase/Postgres, Seção 3.4) — divergindo apenas em colunas exclusivas de um dos lados (`FILA_SYNC` só existe localmente) e nos tipos nativos de cada motor de banco.
 
 As cardinalidades foram estritamente alinhadas com as multiplicidades do Diagrama de Classes (Seção 3.1):
 - `Usuario` possui relação `1:N` com as entidades operacionais, estabelecendo o escopo de permissões (RLS por `usuario_id` no Supabase).
@@ -604,6 +622,7 @@ As cardinalidades foram estritamente alinhadas com as multiplicidades do Diagram
 - `FilaSync` é uma tabela estritamente local (sem contraparte no Supabase) e se relaciona com as demais entidades de forma polimórfica (via `entidade` + `entidade_id`), sem restrição de chave estrangeira (FK) estrita no nível do banco.
 - Valores enumerados (`CanalOrigem`, `StatusPedido`, etc.) foram persistidos como colunas descritivas (strings) dentro de suas respectivas tabelas.
 - IDs são UUID v4 gerados no dispositivo, usados como PK tanto no SQLite quanto no Supabase.
+- `CLIENTE`, `PEDIDO`, `OBRA` e `EVENTO` possuem a coluna `deleted_at` (nullable), usada para soft delete — nenhuma linha é removida fisicamente antes da confirmação do delete pelo Supabase (Seção 3.1/3.2).
 
 ```mermaid
 erDiagram
@@ -627,6 +646,7 @@ erDiagram
         string contato
         string status_sync "enum"
         datetime criado_em_local
+        datetime deleted_at "nullable, soft delete"
     }
     
     PEDIDO {
@@ -642,6 +662,7 @@ erDiagram
         string foto_conclusao_url
         string status_sync "enum"
         datetime criado_em_local
+        datetime deleted_at "nullable, soft delete"
     }
     
     OBRA {
@@ -655,6 +676,7 @@ erDiagram
         string foto_url
         string status_sync "enum"
         datetime criado_em_local
+        datetime deleted_at "nullable, soft delete"
     }
     
     EVENTO {
@@ -663,11 +685,12 @@ erDiagram
         string nome
         date data
         string endereco
-        double latitude
-        double longitude
+        double latitude "coluna embutida do VO Coordenada"
+        double longitude "coluna embutida do VO Coordenada"
         string observacoes
         string status_sync "enum"
         datetime criado_em_local
+        datetime deleted_at "nullable, soft delete"
     }
     
     FILA_SYNC {
@@ -681,7 +704,91 @@ erDiagram
     }
 ```
 
-*(base: Etapa 1, Seções 3 e 4; restrições derivadas da Seção 3)*
+*(base: Etapa 1, Seções 3 e 4; restrições derivadas da Seção 3; skill mobile-design-doc Seção 3.1)*
+
+## 3.4 Diagrama Entidade-Relacionamento (DER) — Supabase/Postgres (Remoto)
+
+Estruturalmente equivalente ao DER local (Seção 3.3) nas tabelas de domínio, com tipos nativos do Postgres e **sem `FILA_SYNC`**, que é conceito exclusivamente local. `criado_em_local` (Seção 3.2) viaja como metadado de auditoria; o timestamp oficial de conflito é o gerado pelo próprio Postgres (`updated_at`, coluna de controle padrão do Supabase, RNF04).
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ CLIENTES : possui
+    PROFILES ||--o{ PEDIDOS : gerencia
+    PROFILES ||--o{ OBRAS : possui
+    PROFILES ||--o{ EVENTOS : agenda
+    
+    CLIENTES ||--o{ PEDIDOS : origina
+    OBRAS |o--o{ PEDIDOS : vincula
+
+    PROFILES {
+        uuid id PK "FK para auth.users(id)"
+        text email
+    }
+    
+    CLIENTES {
+        uuid id PK
+        uuid usuario_id FK
+        text nome
+        text contato
+        timestamptz updated_at
+        timestamptz deleted_at "nullable, soft delete"
+    }
+    
+    PEDIDOS {
+        uuid id PK
+        uuid usuario_id FK
+        uuid cliente_id FK
+        uuid obra_id FK "nullable"
+        text descricao
+        text canal_origem "enum"
+        date data_entrega
+        text status "enum"
+        text foto_conclusao_url
+        timestamptz updated_at
+        timestamptz deleted_at "nullable, soft delete"
+    }
+    
+    OBRAS {
+        uuid id PK
+        uuid usuario_id FK
+        text nome
+        text tipo "enum (UNICA/SERIE)"
+        integer quantidade
+        text status_obra "enum"
+        text foto_url
+        timestamptz updated_at
+        timestamptz deleted_at "nullable, soft delete"
+    }
+    
+    EVENTOS {
+        uuid id PK
+        uuid usuario_id FK
+        text nome
+        date data
+        text endereco
+        double_precision latitude "coluna embutida do VO Coordenada"
+        double_precision longitude "coluna embutida do VO Coordenada"
+        text observacoes
+        timestamptz updated_at
+        timestamptz deleted_at "nullable, soft delete"
+    }
+```
+
+*(base: Etapa 1, Seções 3 e 4; skill mobile-design-doc Seção 3.1)*
+
+## 3.5 Row Level Security (RLS) por Tabela
+
+| Tabela | Regra (resumo) |
+|---|---|
+| `clientes` | `usuario_id = auth.uid()` |
+| `pedidos` | `usuario_id = auth.uid()` |
+| `obras` | `usuario_id = auth.uid()` |
+| `eventos` | `usuario_id = auth.uid()` |
+| `profiles` | `id = auth.uid()` — leitura/escrita restritas ao próprio perfil |
+
+Regra homogênea em todas as tabelas de domínio porque o app suporta exatamente um usuário autenticado por conta, sem entidade `negocio`/workspace nem papéis diferenciados (RNF10, Decisão #1/#3). Escrita/leitura via Supabase Storage (fotos) segue o mesmo escopo indiretamente, através do `usuario_id` já validado na tabela `pedidos`/`obras` associada ao arquivo.
+
+*(base: Etapa 1, Seção 4; RNF03, RNF10)*
 
 ---
 
@@ -695,54 +802,60 @@ Este diagrama representa um instantâneo (snapshot) em tempo de execução do si
 O artesão (`usuario1`) possui um cliente cadastrado (`clienteJoao`) que realizou dois pedidos.
 - O `pedido101` (Fazendo) está vinculado a uma obra exclusiva (`obraAguia`), cujo tipo é `UNICA`. Por conta desse vínculo ativo, o status da obra reflete `RESERVADA`.
 - O `pedido102` (Feito) foi uma venda presencial de uma obra repetível (`obraCoruja`), do tipo `SERIE`. A obra continua com status `DISPONIVEL` e a quantidade restante é 4, pois a baixa do estoque nesse tipo ocorre por decremento da quantidade, não por retenção de estado.
+- **Estado misto de sincronização** (propósito específico desta seção na skill mobile-design-doc): o artesão acabou de fotografar e concluir o `pedido102` ainda dentro de uma feira sem sinal de internet — o registro está salvo localmente com `statusSync = "PENDENTE"`, enquanto todo o restante do snapshot (cliente, pedido101 e as duas obras) já foi sincronizado anteriormente. Esse estado parcial é normal em app offline-first, não um erro.
 
 ```mermaid
 classDiagram
     class usuario1 {
         <<instance>>
-        id = "uuid-artesao-1"
+        id = "a1111111-uuid-artesao"
         email = "artesao@email.com"
     }
 
     class clienteJoao {
         <<instance>>
-        id = 42
+        id = "b2222222-uuid-cliente"
         nome = "João da Silva"
         contato = "(11) 99999-9999"
+        statusSync = "SINCRONIZADO"
     }
 
     class pedido101 {
         <<instance>>
-        id = 101
+        id = "c3333333-uuid-pedido"
         descricao = "Escultura de Águia personalizada"
         canalOrigem = "WHATSAPP"
         status = "FAZENDO"
+        statusSync = "SINCRONIZADO"
     }
 
     class pedido102 {
         <<instance>>
-        id = 102
+        id = "c4444444-uuid-pedido"
         descricao = "Coruja de prateleira (pronta entrega)"
         canalOrigem = "PRESENCIAL"
         status = "FEITO"
+        statusSync = "PENDENTE"
     }
 
     class obraAguia {
         <<instance>>
-        id = 201
+        id = "d5555555-uuid-obra"
         nome = "Águia de Asas Abertas"
         tipo = "UNICA"
         quantidade = 1
         statusObra = "RESERVADA"
+        statusSync = "SINCRONIZADO"
     }
 
     class obraCoruja {
         <<instance>>
-        id = 202
+        id = "d6666666-uuid-obra"
         nome = "Coruja Pequena"
         tipo = "SERIE"
         quantidade = 4
         statusObra = "DISPONIVEL"
+        statusSync = "SINCRONIZADO"
     }
 
     %% Associações Usuario -> Entidades (escopo por usuario_id)
@@ -766,6 +879,7 @@ classDiagram
 - A **associação** `Usuario -- [Entidades]` prova que todos os registros estão atrelados ao dono (`usuario_id`), satisfazendo o isolamento de dados por RLS (RNF03, RNF10).
 - A **associação** `Cliente -- Pedido` demonstra que um cliente pode originar vários pedidos distintos simultaneamente (associação 1 para muitos do lado do Cliente).
 - A **associação** `Pedido --> Obra` (1 para 0..1 do lado do Pedido) reflete corretamente que o Pedido aponta para a obra, com o modelo suportando as distinções vitais das regras de negócio: obras únicas seguram seu status em `RESERVADA`, enquanto obras em série apenas operam por decremento da `quantidade` e continuam `DISPONIVEL` para outros pedidos.
+- O `statusSync = "PENDENTE"` isolado em `pedido102` valida que o modelo suporta estado de sincronização parcial dentro do mesmo snapshot, sem exigir que "tudo sincronize junto" — cada entidade sincroniza de forma independente via sua própria linha na `FilaSync`.
 
 *(base: Seção 3 e Seção 3.3)*
 
@@ -773,13 +887,13 @@ classDiagram
 
 # 5. Diagrama de Estados
 
-Conforme definido nas etapas anteriores (Tabela de Persistência e regras de negócio da Seção 3), duas entidades deste domínio possuem um ciclo de vida complexo o suficiente para justificar a modelagem detalhada de estados: **Pedido** e **Obra**.
+Conforme definido nas etapas anteriores (Tabela de Persistência e regras de negócio da Seção 3), duas entidades deste domínio possuem um ciclo de vida de **negócio** complexo o suficiente para justificar a modelagem detalhada de estados: **Pedido** e **Obra** (Seções 5.1 e 5.2). Adicionalmente, por ser um app offline-first, a Seção 5.3 modela o ciclo de **sincronização** (`statusSync`), aplicável a toda entidade sincronizável (`Cliente`, `Pedido`, `Obra`, `Evento`) — diagrama que a skill `mobile-design-doc` trata como não dispensável em apps deste tipo, independentemente do ciclo de negócio de cada entidade.
 
 ## 5.1 Ciclo de Vida do Pedido
 
 Este diagrama detalha as transições do atributo `status` (enum `StatusPedido`) da entidade `Pedido`.
 
-A regra rígida documentada (RF05 / RNF11 / Decisão #7 da Etapa 1) — exigência obrigatória de fotografia da obra concluída — atua como a **condição de guarda** (`[possui foto de conclusão]`) na transição de `FAZENDO` para `FEITO`. O cancelamento (RF20) encerra a vida do objeto, levando-o ao estado final (deleção física ou deleção lógica não visível).
+A regra rígida documentada (RF05 / RNF11 / Decisão #7 da Etapa 1) — exigência obrigatória de fotografia da obra concluída — atua como a **condição de guarda** (`[possui foto de conclusão]`) na transição de `FAZENDO` para `FEITO`. O cancelamento (RF20) encerra a vida do objeto do ponto de vista de negócio: o `[*]` representa deleção **lógica** — `cancelar()` preenche `deletedAt` (Seção 3.1) e enfileira `DELETAR` na `FilaSync` — nunca deleção física antes da confirmação do Supabase. O ciclo de sincronização que efetivamente processa essa remoção está detalhado na Seção 5.3.
 
 ```mermaid
 stateDiagram-v2
@@ -822,6 +936,28 @@ stateDiagram-v2
 
 *(base: RF10, RF21, RF22; restrições dos métodos da classe Obra da Seção 3)*
 
+## 5.3 Ciclo de Sincronização (genérico, por entidade sincronizável)
+
+Diferente dos dois diagramas anteriores — que descrevem o ciclo de **negócio** de uma entidade específica — este diagrama descreve o ciclo de **sincronização** (`statusSync`), compartilhado por toda entidade offline-first do domínio: `Cliente`, `Pedido`, `Obra` e `Evento`. É o ciclo que efetivamente processa a fila local (`FilaSync`) contra o Supabase, incluindo o caminho de deleção lógica iniciado por `cancelar()`/`arquivar()`/remoções (Seções 5.1, 5.2 e nota de `deletedAt` na Seção 3.1).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pendente : criado ou editado offline/online
+
+    Pendente --> Sincronizando : conexão disponível, worker processa FilaSync
+    Sincronizando --> Sincronizado : servidor confirma insercao/atualizacao (2xx)
+    Sincronizando --> Erro : falha de rede ou validacao
+    Erro --> Sincronizando : nova tentativa (retry com backoff)
+
+    Sincronizado --> Pendente : nova edicao local
+
+    Pendente --> ExcluidoLocalmente : usuario cancela/remove (preenche deletedAt)
+    ExcluidoLocalmente --> Sincronizando : propaga DELETAR via FilaSync
+    Sincronizando --> [*] : delete confirmado no servidor
+```
+
+*(base: skill mobile-design-doc, Seção 3 "Diagramas de Estado"; RNF02, RNF04; campo `deletedAt` — Seção 3.1)*
+
 ---
 
 # 6. Classes de Fronteira, Controle e Entidade (Boundary-Control-Entity)
@@ -830,22 +966,24 @@ Esta etapa reclassifica os elementos levantados até aqui na visão da Análise 
 
 ## 6.1 Mapeamento BCE por Caso de Uso Principal
 
-| Caso de Uso (UC) | Boundary (Telas / Triggers) | Control (Use Cases / Services) | Entities Envolvidas |
-|------------------|----------------------------|--------------------------------|----------------------|
-| UC01 Realizar Login | `TelaLogin` | `AuthUseCase` | `Usuario` (remoto) |
-| UC03 Visualizar Kanban | `TelaKanban` | `ConsultarPedidosUseCase` | `Pedido`, `Cliente`, `Obra` |
-| UC05 Concluir Pedido | `TelaKanban`, `CameraView` | `ConcluirPedidoUseCase` | `Pedido`, `Obra` |
-| UC07 Registrar Novo Pedido | `TelaNovoPedido` | `CadastrarPedidoUseCase` | `Pedido`, `Cliente`, `Obra` |
-| UC09 Cadastrar Cliente | `TelaNovoCliente` | `CadastrarClienteUseCase` | `Cliente` |
-| UC11 Consultar Estoque | `TelaEstoque` | `ConsultarEstoqueUseCase` | `Obra` |
-| UC12 Cadastrar Obra | `TelaNovaObra`, `CameraView` (opcional catálogo) | `CadastrarObraUseCase` | `Obra` |
-| UC13 Cadastrar Evento | `TelaNovoEvento`, `MapaView` | `CadastrarEventoUseCase` | `Evento` |
-| UC16 Sincronizar Dados | `SyncServiceWorker` (Background) | `SincronizarDadosUseCase` | `FilaSync`, `Pedido`, `Cliente`, `Obra`, `Evento` |
-| UC19 Editar Cliente | `TelaEditarCliente` | `EditarClienteUseCase` | `Cliente` |
-| UC20 Editar Pedido | `TelaEditarPedido` | `EditarPedidoUseCase` | `Pedido`, `Obra` |
-| UC21 Cancelar Pedido | `TelaKanban` | `CancelarPedidoUseCase` | `Pedido`, `Obra` |
+| Caso de Uso (UC) | Boundary UI (Telas) | Boundary Nativo/Gateway | Control (Use Cases / Services) | Entities Envolvidas |
+|------------------|---------------------|--------------------------|--------------------------------|----------------------|
+| UC01 Realizar Login | `TelaLogin` | `AuthGateway` | `AuthUseCase` | `Usuario` (remoto) |
+| UC03 Visualizar Kanban | `TelaKanban` | — | `ConsultarPedidosUseCase` | `Pedido`, `Cliente`, `Obra` |
+| UC05 Concluir Pedido | `TelaKanban` | `CameraGateway` | `ConcluirPedidoUseCase` | `Pedido`, `Obra` |
+| UC07 Registrar Novo Pedido | `TelaNovoPedido` | — | `CadastrarPedidoUseCase` | `Pedido`, `Cliente`, `Obra` |
+| UC09 Cadastrar Cliente | `TelaNovoCliente` | — | `CadastrarClienteUseCase` | `Cliente` |
+| UC11 Consultar Estoque | `TelaEstoque` | — | `ConsultarEstoqueUseCase` | `Obra` |
+| UC12 Cadastrar Obra | `TelaNovaObra` | `CameraGateway` (opcional, foto de catálogo) | `CadastrarObraUseCase` | `Obra` |
+| UC13 Cadastrar Evento | `TelaNovoEvento` | `LocationGateway` | `CadastrarEventoUseCase` | `Evento` |
+| UC16 Sincronizar Dados | (background, sem UI) | `SyncGateway` | `SincronizarDadosUseCase` | `FilaSync`, `Pedido`, `Cliente`, `Obra`, `Evento` |
+| UC19 Editar Cliente | `TelaEditarCliente` | — | `EditarClienteUseCase` | `Cliente` |
+| UC20 Editar Pedido | `TelaEditarPedido` | — | `EditarPedidoUseCase` | `Pedido`, `Obra` |
+| UC21 Cancelar Pedido | `TelaKanban` | — | `CancelarPedidoUseCase` | `Pedido`, `Obra` |
 
-*(base: Seções 2 e 3)*
+`CameraGateway`, `LocationGateway`, `AuthGateway` e `SyncGateway` são interfaces definidas no domínio (não implementações) — cada uma tem uma implementação concreta na camada de adapters que efetivamente importa `expo-camera`, `expo-location` e `@supabase/supabase-js` (Seções 9 e 10.1). O Control nunca depende do SDK nativo diretamente, apenas da interface do Gateway, do mesmo jeito que depende de `IPedidoRepository` em vez do SQLite diretamente.
+
+*(base: Seções 2 e 3; skill mobile-design-doc — "Gateway como Boundary de recurso nativo")*
 
 ## 6.2 Diagramas de Robustez
 
@@ -860,8 +998,8 @@ Demonstra a restrição (RNF11) de uso obrigatório da câmera antes que a lógi
 ```mermaid
 flowchart LR
     Ator((Artesão))
-    B1[TelaKanban «boundary»]
-    B2[CameraView «boundary»]
+    B1[TelaKanban «boundary-ui»]
+    B2[CameraGateway «boundary-nativo»]
     C[ConcluirPedidoUseCase «control»]
     E1[Pedido «entity»]
     E2[Obra «entity»]
@@ -917,13 +1055,14 @@ Demonstra a validação rigorosa da foto e o enfileiramento offline.
 ```mermaid
 sequenceDiagram
     actor Artesao as Artesão
-    participant Tela as TelaKanban «boundary»
-    participant Cam as CameraView «boundary»
+    participant Tela as TelaKanban «boundary-ui»
+    participant Cam as CameraGateway «boundary-nativo»
     participant UC as ConcluirPedidoUseCase «control»
     participant Pedido as Pedido «entity»
     participant Obra as Obra «entity»
     participant Repo as SQLiteRepository «adapter»
     participant Fila as FilaSync «adapter»
+    participant Sync as SyncGateway «Supabase»
 
     Artesao ->> Tela: aciona "Mover para Feito"
     Tela ->> Cam: abrirCamera()
@@ -956,6 +1095,17 @@ sequenceDiagram
         
         UC -->> Tela: sucesso
         Tela -->> Artesao: exibe card na coluna "Feito"
+
+        par processamento assíncrono da fila (quando há rede)
+            Fila ->> Sync: enviar(pedidoId, payload)
+            alt sync bem-sucedido
+                Sync -->> Fila: 200 ok
+                Fila ->> Repo: marcarSincronizado(pedidoId)
+            else falha de rede/validação
+                Sync -->> Fila: erro
+                Fila ->> Fila: reagendar retry (backoff)
+            end
+        end
     end
 ```
 
@@ -966,12 +1116,13 @@ Demonstra o cadastro de um pedido com seleção de cliente e a bifurcação de r
 ```mermaid
 sequenceDiagram
     actor Artesao as Artesão
-    participant Tela as TelaNovoPedido «boundary»
+    participant Tela as TelaNovoPedido «boundary-ui»
     participant UC as CadastrarPedidoUseCase «control»
     participant Pedido as novoPedido: Pedido «entity»
     participant Obra as ObraEstoque «entity»
     participant Repo as SQLiteRepository «adapter»
     participant Fila as FilaSync «adapter»
+    participant Sync as SyncGateway «Supabase»
 
     Artesao ->> Tela: preenche dados + seleciona Cliente
     
@@ -1005,6 +1156,17 @@ sequenceDiagram
     
     UC -->> Tela: sucesso
     Tela -->> Artesao: redireciona p/ Kanban ("A Fazer")
+
+    par processamento assíncrono da fila (quando há rede)
+        Fila ->> Sync: enviar(novoPedido.id, payload)
+        alt sync bem-sucedido
+            Sync -->> Fila: 200 ok
+            Fila ->> Repo: marcarSincronizado(novoPedido.id)
+        else falha de rede/validação
+            Sync -->> Fila: erro
+            Fila ->> Fila: reagendar retry (backoff)
+        end
+    end
 ```
 
 *(base: Seção 2 - fluxos principais; Seção 3 - restrições de métodos; RF05, RF10, RF15)*
@@ -1130,11 +1292,16 @@ flowchart TD
             SyncWorker[Worker de Sincronização<br/>em Background]
             NetListener[Monitor de Conectividade]
             SupabaseAdapter[Adaptadores REST API / SDK]
+            CameraGtw["CameraGateway<br/>(adapter nativo)"]
+            LocationGtw["LocationGateway<br/>(adapter nativo)"]
+            AuthGtw["AuthGateway<br/>(adapter Supabase Auth)"]
         end
         
         subgraph LocalInfra ["Infraestrutura Local (Offline-First)"]
             SQLite[(SQLite Database<br/>Dados Relacionais)]
             FS[Expo File System<br/>Cache de Imagens]
+            ExpoCam["expo-camera SDK"]
+            ExpoLoc["expo-location SDK"]
         end
 
         %% Fluxo interno da arquitetura Limpa
@@ -1142,10 +1309,16 @@ flowchart TD
         Hooks --> UseCases
         UseCases --> Entities
         UseCases --> Repo
+        UseCases --> CameraGtw
+        UseCases --> LocationGtw
+        UseCases --> AuthGtw
         
         %% Gravação Local
         Repo --> SQLite
         Repo --> FS
+        CameraGtw --> ExpoCam
+        CameraGtw --> FS
+        LocationGtw --> ExpoLoc
         
         %% Mecânica de Sincronização
         NetListener -.->|"Gatilho (Online)"| SyncWorker
@@ -1161,7 +1334,7 @@ flowchart TD
 
     %% Integrações com a Nuvem
     Artesao -->|"Interação (Toque/Gestos)"| Telas
-    Hooks -->|Login/Logout Direto| S_Auth
+    AuthGtw -->|"Login/Logout"| S_Auth
     SupabaseAdapter -->|"Sincronização Assíncrona (Criação, Edição, Deleção)"| S_DB
     SupabaseAdapter -->|Upload Compressado| S_Storage
 
@@ -1175,13 +1348,14 @@ flowchart TD
 
 ### Componentes Chave
 
-1. **Camada de Apresentação:** React Native com Expo, consumindo os `UseCases` sem conhecer os bancos de dados locais diretamente.
+1. **Camada de Apresentação:** React Native com Expo, consumindo os `UseCases` sem conhecer os bancos de dados locais nem os SDKs nativos diretamente.
 2. **Repositórios Locais (`Repo`):** São a única fonte de verdade síncrona do App. A UI lê e escreve exclusivamente aqui.
-3. **Monitor de Conectividade (`NetListener`):** Escuta mudanças no sistema operacional do celular (modo avião, perda de sinal) e sinaliza a UI (para exibir o banner de offline - RF17) ou aciona o `SyncWorker`.
-4. **Worker de Sincronização (`SyncWorker`):** Lê a `fila_sync` (dentro do SQLite), compacta as imagens salvas no `FS` e aciona os `SupabaseAdapters`.
-5. **PostgreSQL com RLS (`S_DB`):** O backend recebe operações do aplicativo, checa o token de identidade e, baseado no `usuario_id` (`auth.uid()`), permite (ou nega) as transações, garantindo o RNF03.
+3. **Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`):** Interfaces de domínio que isolam os `UseCases` dos SDKs concretos (`expo-camera`, `expo-location`, `supabase-js` Auth) — mesma função de fronteira que os Repositórios cumprem para o SQLite. `UseCases` nunca importam esses SDKs diretamente (regra de checagem — Seção 10.1).
+4. **Monitor de Conectividade (`NetListener`):** Escuta mudanças no sistema operacional do celular (modo avião, perda de sinal) e sinaliza a UI (para exibir o banner de offline - RF17) ou aciona o `SyncWorker`.
+5. **Worker de Sincronização (`SyncWorker`):** Lê a `fila_sync` (dentro do SQLite), compacta as imagens salvas no `FS` e aciona os `SupabaseAdapters`.
+6. **PostgreSQL com RLS (`S_DB`):** O backend recebe operações do aplicativo, checa o token de identidade e, baseado no `usuario_id` (`auth.uid()`), permite (ou nega) as transações, garantindo o RNF03.
 
-*(base: Etapa 1 - Seção 2, 3, 4, 5 e 6)*
+*(base: Etapa 1 - Seção 2, 3, 4, 5 e 6; skill mobile-design-doc — Gateways como adapters de recurso nativo)*
 
 ---
 
@@ -1191,26 +1365,35 @@ Para garantir a manutenibilidade (RNF09) e a robustez testável do sistema "Offl
 
 ## 10.1 Estrutura de Pastas (Clean Architecture)
 
-A organização do projeto deve seguir rigorosamente a separação de responsabilidades. A regra de ouro é: **dependências apontam sempre para o centro** (Domain). A camada `domain` não pode importar ABSOLUTAMENTE NADA de pacotes externos, bibliotecas de UI (React) ou SDKs de banco (Supabase, SQLite).
+A organização do projeto deve seguir rigorosamente a separação de responsabilidades. A regra de ouro é: **dependências apontam sempre para o centro** (Domain). A camada `domain` não pode importar ABSOLUTAMENTE NADA de pacotes externos, bibliotecas de UI (React) ou SDKs de banco/sensores (Supabase, SQLite, `expo-camera`, `expo-location`).
+
+**Regra prática de checagem:** se um arquivo em `core/domain/` ou `core/application/` importar `expo-camera`, `expo-location`, `expo-sqlite`, `drizzle-orm` (ou equivalente) ou `@supabase/supabase-js` diretamente → violação de arquitetura.
 
 ```text
 src/
  ├── core/
  │   ├── domain/               # O coração da aplicação (TDD Primeira fase)
  │   │   ├── entities/         # Classes puras: Obra, Pedido, Cliente (c/ regras de negócio)
+ │   │   ├── value-objects/    # Coordenada (lat/lng c/ validação de range)
  │   │   ├── enums/            # StatusPedido, TipoObra, etc.
  │   │   └── errors/           # Exceções de domínio (ex: ObraInvalidaError)
  │   │
  │   └── application/          # Casos de Uso (TDD Segunda fase)
  │       ├── usecases/         # ConcluirPedidoUseCase, CadastrarObraUseCase
- │       └── repositories/     # Interfaces (contratos) dos repositórios (ex: IPedidoRepository)
+ │       ├── repositories/     # Interfaces (contratos) dos repositórios (ex: IPedidoRepository)
+ │       └── gateways/         # Interfaces (contratos) de recurso nativo/externo:
+ │                              #   ICameraGateway, ILocationGateway, IAuthGateway, ISyncGateway
  │
  ├── infrastructure/           # Implementação dos contratos (Adapters)
  │   ├── database/
  │   │   ├── sqlite/           # Implementação dos repositórios usando expo-sqlite
  │   │   └── supabase/         # Integração com backend (SupabaseClient)
+ │   ├── device/                # Implementação dos Gateways nativos (TDD Terceira fase)
+ │   │   ├── camera/            # CameraGateway usando expo-camera
+ │   │   └── location/          # LocationGateway usando expo-location
+ │   ├── auth/                  # AuthGateway usando supabase-js Auth
  │   ├── fileSystem/           # Implementação de compressão/salvamento (expo-file-system)
- │   └── sync/                 # Worker de sincronização e monitor de rede
+ │   └── sync/                 # Worker de sincronização, SyncGateway e monitor de rede
  │
  ├── presentation/             # React Native / Expo UI
  │   ├── components/           # Componentes visuais "burros" (Botões, Inputs, Cards)
@@ -1219,7 +1402,7 @@ src/
  │   └── navigation/           # Rotas do app
  │
  └── main/                     # Ponto de entrada e Injeção de Dependência (Factories)
-     └── factories/            # Monta os Casos de Uso instanciando os Repositórios reais
+     └── factories/            # Monta os Casos de Uso instanciando Repositórios e Gateways reais
 ```
 
 ## 10.2 Orientação para TDD (Test-Driven Development)
@@ -1229,16 +1412,23 @@ A implementação deve ser orientada a testes, começando pelo núcleo e expandi
 1. **Fase 1: Testes de Entidade (Domain)**
    - Escreva testes para instanciar a entidade `Obra` e verificar os métodos `reservar()`, `decrementarUnidades()`, `incrementarUnidades()` e `adicionarUnidades()`.
    - Assegure que exceções de negócio sejam lançadas ao violar restrições (ex: tentar reservar uma obra do tipo `SERIE` ou tentar concluir `Pedido` sem foto).
+   - Teste também o Value Object `Coordenada` isoladamente: `validar()` deve rejeitar `latitude`/`longitude` fora do range válido.
 2. **Fase 2: Testes de Caso de Uso (Application)**
-   - Escreva testes para `ConcluirPedidoUseCase` usando repositórios em memória (mocks criados com Jest).
+   - Escreva testes para `ConcluirPedidoUseCase` usando repositórios e gateways em memória (fakes/mocks criados com Jest) — inclui `ICameraGateway` fake, não o módulo `expo-camera` real.
    - Valide orquestração: se a regra da foto funciona e se `Obra.darBaixa()` é chamada corretamente via caso de uso, verificando se o repositório é chamado no final.
-3. **Fase 3: Testes de Repositório (Infrastructure)**
+3. **Fase 3: Testes de Gateway/Adapter Isolado**
+   - `jest.mock('expo-camera')` / `jest.mock('expo-location')` para testar se `CameraGateway`/`LocationGateway` traduzem corretamente a API nativa para a interface de domínio, incluindo o caminho de permissão negada (RNF12, UC05 FA2, UC13 FA1).
+4. **Fase 4: Testes de Repositório (Infrastructure)**
    - Teste as queries do SQLite para operações CRUD.
-   - Valide estritamente o gatilho de enfileiramento (garantir a adição do status `pendente` e a inserção na `FilaSync`).
+   - Valide estritamente o gatilho de enfileiramento (garantir a adição do status `pendente` e a inserção na `FilaSync`), incluindo o caminho de `DELETAR` disparado por `deletedAt` (Seção 3.1).
+   - Teste a resolução de conflito do `SyncGateway`/Worker por `updated_at` (RNF04).
+5. **Fase 5: Testes de Componente/Tela**
+   - React Native Testing Library renderizando telas (ex: `TelaKanban`) com o *UseCase* fake injetado, validando estados de loading, sucesso e erro sem depender de infraestrutura real.
 
 ## 10.3 Padrões de Projeto Exigidos
 
 - **Repository Pattern:** O App NUNCA deve fazer queries do SQLite diretamente dentro de Hooks do React ou Telas. A UI chama os *UseCases*, que interagem com as interfaces genéricas dos repositórios.
+- **Gateway Pattern (recursos nativos):** Da mesma forma que os `Repositories` abstraem o SQLite, os `Gateways` (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`) abstraem os SDKs Expo/Supabase. *UseCases* dependem apenas da interface do Gateway (`core/application/gateways/`), nunca do SDK concreto — mesma regra de inversão de dependência aplicada ao acesso a dados.
 - **Dependency Injection (Inversão de Dependência):** Instancie o repositório concreto do SQLite na pasta `main/factories/` e injete nos *UseCases* via construtor. Isso permite rodar testes unitários rápidos na camada Application passando *in-memory repositories*.
 - **Desacoplamento Offline-First:** As camadas de repositório devem responder imediatamente com sucesso à UI após a gravação local (SQLite). A comunicação de falha ou latência de rede fica encapsulada e isolada apenas no Worker de Sincronização em background.
 
@@ -1256,38 +1446,40 @@ O desenvolvimento deverá ser iniciado respeitando o seguinte fluxo:
 
 # Apêndice A — Consolidação e Revisão de Escopo Fechado
 
-## A.1 Checklist de 15 itens da skill `software-design-doc`
+## A.1 Checklist de 15 itens da skill `mobile-design-doc`
+
+> Correção de rótulo: a auditoria original desta seção citava a skill genérica `software-design-doc`. O link fornecido pelo professor é o da skill **`mobile-design-doc`**, que trata como obrigatórios alguns itens que a genérica trata como dispensáveis (ex: ciclo de sincronização, DER local+remoto, Gateways nativos como Boundary). Esta revisão corrige o rótulo e atualiza os itens abaixo de acordo.
 
 | # | Item exigido | Presença neste documento | Seção |
 |---|--------------|--------------------------|-------|
-| 1 | Requisitos funcionais e não funcionais (tabela) | OK — RF01–24, RNF01–11 | 1 |
+| 1 | Requisitos funcionais e não funcionais (tabela) | OK — RF01–24, RNF01–13 (inclui RNF12 Permissões de dispositivo e RNF13 Armazenamento local, categorias obrigatórias na skill mobile) | 1 |
 | 2 | Diagrama de casos de uso com atores (+ herança de ator), include, extend | OK com adaptação registrada — atores Artesão/Monitor/Supabase; `include` (UC05→UC06, UC07→UC08, UC13→UC14, UC16→UC17) e `extend` (UC09→UC08, UC10→UC07); herança de ator não aplicável (usuário único; sem `Administrador` — Decisão #1/#3 registrada em 2.1) | 2 |
 | 3 | Descrição textual dos casos de uso principais | OK — UC01, UC05, UC07, UC12, UC13, UC16 com ator, pré-condição, fluxo principal, alternativos, pós-condição | 2.4 |
-| 4 | Diagrama de classes com composição, agregação, herança e multiplicidades | OK — associação `Usuario--`, associação `Cliente--Pedido`, `Pedido-->Obra`, enums; agregação/herança genérica não se aplicam a este domínio (registrado em 3.1: `ItemPedido`/`Pagamento` descartados com justificativa) | 3.1 |
-| 5 | Marcação de persistência das entidades | OK — tabela completa (UUID v4 client-generated) + `created_at_local` transversal | 3.2 |
-| 6 | DER — feito se houver entidade persistente, dispensado com registro se não | OK — feito (5 tabelas: `CLIENTE`, `PEDIDO`, `OBRA`, `EVENTO` + `FILA_SYNC` local) | 3.3 |
-| 7 | Diagrama de objetos validando cardinalidades/relações | OK — snapshot usuario1/clienteJoao/pedidos/obras + validação | 4 |
-| 8 | Diagrama de estados — perguntado sobre ciclo complexo; feito ou dispensado com registro | OK — feito para 2 entidades com ciclo complexo (`Pedido`, `Obra` com compensação `incrementarUnidades`); demais entidades sem ciclo complexo (dispensadas por não se aplicar) | 5 |
-| 9 | Classes BCE mapeadas por caso de uso | OK — tabela 12 linhas UC→Boundary→Control→Entities | 6.1 |
-| 10 | Diagrama de sequência dos casos de uso principais | OK — UC05 e UC07 com lifelines, `alt`/`opt`, retornos | 7 |
+| 4 | Diagrama de classes com composição, agregação, herança e multiplicidades | OK — associação `Usuario--`, `Cliente--Pedido`, `Pedido-->Obra`, composição `Evento *-- Coordenada` (Value Object), enums; `deletedAt` (soft delete) em `Cliente`/`Pedido`/`Obra`/`Evento`; agregação/herança genérica não se aplicam a este domínio (registrado em 3.1) | 3.1 |
+| 5 | Marcação de persistência das entidades | OK — tabela completa (UUID v4 client-generated) + `created_at_local` e `deletedAt` transversais | 3.2 |
+| 6 | DER local e remoto, com RLS documentado | OK — dois DERs completos (Local SQLite e Remoto Supabase/Postgres, ambos com `deleted_at`) + tabela de RLS por tabela | 3.3–3.5 |
+| 7 | Diagrama de objetos validando cardinalidades/relações | OK — snapshot `usuario1`/`clienteJoao`/pedidos/obras + validação de cardinalidade + cenário de sincronização mista (`pedido102` pendente vs. demais já sincronizados) | 4 |
+| 8 | Diagrama de estados — ciclo de negócio e ciclo de sincronização | OK — feito para 2 ciclos de negócio (`Pedido`, `Obra` com compensação `incrementarUnidades`) **+** ciclo de sincronização genérico (Pendente/Sincronizando/Sincronizado/Erro), não dispensado por ser app offline-first | 5 |
+| 9 | Classes BCE mapeadas por caso de uso, com Boundary de recurso nativo separado | OK — tabela 12 linhas UC→Boundary UI→Boundary Nativo/Gateway→Control→Entities (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway` nomeados) | 6.1 |
+| 10 | Diagrama de sequência dos casos de uso principais, incluindo caminho de sincronização assíncrona | OK — UC05 e UC07 com lifelines, `alt`/`opt`, retornos, e bloco `par`/`alt` de sincronização em background (sucesso vs. falha/retry) | 7 |
 | 11 | Diagrama(s) de atividade para fluxos principais | OK — UC16+UC17 offline-first com decisão, raias via subgraphs | 8 |
-| 12 | Diagrama de componentes (camadas Clean) | OK — subgraphs Presentation/Application-Domain/Adapters/LocalInfra + Supabase; regra de dependência documentada | 9 |
-| 13 | Mapeamento DDD (aggregates, entidades, value objects, repositories) | OK — entities/enums/errors, repositories por aggregate root, linguagem ubíqua; aggregates implícitos (`Pedido`, `Obra` como raízes; `ItemPedido` inexistente neste domínio); sem Value Objects nomeados além dos enums (nenhum VO complexo identificado) | 10 |
-| 14 | Estrutura de camadas Clean (domain/application/adapters/infra) | OK — árvore `src/` + regra de dependência para o centro | 10.1 |
-| 15 | Plano de testes TDD por caso de uso (unidade domínio → use case → integração) | OK — Fase 1 entidade (inclui `incrementarUnidades`), Fase 2 use case com in-memory repo, Fase 3 SQLite/FilaSync | 10.2–10.4 |
+| 12 | Diagrama de componentes (camadas Clean) | OK — subgraphs Presentation/Application-Domain/Adapters (incluindo `CameraGateway`, `LocationGateway`, `AuthGateway`)/LocalInfra + Supabase; regra de dependência documentada | 9 |
+| 13 | Mapeamento DDD (aggregates, entidades, value objects, repositories, gateways) | OK — entities/value-objects/enums/errors, repositories e gateways por aggregate root, linguagem ubíqua; aggregates implícitos (`Pedido`, `Obra` como raízes); Value Object `Coordenada` (lat/lng com validação de range) nomeado | 10 |
+| 14 | Estrutura de camadas Clean (domain/application/adapters/infra) | OK — árvore `src/` com pastas `value-objects/` e `gateways/` (interfaces) + implementações em `infrastructure/device`; regra de checagem explícita contra import de SDK nativo em `domain`/`application` | 10.1 |
+| 15 | Plano de testes TDD por caso de uso (domínio → use case → gateway → repositório → componente) | OK — Fase 1 entidade + VO `Coordenada`, Fase 2 use case com fakes de repositório/gateway, Fase 3 gateway/adapter isolado (`jest.mock('expo-camera'/'expo-location')`), Fase 4 SQLite/`FilaSync` (inclui `DELETAR` via `deletedAt`), Fase 5 componente/tela (Testing Library) | 10.2–10.4 |
 
 ## A.2 Numeração de seções
 
-Sequencial e sem duplicidade: 1, 2, 3, 3.3 (DER dentro de Classes), 4, 5, 6, 7, 8, 9, 10 + Apêndice A.
+Sequencial e sem duplicidade: 1, 2, 3 (3.1–3.5, incluindo DER Local, DER Remoto e RLS por Tabela), 4, 5 (5.1–5.3, incluindo o ciclo de sincronização genérico), 6, 7, 8, 9, 10 + Apêndice A.
 
 ## A.3 Rastreabilidade RF → UC → BCE → Sequência → Teste
 
-- Todo RF01–24 possui pelo menos um UC na tabela 2.3 (cobertura total verificada).
-- UCs principais (UC01, UC03, UC05, UC07, UC09, UC11, UC12, UC13, UC16, UC19, UC20, UC21) estão na tabela BCE 6.1 com mesmos nomes de Boundary/Control/Entity.
-- UC05 e UC07 (fluxos críticos com regra rígida) possuem sequência em 7.1–7.2 com mesmos participantes da Seção 6 e mesma ordem de chamada que vira teste de use case.
-- Entities da Seção 3 aparecem em BCE (6.1), sequência (7), DER (3.3) e objetos (4).
-- Testes da Seção 10 cobrem domínio (`Obra.reservar`, `Pedido.concluir` sem foto, `incrementarUnidades`), aplicação (`ConcluirPedidoUseCase` + `darBaixa`) e infra (CRUD SQLite + `fila_sync pendente`); cada RF é rastreável a pelo menos um nível de teste via UC de origem.
-- IDs RF/UC renumerados sequencialmente após remoção de Histórico de Preços e Foto de Referência; nomes de métodos (`concluir`, `darBaixa`, `reservar`, `decrementarUnidades`, `incrementarUnidades`), enums e tabelas mantidos consistentes.
+- Todo RF01–24 possui pelo menos um UC na tabela 2.3 (cobertura total verificada); RNF12/RNF13 rastreiam para UC05 FA2, UC13 FA1 e Decisão #10 da Etapa 1.
+- UCs principais (UC01, UC03, UC05, UC07, UC09, UC11, UC12, UC13, UC16, UC19, UC20, UC21) estão na tabela BCE 6.1 com mesmos nomes de Boundary UI/Boundary Nativo/Control/Entity, incluindo os Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`).
+- UC05 e UC07 (fluxos críticos com regra rígida) possuem sequência em 7.1–7.2 com mesmos participantes da Seção 6 (incluindo `SyncGateway`) e mesma ordem de chamada que vira teste de use case (Fase 2) e de gateway (Fase 3).
+- Entities da Seção 3 aparecem em BCE (6.1), sequência (7), DER (3.3–3.4) e objetos (4); o campo `deletedAt` aparece de forma consistente em classes (3.1), DER (3.3–3.4) e no ciclo de sincronização (5.3).
+- Testes da Seção 10 cobrem domínio (`Obra.reservar`, `Pedido.concluir` sem foto, `incrementarUnidades`, `Coordenada.validar`), gateway (`CameraGateway`/`LocationGateway` com permissão negada), aplicação (`ConcluirPedidoUseCase` + `darBaixa`), infra (CRUD SQLite + `fila_sync pendente` + `DELETAR`) e componente (Testing Library); cada RF/RNF é rastreável a pelo menos um nível de teste via UC de origem.
+- IDs RF/UC renumerados sequencialmente após remoção de Histórico de Preços e Foto de Referência; nomes de métodos (`concluir`, `darBaixa`, `reservar`, `decrementarUnidades`, `incrementarUnidades`, `cancelar`), enums e tabelas mantidos consistentes.
 
 ## A.4 Revisão de escopo fechado aplicada
 
@@ -1295,5 +1487,6 @@ Sequencial e sem duplicidade: 1, 2, 3, 3.3 (DER dentro de Classes), 4, 5, 6, 7, 
 2. **Removida Foto de Referência:** RF08/UC10 originais deletados; mantida Foto de Conclusão obrigatória UC05/UC06 (Corte B).
 3. **Removida entidade `Negocio`:** escopo direto por `usuario_id` UUID; RLS por `auth.uid()`; DER e classes atualizados; IDs UUID v4 client-generated nos dois lados.
 4. **Removida linguagem de futuro/v1.1/v2:** escopo fechado de 6 meses sem entregas futuras; tabela Fora do MVP deletada na Etapa 1.
-5. **Sintaxe Mermaid:** rótulos com parênteses/`/` entre aspas duplas, `<br/>` em vez de `\n`, blocos `alt/opt/end` balanceados, `erDiagram` com tipos minúsculos e PK/FK.
+5. **Sintaxe Mermaid:** rótulos com parênteses/`/` entre aspas duplas, `<br/>` em vez de `\n`, blocos `alt/opt/par/end` balanceados, `erDiagram` com tipos minúsculos e PK/FK. Todos os diagramas desta revisão foram validados programaticamente com o motor de parsing do Mermaid (mesmo engine do mermaid.live) antes da entrega.
 6. **Correções de referência:** `UC08 → RF07`, `Decisão #11 → #1/#3`, `RNF12 → RNF11`, compensação `SERIE` no cancelamento, modo degradado do mapa offline.
+7. **Revisão de conformidade com a skill `mobile-design-doc` (esta rodada):** adicionados RNF12 (Permissões de dispositivo) e RNF13 (Armazenamento local); campo `deletedAt` (soft delete) em `Cliente`/`Pedido`/`Obra`/`Evento`; Value Object `Coordenada` extraído de `Evento`; DER separado em Local (3.3) e Remoto (3.4) + RLS por tabela (3.5); diagrama de ciclo de sincronização genérico (5.3); Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`) modelados como Boundary/interface de domínio em BCE (6.1), robustez (6.2), sequência (7), componentes (9) e estrutura de pastas (10.1); plano de TDD estendido para 5 fases (10.2). Nenhum outro conteúdo do documento foi alterado.
