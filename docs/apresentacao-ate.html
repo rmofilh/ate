@@ -104,14 +104,14 @@
 
   <section class="slide"><div class="content">
     <div class="eyebrow">Fluxo central</div><h2>Da encomenda à entrega, sem perder o contexto</h2>
-    <div class="flow"><div class="step"><div class="circle">1</div><h3>A Fazer</h3><p>Registrar cliente, origem, descrição, prazo e obra vinculada.</p></div><div class="step"><div class="circle">2</div><h3>Fazendo</h3><p>Acompanhar a produção em um Kanban simples.</p></div><div class="step"><div class="circle">3</div><h3>Feito</h3><p>Concluir somente após fotografar a obra pronta.</p></div></div>
-    <div class="footer"><span class="source">Fonte: ate-fase1, Seções 1 e 7; ate-fase2, RF03–RF07</span><span class="num"></span></div>
+    <div class="flow"><div class="step"><div class="circle">1</div><h3>A Fazer</h3><p>Registrar cliente, origem, descrição, prazo e obra vinculada.</p></div><div class="step"><div class="circle">2</div><h3>Fazendo</h3><p>Acompanhar a produção em um Kanban simples.</p></div><div class="step"><div class="circle">3</div><h3>Feito</h3><p>Concluir somente após fotografar a obra pronta.</p></div></div><p class="lede" style="margin-top:26px">Peça em série pronta: venda direta vai direto a Feito, sem Kanban (UC27).</p>
+    <div class="footer"><span class="source">Fonte: ate-fase1, Seções 1 e 7; ate-fase2, RF03–RF07, RF26</span><span class="num"></span></div>
     <aside class="notes">O Kanban tem exatamente três estados. Ao apresentar, faça a passagem visual de A Fazer para Fazendo e destaque que a última transição possui uma regra especial.</aside>
   </div></section>
 
   <section class="slide rust"><div class="content">
-    <div class="camera-layout"><div><div class="badge">Diferencial do produto</div><h2>A foto não é um extra.<br><span class="accent">É a confirmação de conclusão.</span></h2><div class="checklist"><div class="check">Obrigatória de “Fazendo” para “Feito”</div><div class="check">Sem bypass ou configuração</div><div class="check">Cria um histórico visual da obra entregue</div></div></div><div class="phone"><div class="camera-screen"><div class="shutter"></div></div></div></div>
-    <div class="footer"><span class="source">Fonte: ate-fase1, Seção 5 e Decisão 7; ate-fase2, RF05 e RNF11</span><span class="num"></span></div>
+    <div class="camera-layout"><div><div class="badge">Diferencial do produto</div><h2>A foto não é um extra.<br><span class="accent">É a confirmação de conclusão.</span></h2><div class="checklist"><div class="check">Obrigatória de “Fazendo” para “Feito”</div><div class="check">Sem bypass ou configuração</div><div class="check">Cria um histórico visual da obra entregue</div><div class="check">Exceção: venda direta SERIE reusa foto de catálogo (UC27)</div></div></div><div class="phone"><div class="camera-screen"><div class="shutter"></div></div></div></div>
+    <div class="footer"><span class="source">Fonte: ate-fase1, Seção 5 e Decisões 7 e 13; ate-fase2, RF05, RF26 e RNF11</span><span class="num"></span></div>
     <aside class="notes">Este é o melhor ponto para marcar o diferencial. A câmera funciona como validador de uma regra de negócio, não apenas como anexo opcional. A foto de catálogo, por outro lado, é opcional.</aside>
   </div></section>
 
@@ -124,8 +124,8 @@
 
   <section class="slide"><div class="content">
     <div class="eyebrow">Estoque</div><h2>Duas naturezas de obra, duas regras de baixa</h2>
-    <div class="stock-grid"><article class="stock-card"><span class="tag">OBRA ÚNICA</span><h3>Uma peça, um vínculo</h3><p>Ao entrar em um pedido, passa de disponível para reservada.</p><div class="logic">Conclusão: <b>entregue</b><br>Cancelamento: volta a <b>disponível</b></div></article><article class="stock-card series"><span class="tag">OBRA EM SÉRIE</span><h3>Quantidade controlada</h3><p>Ao ser vinculada a um pedido, a quantidade diminui imediatamente.</p><div class="logic">Nova produção: <b>adiciona unidades</b><br>Cancelamento: <b>restaura +1</b></div></article></div>
-    <div class="footer"><span class="source">Fonte: ate-fase1, Seções 3 e 7; Decisão 8</span><span class="num"></span></div>
+    <div class="stock-grid"><article class="stock-card"><span class="tag">OBRA ÚNICA</span><h3>Uma peça, um vínculo</h3><p>Ao entrar em um pedido, passa de disponível para reservada.</p><div class="logic">Conclusão: <b>entregue</b><br>Cancelamento: volta a <b>disponível</b></div></article><article class="stock-card series"><span class="tag">OBRA EM SÉRIE</span><h3>Quantidade controlada</h3><p>Ao ser vinculada a um pedido, a quantidade diminui imediatamente.</p><div class="logic">Nova produção: <b>adiciona unidades</b><br>Cancelamento: <b>restaura +1</b><br>Remoção manual: <b>dupla confirmação (UC26)</b><br>Venda direta: <b>sem Kanban (UC27)</b></div></article></div>
+    <div class="footer"><span class="source">Fonte: ate-fase1, Seções 3 e 7; Decisões 8 e 13; ate-fase2, RF25–RF26</span><span class="num"></span></div>
     <aside class="notes">Esta distinção surgiu da realidade do estoque do artesão: algumas peças são únicas, outras são repetidas para venda em feiras. A regra evita vender uma obra única duas vezes e mantém a quantidade das séries coerente.</aside>
   </div></section>
 
@@ -144,9 +144,9 @@
   </div></section>
 
   <section class="slide dark"><div class="content">
-    <div class="evidence"><div class="numbers"><div class="stat"><strong>24</strong><span>requisitos funcionais</span></div><div class="stat"><strong>13</strong><span>requisitos não funcionais</span></div><div class="stat"><strong>6</strong><span>casos de uso descritos em detalhe</span></div><div class="stat"><strong>15</strong><span>itens de conformidade revisados</span></div></div><div><div class="eyebrow">Fase 2</div><h2>A ideia foi convertida em <span class="accent">especificação rastreável</span></h2><p class="lede" style="margin-top:24px">O documento detalha requisitos, persistência local e remota, estados, sequências, componentes e testes.</p><div class="coverage"><span>Casos de uso</span><span>Classes e objetos</span><span>DER local + remoto</span><span>Estados</span><span>BCE e sequência</span><span>Atividades e componentes</span></div></div></div>
+    <div class="evidence"><div class="numbers"><div class="stat"><strong>26</strong><span>requisitos funcionais</span></div><div class="stat"><strong>13</strong><span>requisitos não funcionais</span></div><div class="stat"><strong>7</strong><span>casos de uso descritos em detalhe</span></div><div class="stat"><strong>15</strong><span>itens de conformidade revisados</span></div></div><div><div class="eyebrow">Fase 2</div><h2>A ideia foi convertida em <span class="accent">especificação rastreável</span></h2><p class="lede" style="margin-top:24px">O documento detalha requisitos, persistência local e remota, estados, sequências, componentes e testes.</p><div class="coverage"><span>Casos de uso</span><span>Classes e objetos</span><span>DER local + remoto</span><span>Estados</span><span>BCE e sequência</span><span>Atividades e componentes</span></div></div></div>
     <div class="footer"><span class="source">Fonte: ate-fase2, Seções 1–10 e Apêndice A</span><span class="num"></span></div>
-    <aside class="notes">Esta é a síntese da fase 2. Não percorra os diagramas um a um. Diga que eles existem, foram alinhados por rastreabilidade e podem ser abertos no documento se a banca pedir detalhes. Os seis casos descritos textualmente são UC01, UC05, UC07, UC12, UC13 e UC16.</aside>
+    <aside class="notes">Esta é a síntese da fase 2. Não percorra os diagramas um a um. Diga que eles existem, foram alinhados por rastreabilidade e podem ser abertos no documento se a banca pedir detalhes. Os sete casos descritos textualmente são UC01, UC05, UC07, UC12, UC13, UC16 e UC27.</aside>
   </div></section>
 
   <section class="slide"><div class="content">

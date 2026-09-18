@@ -19,6 +19,7 @@
 - Consultar o estoque de obras prontas, incluindo obras em série (múltiplas unidades da mesma peça), para levar a eventos;
 - Registrar clientes e criar encomendas de forma rápida durante eventos presenciais, incluindo edição e cancelamento para correção de erros;
 - Gerenciar o estoque com edição de dados, adição de unidades em série e remoção/arquivamento com confirmação explícita;
+- Remover manualmente unidades de obra em série com dupla confirmação (UC26) e realizar venda direta de peça em série com criação imediata do pedido em "Feito" (UC27);
 - Visualizar no mapa os locais de feiras e eventos em que o artesão vai expor, incluindo edição e remoção de eventos cancelados.
 
 ---
@@ -61,7 +62,7 @@ A tabela `obras` incluirá os campos `tipo ENUM('unica', 'serie')` e `quantidade
 
 ## 5. Integração com Hardware e Sensores
 
-**Uso da Câmera:** A câmera será utilizada obrigatoriamente como validador de conclusão: para mover um pedido de "Fazendo" para "Feito" no Kanban, o usuário **deve** fotografar a escultura pronta. Esta é uma regra de negócio rígida, sem bypass ou configuração — constitui um dos diferenciais do produto, pois gera um histórico visual acessível e relevante de cada obra entregue. Opcionalmente, o artesão pode fotografar a obra no cadastro do estoque para o catálogo.
+**Uso da Câmera:** A câmera será utilizada obrigatoriamente como validador de conclusão: para mover um pedido de "Fazendo" para "Feito" no Kanban, o usuário **deve** fotografar a escultura pronta. Esta é uma regra de negócio rígida, sem bypass ou configuração — constitui um dos diferenciais do produto, pois gera um histórico visual acessível e relevante de cada obra entregue. Opcionalmente, o artesão pode fotografar a obra no cadastro do estoque para o catálogo. Exceção única: a venda direta de obra em série (UC27) dispensa foto nova de conclusão, reutilizando a foto de catálogo existente.
 
 As imagens serão comprimidas antes de serem salvas e armazenadas permanentemente no diretório do app no dispositivo (`expo-file-system`), garantindo persistência offline. Após o sync, as imagens serão enviadas ao Supabase Storage e o caminho local poderá ser mantido como cache.
 
@@ -111,3 +112,4 @@ As imagens serão comprimidas antes de serem salvas e armazenadas permanentement
 | 10 | Volume estimado de dados | < 30 obras/ano | Valida Free tier Supabase; sem necessidade de paginação |
 | 11 | Módulo Mapa de Eventos | Mapa visual simples com pins | Sem notificações, sem calendário; lista funciona offline, tiles exigem rede |
 | 12 | Canal de origem do pedido | Enum estruturado | Valores fixos: Instagram, WhatsApp, Presencial, Telefone, Outros |
+| 13 | Venda direta de obra em série | Venda direta (UC27) só para tipo SERIE, sem passar pelo Kanban: cria pedido direto em Feito vinculado ao Cliente Balcão único por usuario_id (criado sob demanda); dispensa foto nova de conclusão, valendo a foto de catálogo como exceção à Decisão #7 | Agiliza venda presencial em feiras sem burocracia do Kanban; Cliente Balcão evita cadastros repetitivos mantendo escopo por usuario_id |

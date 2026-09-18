@@ -33,6 +33,8 @@
 | RF22 | Sistema deve permitir que o artesão remova/arquive uma obra do estoque (ex: peça danificada ou descontinuada) — com confirmação explícita; obras vinculadas a pedido aberto não podem ser removidas | Média | Artesão |
 | RF23 | Sistema deve permitir que o artesão edite um evento/feira existente (nome, data, local, observações) | Média | Artesão |
 | RF24 | Sistema deve permitir que o artesão remova um evento cancelado — com confirmação explícita antes da exclusão | Média | Artesão |
+| RF25 | Sistema deve permitir que o artesão remova manualmente unidades de uma obra em série no estoque (ex: quebra/perda), informando a quantidade, com dupla confirmação explícita antes da baixa | Média | Artesão |
+| RF26 | Sistema deve permitir que o artesão realize venda direta de obra em série, criando pedido em Feito sem passar pelo Kanban, vinculado ao Cliente Balcão, com baixa imediata de estoque e sem exigir foto nova de conclusão | Alta | Artesão |
 
 ## 1.2 Requisitos Não Funcionais (RNF)
 
@@ -48,7 +50,7 @@
 | RNF08 | **Escalabilidade (dados):** O volume estimado de dados é inferior a 30 obras/ano; a solução deve operar dentro dos limites do Free tier do Supabase sem necessidade de paginação *(base: Etapa 1, Decisão #10)* | Baixa | Equipe técnica |
 | RNF09 | **Manutenibilidade:** O código deve seguir os princípios de Clean Architecture e Domain-Driven Design, separando núcleo de regras de negócio (domain/application) das camadas externas (adapters/infra), sem importar libs de banco ou framework dentro de entidades ou use cases *(base: Etapa 1, Seção 6)* | Alta | Equipe técnica |
 | RNF10 | **Conformidade (usuário único):** O sistema suporta exatamente um usuário autenticado; todo dado operacional é escopado por `usuario_id` (`auth.uid()`); compartilhamento de contas não é suportado *(base: Etapa 1, Seção 4 / Decisão #1 / Decisão #3)* | Alta | Equipe técnica |
-| RNF11 | **Confiabilidade (imagem de conclusão):** A regra de exigir fotografia para fechar um pedido ("Fazendo" → "Feito") é uma restrição rígida do sistema — não pode ser contornada por configuração, permissão ou fluxo alternativo *(base: Etapa 1, Decisão #7)* | Alta | Equipe técnica |
+| RNF11 | **Confiabilidade (imagem de conclusão):** A regra de exigir fotografia para fechar um pedido ("Fazendo" → "Feito") é uma restrição rígida do sistema — não pode ser contornada por configuração, permissão ou fluxo alternativo, exceto venda_direta=true + SERIE em venda direta (UC27/RF26, Decisão #13 da Etapa 1) *(base: Etapa 1, Decisão #7 / Decisão #13)* | Alta | Equipe técnica |
 | RNF12 | **Permissões de dispositivo:** Permissões de câmera e de localização devem ser solicitadas apenas no momento do uso (nunca no cold start do app); se negadas, a operação correspondente é abortada com instrução visível para habilitar a permissão nas configurações do dispositivo, sem travar o restante do app *(base: Etapa 1, Seção 5; UC05 FA2, UC13 FA1)* | Alta | Equipe técnica |
 | RNF13 | **Armazenamento local:** Dado o volume estimado de dados (< 30 obras/ano — Decisão #10), não há necessidade de rotina de limpeza automática de registros já sincronizados nesta fase do projeto; registros com `status_sync = 'sincronizado'` permanecem no SQLite e no cache de imagens indefinidamente. Limite de espaço em disco não é uma restrição ativa do projeto, mas fica registrado como categoria avaliada *(base: Etapa 1, Decisão #10)* | Baixa | Equipe técnica |
 
@@ -98,6 +100,8 @@ flowchart LR
         UC12["UC12 Cadastrar Obra"]
         UC22["UC22 Adicionar Unidades a Obra em Série"]
         UC23["UC23 Remover Obra do Estoque"]
+        UC26["UC26 Remover Unidades de Obra em Série"]
+        UC27["UC27 Venda Direta de Obra em Série"]
     end
 
     subgraph EVENTOS["Eventos e Feiras"]
@@ -128,6 +132,8 @@ flowchart LR
     Artesao --> UC12
     Artesao --> UC22
     Artesao --> UC23
+    Artesao --> UC26
+    Artesao --> UC27
     Artesao --> UC13
     Artesao --> UC15
     Artesao --> UC24
@@ -185,6 +191,8 @@ flowchart LR
 | UC23 Remover Obra do Estoque | RF22 |
 | UC24 Editar Evento | RF23 |
 | UC25 Remover Evento | RF24 |
+| UC26 Remover Unidades de Obra em Série | RF25 |
+| UC27 Venda Direta de Obra em Série | RF26 |
 
 ## 2.4 Descrições Textuais dos Casos de Uso Principais
 
@@ -370,6 +378,35 @@ flowchart LR
 
 ---
 
+### UC27 — Venda Direta de Obra em Série
+
+**Ator primário:** Artesão  
+**Pré-condições:**
+- Obra do tipo `SERIE` existe no estoque com `quantidade > 0`.
+- Artesão autenticado.
+
+**Fluxo principal:**
+1. Artesão acessa o Estoque e aciona "Venda direta" na obra em série.
+2. App exibe confirmação com nome, quantidade disponível e campo de quantidade a vender.
+3. Artesão informa a quantidade (`qtd > 0`) e confirma.
+4. Sistema resolve o Cliente Balcão único por `usuario_id` (criado sob demanda se inexistente).
+5. Sistema executa `Obra.removerUnidades(qtd)` com baixa imediata e cria o pedido com `venda_direta=true` direto em `FEITO`, sem passar pelo Kanban e sem exigir foto nova de conclusão (exceção à RNF11).
+6. App persiste pedido e obra no SQLite com `status_sync = 'pendente'` e registra as operações na `fila_sync`.
+7. Estoque exibe a quantidade atualizada; pedido aparece na coluna "Feito".
+
+**Fluxos alternativos:**
+- **FA1 — Quantidade inválida ou insuficiente:** Sistema exibe erro e aborta sem criar pedido.
+- **FA2 — Obra não é SERIE:** Operação bloqueada com aviso.
+- **FA3 — Offline:** Persiste localmente; sync posterior (UC16).
+
+**Pós-condições:**
+- Pedido em `FEITO` vinculado ao Cliente Balcão e à obra em série.
+- Quantidade da obra decrementada; mantém `DISPONIVEL` mesmo se zerada.
+
+*(base: Etapa 1, Decisão #13 / RF26 / RNF11 exceção venda_direta)*
+
+---
+
 # 3. Diagrama de Classes
 
 ## 3.1 Diagrama de Classes
@@ -433,6 +470,7 @@ classDiagram
         +editar(descricao: String, dataEntrega: Date) void
         +cancelar() void
         +vincularObra(obraId: UUID) void
+        +vendaDireta(obraId: UUID, qtd: int) void
     }
 
     class Obra {
@@ -454,6 +492,7 @@ classDiagram
         +decrementarUnidades() void
         +incrementarUnidades() void
         +arquivar() void
+        +removerUnidades(qtd: int) void
     }
 
     class Evento {
@@ -579,6 +618,7 @@ classDiagram
 | `adicionarUnidades(qtd)` | Válido somente se `tipo = SERIE` e `qtd > 0` *(base: RF21)* |
 | `incrementarUnidades()` | Compensação de cancelamento em `SERIE`: `quantidade += 1` *(base: RF10, RF20)* |
 | `arquivar()` | Bloqueado se obra está vinculada a pedido com `status != FEITO` *(base: RF22)* |
+| `removerUnidades(qtd)` | Válido somente se `tipo = SERIE` e `0 < qtd <= quantidade` atual; mantém `statusObra = DISPONIVEL` mesmo com `quantidade = 0`; primitiva compartilhada por UC26 (baixa manual) e UC27 (venda direta com `venda_direta=true`) *(base: RF25, RF26)* |
 
 ### Restrições de negócio nos métodos de `Pedido`
 
@@ -589,6 +629,7 @@ classDiagram
 | `editar(...)` | Válido somente se `status = A_FAZER` *(base: RF19)* |
 | `cancelar()` | Disponível em qualquer status, com confirmação explícita; dispara `Obra.liberar()` se obra `UNICA` vinculada, ou `Obra.incrementarUnidades()` se `SERIE`; preenche `deletedAt` (soft delete) em vez de remover a linha fisicamente, enfileirando `DELETAR` na `FilaSync` *(base: RF20; deletedAt transversal — Seção 3.1)* |
 | `vincularObra(obraId)` | Válido somente se `status = A_FAZER`; delega regra de baixa ao tipo da obra |
+| `vendaDireta(obraId, qtd)` | Válido somente se obra `tipo = SERIE` e `qtd > 0` com estoque suficiente; cria pedido direto em `FEITO` com `venda_direta=true`, sem exigir foto nova de conclusão (exceção RNF11) e sem passar pelo Kanban *(base: RF26 / Decisão #13)* |
 
 ## 3.2 Tabela de Persistência
 
@@ -904,6 +945,7 @@ stateDiagram-v2
     
     FAZENDO --> FEITO : concluir() [possui foto de conclusão]
     FAZENDO --> [*] : cancelar() / removerRegistro()
+    [*] --> FEITO : "vendaDireta [SERIE]"
     
     FEITO --> [*] : arquivamento automático (estado final útil)
 ```
@@ -980,6 +1022,8 @@ Esta etapa reclassifica os elementos levantados até aqui na visão da Análise 
 | UC19 Editar Cliente | `TelaEditarCliente` | — | `EditarClienteUseCase` | `Cliente` |
 | UC20 Editar Pedido | `TelaEditarPedido` | — | `EditarPedidoUseCase` | `Pedido`, `Obra` |
 | UC21 Cancelar Pedido | `TelaKanban` | — | `CancelarPedidoUseCase` | `Pedido`, `Obra` |
+| UC26 Remover Unidades de Obra em Série | `TelaEstoque` | — | `RemoverUnidadesUseCase` | `Obra` |
+| UC27 Venda Direta de Obra em Série | `TelaEstoque` | — | `VendaDiretaUseCase` | `Pedido`, `Obra`, `Cliente` |
 
 `CameraGateway`, `LocationGateway`, `AuthGateway` e `SyncGateway` são interfaces definidas no domínio (não implementações) — cada uma tem uma implementação concreta na camada de adapters que efetivamente importa `expo-camera`, `expo-location` e `@supabase/supabase-js` (Seções 9 e 10.1). O Control nunca depende do SDK nativo diretamente, apenas da interface do Gateway, do mesmo jeito que depende de `IPedidoRepository` em vez do SQLite diretamente.
 
@@ -1170,6 +1214,57 @@ sequenceDiagram
 ```
 
 *(base: Seção 2 - fluxos principais; Seção 3 - restrições de métodos; RF05, RF10, RF15)*
+
+## 7.3 UC27 — Venda Direta de Obra em Série
+
+Demonstra a venda direta sem Kanban, com Cliente Balcão e baixa imediata de estoque.
+
+```mermaid
+sequenceDiagram
+    actor Artesao as Artesão
+    participant Tela as TelaEstoque «boundary-ui»
+    participant UC as VendaDiretaUseCase «control»
+    participant Pedido as novoPedido: Pedido «entity»
+    participant Obra as ObraEstoque «entity»
+    participant Repo as SQLiteRepository «adapter»
+    participant Fila as FilaSync «adapter»
+    participant Sync as SyncGateway «Supabase»
+
+    Artesao ->> Tela: seleciona obra SERIE e quantidade
+    Artesao ->> Tela: confirma venda direta
+    Tela ->> UC: "vendaDireta(obraId, qtd)"
+    UC ->> Repo: "buscarObra(obraId)"
+    Repo -->> UC: ObraEstoque
+    UC ->> Repo: "buscarOuCriarClienteBalcao()"
+    Repo -->> UC: Cliente Balcão
+
+    alt tipo SERIE com estoque suficiente
+        UC ->> Obra: "removerUnidades(qtd)"
+        Obra -->> UC: quantidade atualizada
+        UC ->> Pedido: cria Pedido FEITO venda direta
+        UC ->> Repo: "salvar(ObraEstoque)"
+        UC ->> Repo: "salvar(novoPedido)"
+        UC ->> Fila: "enfileirar(CRIAR, Pedido, id, payload)"
+        UC -->> Tela: sucesso
+        Tela -->> Artesao: exibe confirmacao de venda
+
+        par processamento assincrono da fila com rede
+            Fila ->> Sync: "enviar(id, payload)"
+            alt sync bem-sucedido
+                Sync -->> Fila: 200 ok
+                Fila ->> Repo: "marcarSincronizado(id)"
+            else falha de rede ou validacao
+                Sync -->> Fila: erro
+                Fila ->> Fila: reagendar retry
+            end
+        end
+    else tipo diferente ou sem estoque
+        UC -->> Tela: erro obra SERIE sem estoque
+        Tela -->> Artesao: exibe erro e aborta venda
+    end
+```
+
+*(base: Seção 2 - UC27; Seção 3 - restrições de métodos; RF26, RF25, RNF11 exceção venda_direta)*
 
 ---
 
@@ -1424,6 +1519,12 @@ A implementação deve ser orientada a testes, começando pelo núcleo e expandi
    - Teste a resolução de conflito do `SyncGateway`/Worker por `updated_at` (RNF04).
 5. **Fase 5: Testes de Componente/Tela**
    - React Native Testing Library renderizando telas (ex: `TelaKanban`) com o *UseCase* fake injetado, validando estados de loading, sucesso e erro sem depender de infraestrutura real.
+6. **Casos RF25/RF26 — Remoção de unidades e venda direta (5 casos)**
+   - Caso 1 (RF25 válido): `Obra.removerUnidades(qtd)` com `tipo = SERIE` e `0 < qtd <= quantidade` decrementa e mantém `DISPONIVEL` mesmo zerando.
+   - Caso 2 (RF25 inválido): `removerUnidades` com `qtd <= 0`, `qtd > quantidade` ou tipo diferente de `SERIE` lança exceção e não altera o estoque.
+   - Caso 3 (RF26 válido): `Pedido.vendaDireta` com obra `SERIE`, `qtd > 0` e estoque suficiente cria pedido `FEITO` com `venda_direta=true`, sem foto nova, com baixa imediata e Cliente Balcão.
+   - Caso 4 (RF26 inválido): `vendaDireta` com obra não `SERIE`, `qtd <= 0` ou sem estoque lança exceção e não cria pedido.
+   - Caso 5 (RF26 orquestração): `VendaDiretaUseCase` resolve Cliente Balcão único por `usuario_id` (cria sob demanda), salva pedido `FEITO`, enfileira `CRIAR` e agenda sync.
 
 ## 10.3 Padrões de Projeto Exigidos
 
@@ -1452,34 +1553,34 @@ O desenvolvimento deverá ser iniciado respeitando o seguinte fluxo:
 
 | # | Item exigido | Presença neste documento | Seção |
 |---|--------------|--------------------------|-------|
-| 1 | Requisitos funcionais e não funcionais (tabela) | OK — RF01–24, RNF01–13 (inclui RNF12 Permissões de dispositivo e RNF13 Armazenamento local, categorias obrigatórias na skill mobile) | 1 |
-| 2 | Diagrama de casos de uso com atores (+ herança de ator), include, extend | OK com adaptação registrada — atores Artesão/Monitor/Supabase; `include` (UC05→UC06, UC07→UC08, UC13→UC14, UC16→UC17) e `extend` (UC09→UC08, UC10→UC07); herança de ator não aplicável (usuário único; sem `Administrador` — Decisão #1/#3 registrada em 2.1) | 2 |
-| 3 | Descrição textual dos casos de uso principais | OK — UC01, UC05, UC07, UC12, UC13, UC16 com ator, pré-condição, fluxo principal, alternativos, pós-condição | 2.4 |
+| 1 | Requisitos funcionais e não funcionais (tabela) | OK — RF01–26, RNF01–13 (inclui RNF12 Permissões de dispositivo e RNF13 Armazenamento local, categorias obrigatórias na skill mobile; RNF11 com exceção exceto venda_direta=true + SERIE) | 1 |
+| 2 | Diagrama de casos de uso com atores (+ herança de ator), include, extend | OK com adaptação registrada — atores Artesão/Monitor/Supabase; `include` (UC05→UC06, UC07→UC08, UC13→UC14, UC16→UC17) e `extend` (UC09→UC08, UC10→UC07); herança de ator não aplicável (usuário único; sem `Administrador` — Decisão #1/#3 registrada em 2.1); UC01–27 sem buraco (UC26/UC27 em Estoque) | 2 |
+| 3 | Descrição textual dos casos de uso principais | OK — UC01, UC05, UC07, UC12, UC13, UC16, UC27 com ator, pré-condição, fluxo principal, alternativos, pós-condição | 2.4 |
 | 4 | Diagrama de classes com composição, agregação, herança e multiplicidades | OK — associação `Usuario--`, `Cliente--Pedido`, `Pedido-->Obra`, composição `Evento *-- Coordenada` (Value Object), enums; `deletedAt` (soft delete) em `Cliente`/`Pedido`/`Obra`/`Evento`; agregação/herança genérica não se aplicam a este domínio (registrado em 3.1) | 3.1 |
 | 5 | Marcação de persistência das entidades | OK — tabela completa (UUID v4 client-generated) + `created_at_local` e `deletedAt` transversais | 3.2 |
 | 6 | DER local e remoto, com RLS documentado | OK — dois DERs completos (Local SQLite e Remoto Supabase/Postgres, ambos com `deleted_at`) + tabela de RLS por tabela | 3.3–3.5 |
 | 7 | Diagrama de objetos validando cardinalidades/relações | OK — snapshot `usuario1`/`clienteJoao`/pedidos/obras + validação de cardinalidade + cenário de sincronização mista (`pedido102` pendente vs. demais já sincronizados) | 4 |
-| 8 | Diagrama de estados — ciclo de negócio e ciclo de sincronização | OK — feito para 2 ciclos de negócio (`Pedido`, `Obra` com compensação `incrementarUnidades`) **+** ciclo de sincronização genérico (Pendente/Sincronizando/Sincronizado/Erro), não dispensado por ser app offline-first | 5 |
-| 9 | Classes BCE mapeadas por caso de uso, com Boundary de recurso nativo separado | OK — tabela 12 linhas UC→Boundary UI→Boundary Nativo/Gateway→Control→Entities (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway` nomeados) | 6.1 |
-| 10 | Diagrama de sequência dos casos de uso principais, incluindo caminho de sincronização assíncrona | OK — UC05 e UC07 com lifelines, `alt`/`opt`, retornos, e bloco `par`/`alt` de sincronização em background (sucesso vs. falha/retry) | 7 |
+| 8 | Diagrama de estados — ciclo de negócio e ciclo de sincronização | OK — feito para 2 ciclos de negócio (`Pedido` com transição `[*]-->FEITO vendaDireta [SERIE]`, `Obra` com compensação `incrementarUnidades` e `removerUnidades`) **+** ciclo de sincronização genérico (Pendente/Sincronizando/Sincronizado/Erro), não dispensado por ser app offline-first | 5 |
+| 9 | Classes BCE mapeadas por caso de uso, com Boundary de recurso nativo separado | OK — tabela 14 linhas UC→Boundary UI→Boundary Nativo/Gateway→Control→Entities (inclui UC26/UC27; `CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway` nomeados) | 6.1 |
+| 10 | Diagrama de sequência dos casos de uso principais, incluindo caminho de sincronização assíncrona | OK — UC05, UC07 e UC27 (7.1–7.3) com lifelines, `alt`/`opt`, retornos, e bloco `par`/`alt` de sincronização em background (sucesso vs. falha/retry) | 7 |
 | 11 | Diagrama(s) de atividade para fluxos principais | OK — UC16+UC17 offline-first com decisão, raias via subgraphs | 8 |
 | 12 | Diagrama de componentes (camadas Clean) | OK — subgraphs Presentation/Application-Domain/Adapters (incluindo `CameraGateway`, `LocationGateway`, `AuthGateway`)/LocalInfra + Supabase; regra de dependência documentada | 9 |
 | 13 | Mapeamento DDD (aggregates, entidades, value objects, repositories, gateways) | OK — entities/value-objects/enums/errors, repositories e gateways por aggregate root, linguagem ubíqua; aggregates implícitos (`Pedido`, `Obra` como raízes); Value Object `Coordenada` (lat/lng com validação de range) nomeado | 10 |
 | 14 | Estrutura de camadas Clean (domain/application/adapters/infra) | OK — árvore `src/` com pastas `value-objects/` e `gateways/` (interfaces) + implementações em `infrastructure/device`; regra de checagem explícita contra import de SDK nativo em `domain`/`application` | 10.1 |
-| 15 | Plano de testes TDD por caso de uso (domínio → use case → gateway → repositório → componente) | OK — Fase 1 entidade + VO `Coordenada`, Fase 2 use case com fakes de repositório/gateway, Fase 3 gateway/adapter isolado (`jest.mock('expo-camera'/'expo-location')`), Fase 4 SQLite/`FilaSync` (inclui `DELETAR` via `deletedAt`), Fase 5 componente/tela (Testing Library) | 10.2–10.4 |
+| 15 | Plano de testes TDD por caso de uso (domínio → use case → gateway → repositório → componente) | OK — Fase 1 entidade + VO `Coordenada`, Fase 2 use case com fakes de repositório/gateway, Fase 3 gateway/adapter isolado (`jest.mock('expo-camera'/'expo-location')`), Fase 4 SQLite/`FilaSync` (inclui `DELETAR` via `deletedAt`), Fase 5 componente/tela (Testing Library) + 5 casos RF25/RF26 (`removerUnidades`, `vendaDireta`) | 10.2–10.4 |
 
 ## A.2 Numeração de seções
 
-Sequencial e sem duplicidade: 1, 2, 3 (3.1–3.5, incluindo DER Local, DER Remoto e RLS por Tabela), 4, 5 (5.1–5.3, incluindo o ciclo de sincronização genérico), 6, 7, 8, 9, 10 + Apêndice A.
+Sequencial e sem duplicidade: 1, 2, 3 (3.1–3.5, incluindo DER Local, DER Remoto e RLS por Tabela), 4, 5 (5.1–5.3, incluindo o ciclo de sincronização genérico), 6, 7 (7.1–7.3), 8, 9, 10 + Apêndice A.
 
 ## A.3 Rastreabilidade RF → UC → BCE → Sequência → Teste
 
-- Todo RF01–24 possui pelo menos um UC na tabela 2.3 (cobertura total verificada); RNF12/RNF13 rastreiam para UC05 FA2, UC13 FA1 e Decisão #10 da Etapa 1.
-- UCs principais (UC01, UC03, UC05, UC07, UC09, UC11, UC12, UC13, UC16, UC19, UC20, UC21) estão na tabela BCE 6.1 com mesmos nomes de Boundary UI/Boundary Nativo/Control/Entity, incluindo os Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`).
-- UC05 e UC07 (fluxos críticos com regra rígida) possuem sequência em 7.1–7.2 com mesmos participantes da Seção 6 (incluindo `SyncGateway`) e mesma ordem de chamada que vira teste de use case (Fase 2) e de gateway (Fase 3).
-- Entities da Seção 3 aparecem em BCE (6.1), sequência (7), DER (3.3–3.4) e objetos (4); o campo `deletedAt` aparece de forma consistente em classes (3.1), DER (3.3–3.4) e no ciclo de sincronização (5.3).
-- Testes da Seção 10 cobrem domínio (`Obra.reservar`, `Pedido.concluir` sem foto, `incrementarUnidades`, `Coordenada.validar`), gateway (`CameraGateway`/`LocationGateway` com permissão negada), aplicação (`ConcluirPedidoUseCase` + `darBaixa`), infra (CRUD SQLite + `fila_sync pendente` + `DELETAR`) e componente (Testing Library); cada RF/RNF é rastreável a pelo menos um nível de teste via UC de origem.
-- IDs RF/UC renumerados sequencialmente após remoção de Histórico de Preços e Foto de Referência; nomes de métodos (`concluir`, `darBaixa`, `reservar`, `decrementarUnidades`, `incrementarUnidades`, `cancelar`), enums e tabelas mantidos consistentes.
+- Todo RF01–26 possui pelo menos um UC na tabela 2.3 (cobertura total verificada, sem buraco UC01–27); RF25->UC26, RF26->UC27; RNF12/RNF13 rastreiam para UC05 FA2, UC13 FA1 e Decisão #10 da Etapa 1; RNF11 com exceção exceto venda_direta=true + SERIE (UC27).
+- UCs principais (UC01, UC03, UC05, UC07, UC09, UC11, UC12, UC13, UC16, UC19, UC20, UC21, UC26, UC27) estão na tabela BCE 6.1 com mesmos nomes de Boundary UI/Boundary Nativo/Control/Entity, incluindo os Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`).
+- UC05, UC07 e UC27 (fluxos críticos com regra rígida) possuem sequência em 7.1–7.3 com mesmos participantes da Seção 6 (incluindo `SyncGateway`) e mesma ordem de chamada que vira teste de use case (Fase 2) e de gateway (Fase 3).
+- Entities da Seção 3 aparecem em BCE (6.1), sequência (7.1–7.3), DER (3.3–3.4) e objetos (4); métodos `removerUnidades` e `vendaDireta` em 3.1/BCE/sequência; o campo `deletedAt` aparece de forma consistente em classes (3.1), DER (3.3–3.4) e no ciclo de sincronização (5.3).
+- Testes da Seção 10 cobrem domínio (`Obra.reservar`, `Pedido.concluir` sem foto, `incrementarUnidades`, `removerUnidades`, `vendaDireta`, `Coordenada.validar`), gateway (`CameraGateway`/`LocationGateway` com permissão negada), aplicação (`ConcluirPedidoUseCase` + `darBaixa`, `VendaDiretaUseCase`), infra (CRUD SQLite + `fila_sync pendente` + `DELETAR`) e componente (Testing Library) + 5 casos RF25/RF26; cada RF/RNF é rastreável a pelo menos um nível de teste via UC de origem.
+- IDs RF01–26/UC01–27 sequenciais sem buraco após remoção de Histórico de Preços e Foto de Referência; RF25->UC26, RF26->UC27; nomes de métodos (`concluir`, `darBaixa`, `reservar`, `decrementarUnidades`, `incrementarUnidades`, `removerUnidades`, `vendaDireta`, `cancelar`), enums e tabelas mantidos consistentes.
 
 ## A.4 Revisão de escopo fechado aplicada
 
@@ -1490,3 +1591,4 @@ Sequencial e sem duplicidade: 1, 2, 3 (3.1–3.5, incluindo DER Local, DER Remot
 5. **Sintaxe Mermaid:** rótulos com parênteses/`/` entre aspas duplas, `<br/>` em vez de `\n`, blocos `alt/opt/par/end` balanceados, `erDiagram` com tipos minúsculos e PK/FK. Todos os diagramas desta revisão foram validados programaticamente com o motor de parsing do Mermaid (mesmo engine do mermaid.live) antes da entrega.
 6. **Correções de referência:** `UC08 → RF07`, `Decisão #11 → #1/#3`, `RNF12 → RNF11`, compensação `SERIE` no cancelamento, modo degradado do mapa offline.
 7. **Revisão de conformidade com a skill `mobile-design-doc` (esta rodada):** adicionados RNF12 (Permissões de dispositivo) e RNF13 (Armazenamento local); campo `deletedAt` (soft delete) em `Cliente`/`Pedido`/`Obra`/`Evento`; Value Object `Coordenada` extraído de `Evento`; DER separado em Local (3.3) e Remoto (3.4) + RLS por tabela (3.5); diagrama de ciclo de sincronização genérico (5.3); Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`) modelados como Boundary/interface de domínio em BCE (6.1), robustez (6.2), sequência (7), componentes (9) e estrutura de pastas (10.1); plano de TDD estendido para 5 fases (10.2). Nenhum outro conteúdo do documento foi alterado.
+8. **Venda direta e remoção de unidades (RF25/RF26, UC26/UC27, Decisão #13):** RF25 remoção manual SERIE com dupla confirmação (`removerUnidades` com 0<qtd<=atual, mantém DISPONIVEL); RF26 venda direta SERIE sem Kanban (UC27 textual, `vendaDireta` cria FEITO com venda_direta=true, Cliente Balcão único por usuario_id sob demanda, exceção foto RNF11); diagrama UC + BCE 2 linhas + sequência 7.3 + transição 5.1 [*]-->FEITO + 5 casos TDD; contagem RF01-26/UC01-27 sem buraco, RF25->UC26 e RF26->UC27.
