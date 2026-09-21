@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# expo
+.expo/
+dist/
+web-build/
+
+# native build artifacts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# test coverage
+coverage/
+
+# local scratch (ledgers, briefs, review packages) — não versionar
+.superpowers/
+
+# env
+.env
+.env.local

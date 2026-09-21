@@ -52,6 +52,8 @@
 
 > Nota de alinhamento Clean (revisão 2026-09-21): a §10.1 não tem pasta `src/adapters/` — os Interface Adapters moram em `src/presentation/` (UI) + `src/infrastructure/` (implementações dos contratos) e as portas em `src/core/application/repositories|gateways/`. Não criar `src/adapters/` nesta fase.
 
+> Nota de conformidade com o domínio executado: o domínio valida `usuarioId`/`clienteId`/`obraId` como UUID v4 (`isUuidV4`) e tem construtores privados (usar só factories `criar`/`balcao`/`criarVendaDireta`); `Cliente.criar`/`editar` exigem contato não-vazio e `Evento.criar`/`editar` exigem endereço não-vazio. Por isso os testes usam UUIDs v4 fixos válidos (`a111...` = usuário principal, `b222...` = outro usuário, `c333...` = ID válido porém desconhecido para casos "não encontrado").
+
 ---
 
 ### Task 1: Interfaces + Fakes in-memory + Fixtures
@@ -86,12 +88,12 @@ import { seedFixtures } from '../../infrastructure/seed/fixtures';
 describe('fakes + fixtures', () => {
   it('InMemory filtra soft-deleted', async () => {
     const repo = new InMemoryClienteRepository();
-    const c = Cliente.criar({ usuarioId: 'u1', nome: 'João', contato: 'x' });
+    const c = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'João', contato: 'x' });
     await repo.save(c);
-    expect(await repo.findByUsuario('u1')).toHaveLength(1);
+    expect(await repo.findByUsuario('a1111111-1111-4111-8111-111111111111')).toHaveLength(1);
     c.marcarRemovido();
     await repo.save(c);
-    expect(await repo.findByUsuario('u1')).toHaveLength(0);
+    expect(await repo.findByUsuario('a1111111-1111-4111-8111-111111111111')).toHaveLength(0);
   });
 
   it('seed popula Kanban (3 colunas), Estoque e Mapa não-vazios', async () => {
@@ -324,22 +326,22 @@ describe('Cliente use cases', () => {
   it('cadastrar persiste + enfileira CRIAR', async () => {
     const repo = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
     const uc = new CadastrarClienteUseCase(repo, sync);
-    const c = await uc.execute({ usuarioId: 'u1', nome: 'Maria', contato: 'zap' });
-    expect((await repo.findByUsuario('u1'))).toHaveLength(1);
+    const c = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Maria', contato: 'zap' });
+    expect((await repo.findByUsuario('a1111111-1111-4111-8111-111111111111'))).toHaveLength(1);
     expect(sync.queue[0]).toMatchObject({ tipo: 'CRIAR', entidade: 'Cliente', entidadeId: c.id });
   });
 
   it('editar cliente inexistente lança', async () => {
     const repo = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
     const uc = new EditarClienteUseCase(repo, sync);
-    await expect(uc.execute({ clienteId: 'inexistente', nome: 'x', contato: 'y' })).rejects.toThrow();
+    await expect(uc.execute({ clienteId: 'c3333333-3333-4333-8333-333333333333', nome: 'x', contato: 'y' })).rejects.toThrow();
   });
 
   it('resolver Cliente Avulso cria sob demanda e reusa na 2ª chamada', async () => {
     const repo = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
     const uc = new ResolverClienteBalcaoUseCase(repo, sync);
-    const b1 = await uc.execute({ usuarioId: 'u1' });
-    const b2 = await uc.execute({ usuarioId: 'u1' });
+    const b1 = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111' });
+    const b2 = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111' });
     expect(b1.id).toBe(b2.id);
     expect(b1.nome).toBe('Cliente Avulso');
   });
@@ -451,10 +453,10 @@ describe('Pedido write', () => {
   it('cadastrar sem obra cria A_FAZER + enfileira', async () => {
     const pedidos = new InMemoryPedidoRepository(); const obras = new InMemoryObraRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
-    const cli = Cliente.criar({ usuarioId: 'u1', nome: 'J', contato: 'x' });
+    const cli = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'J', contato: 'x' });
     await clientes.save(cli);
     const uc = new CadastrarPedidoUseCase(pedidos, obras, clientes, sync);
-    const p = await uc.execute({ usuarioId: 'u1', clienteId: cli.id, descricao: 'Onça', canalOrigem: 'INSTAGRAM', dataEntrega: new Date('2026-11-01') });
+    const p = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', clienteId: cli.id, descricao: 'Onça', canalOrigem: 'INSTAGRAM', dataEntrega: new Date('2026-11-01') });
     expect(p.status).toBe('A_FAZER');
     expect(sync.queue[0].entidade).toBe('Pedido');
   });
@@ -462,33 +464,33 @@ describe('Pedido write', () => {
   it('cadastrar com SERIE decrementa estoque (sequência 7.2)', async () => {
     const pedidos = new InMemoryPedidoRepository(); const obras = new InMemoryObraRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
-    const cli = Cliente.criar({ usuarioId: 'u1', nome: 'J', contato: 'x' });
+    const cli = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'J', contato: 'x' });
     await clientes.save(cli);
-    const obra = Obra.criar({ usuarioId: 'u1', nome: 'Coruja', tipo: 'SERIE', quantidade: 4 });
+    const obra = Obra.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Coruja', tipo: 'SERIE', quantidade: 4 });
     await obras.save(obra);
     const uc = new CadastrarPedidoUseCase(pedidos, obras, clientes, sync);
-    await uc.execute({ usuarioId: 'u1', clienteId: cli.id, descricao: 'p', canalOrigem: 'PRESENCIAL', dataEntrega: new Date('2026-11-01'), obraId: obra.id });
+    await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', clienteId: cli.id, descricao: 'p', canalOrigem: 'PRESENCIAL', dataEntrega: new Date('2026-11-01'), obraId: obra.id });
     expect((await obras.findById(obra.id))!.quantidade).toBe(3);
   });
 
   it('rejeita obra de outro usuario (Review Focus isolamento)', async () => {
     const pedidos = new InMemoryPedidoRepository(); const obras = new InMemoryObraRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
-    const cli = Cliente.criar({ usuarioId: 'u1', nome: 'J', contato: 'x' });
+    const cli = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'J', contato: 'x' });
     await clientes.save(cli);
-    const obraOutro = Obra.criar({ usuarioId: 'u2', nome: 'X', tipo: 'SERIE', quantidade: 5 });
+    const obraOutro = Obra.criar({ usuarioId: 'b2222222-2222-4222-8222-222222222222', nome: 'X', tipo: 'SERIE', quantidade: 5 });
     await obras.save(obraOutro);
     const uc = new CadastrarPedidoUseCase(pedidos, obras, clientes, sync);
-    await expect(uc.execute({ usuarioId: 'u1', clienteId: cli.id, descricao: 'p', canalOrigem: 'PRESENCIAL', dataEntrega: new Date(), obraId: obraOutro.id })).rejects.toThrow(/não encontrad/i);
+    await expect(uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', clienteId: cli.id, descricao: 'p', canalOrigem: 'PRESENCIAL', dataEntrega: new Date(), obraId: obraOutro.id })).rejects.toThrow(/não encontrad/i);
   });
 
   it('iniciar produção move A_FAZER→FAZENDO', async () => {
     const pedidos = new InMemoryPedidoRepository(); const obras = new InMemoryObraRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
-    const cli = Cliente.criar({ usuarioId: 'u1', nome: 'J', contato: 'x' });
+    const cli = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'J', contato: 'x' });
     await clientes.save(cli);
     const cad = new CadastrarPedidoUseCase(pedidos, obras, clientes, sync);
-    const p = await cad.execute({ usuarioId: 'u1', clienteId: cli.id, descricao: 'p', canalOrigem: 'WHATSAPP', dataEntrega: new Date('2026-11-01') });
+    const p = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', clienteId: cli.id, descricao: 'p', canalOrigem: 'WHATSAPP', dataEntrega: new Date('2026-11-01') });
     const ini = new IniciarProducaoUseCase(pedidos, sync);
     const movido = await ini.execute({ pedidoId: p.id });
     expect(movido.status).toBe('FAZENDO');
@@ -626,11 +628,11 @@ import { InMemoryClienteRepository } from '../../infrastructure/database/memory/
 async function setupComObraUnica() {
   const pedidos = new InMemoryPedidoRepository(); const obras = new InMemoryObraRepository();
   const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
-  const cli = Cliente.criar({ usuarioId: 'u1', nome: 'J', contato: 'x' });
+  const cli = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'J', contato: 'x' });
   await clientes.save(cli);
-  const obra = Obra.criar({ usuarioId: 'u1', nome: 'Águia', tipo: 'UNICA' });
+  const obra = Obra.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Águia', tipo: 'UNICA' });
   obra.reservar(); await obras.save(obra);
-  const p = Pedido.criar({ usuarioId: 'u1', clienteId: cli.id, descricao: 'Águia', canalOrigem: 'WHATSAPP', dataEntrega: new Date('2026-10-05'), obraId: obra.id });
+  const p = Pedido.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', clienteId: cli.id, descricao: 'Águia', canalOrigem: 'WHATSAPP', dataEntrega: new Date('2026-10-05'), obraId: obra.id });
   p.moverParaFazendo(); await pedidos.save(p);
   return { pedidos, obras, sync, p, obra };
 }
@@ -809,7 +811,7 @@ describe('Obra use cases', () => {
   it('cadastrar SERIE + adicionar unidades', async () => {
     const obras = new InMemoryObraRepository(); const sync = new FakeSyncGateway();
     const cad = new CadastrarObraUseCase(obras, sync);
-    const o = await cad.execute({ usuarioId: 'u1', nome: 'Coruja', tipo: 'SERIE', quantidade: 2 });
+    const o = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Coruja', tipo: 'SERIE', quantidade: 2 });
     const add = new AdicionarUnidadesUseCase(obras, sync);
     const atual = await add.execute({ obraId: o.id, qtd: 3 });
     expect(atual.quantidade).toBe(5);
@@ -818,12 +820,12 @@ describe('Obra use cases', () => {
   it('remover obra vinculada a pedido aberto bloqueia (RF22)', async () => {
     const obras = new InMemoryObraRepository(); const pedidos = new InMemoryPedidoRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
-    const cli = Cliente.criar({ usuarioId: 'u1', nome: 'J', contato: 'x' });
+    const cli = Cliente.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'J', contato: 'x' });
     await clientes.save(cli);
     const cad = new CadastrarObraUseCase(obras, sync);
-    const obra = await cad.execute({ usuarioId: 'u1', nome: 'Águia', tipo: 'UNICA' });
+    const obra = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Águia', tipo: 'UNICA' });
     obra.reservar(); await obras.save(obra);
-    const p = Pedido.criar({ usuarioId: 'u1', clienteId: cli.id, descricao: 'p', canalOrigem: 'WHATSAPP', dataEntrega: new Date('2026-10-01'), obraId: obra.id });
+    const p = Pedido.criar({ usuarioId: 'a1111111-1111-4111-8111-111111111111', clienteId: cli.id, descricao: 'p', canalOrigem: 'WHATSAPP', dataEntrega: new Date('2026-10-01'), obraId: obra.id });
     await pedidos.save(p);
     const rem = new RemoverObraUseCase(obras, pedidos, sync);
     await expect(rem.execute({ obraId: obra.id, confirmado: true })).rejects.toThrow(/vinculada/i);
@@ -832,7 +834,7 @@ describe('Obra use cases', () => {
   it('RF25 exige confirmado + duplaConfirmacao', async () => {
     const obras = new InMemoryObraRepository(); const sync = new FakeSyncGateway();
     const cad = new CadastrarObraUseCase(obras, sync);
-    const o = await cad.execute({ usuarioId: 'u1', nome: 'C', tipo: 'SERIE', quantidade: 5 });
+    const o = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'C', tipo: 'SERIE', quantidade: 5 });
     const uc = new RemoverUnidadesUseCase(obras, sync);
     await expect(uc.execute({ obraId: o.id, qtd: 1, confirmado: false, duplaConfirmacao: true })).rejects.toThrow(/confirma/i);
     await expect(uc.execute({ obraId: o.id, qtd: 1, confirmado: true, duplaConfirmacao: false })).rejects.toThrow(/dupla/i);
@@ -976,9 +978,9 @@ describe('VendaDireta (RF26)', () => {
     const obras = new InMemoryObraRepository(); const pedidos = new InMemoryPedidoRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
     const cad = new CadastrarObraUseCase(obras, sync);
-    const obra = await cad.execute({ usuarioId: 'u1', nome: 'Coruja', tipo: 'SERIE', quantidade: 4 });
+    const obra = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Coruja', tipo: 'SERIE', quantidade: 4 });
     const uc = new VendaDiretaUseCase(obras, pedidos, clientes, sync);
-    const p = await uc.execute({ usuarioId: 'u1', obraId: obra.id, qtd: 2 });
+    const p = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', obraId: obra.id, qtd: 2 });
     expect(p.status).toBe('FEITO');
     expect(p.vendaDireta).toBe(true);
     expect((await obras.findById(obra.id))!.quantidade).toBe(2);
@@ -989,23 +991,23 @@ describe('VendaDireta (RF26)', () => {
     const obras = new InMemoryObraRepository(); const pedidos = new InMemoryPedidoRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
     const cad = new CadastrarObraUseCase(obras, sync);
-    const unica = await cad.execute({ usuarioId: 'u1', nome: 'Águia', tipo: 'UNICA' });
+    const unica = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Águia', tipo: 'UNICA' });
     const uc = new VendaDiretaUseCase(obras, pedidos, clientes, sync);
-    await expect(uc.execute({ usuarioId: 'u1', obraId: unica.id, qtd: 1 })).rejects.toThrow();
-    const serie = await cad.execute({ usuarioId: 'u1', nome: 'C', tipo: 'SERIE', quantidade: 1 });
-    await expect(uc.execute({ usuarioId: 'u1', obraId: serie.id, qtd: 0 })).rejects.toThrow();
-    await expect(uc.execute({ usuarioId: 'u1', obraId: serie.id, qtd: 5 })).rejects.toThrow();
-    expect(await pedidos.findByUsuario('u1')).toHaveLength(0);
+    await expect(uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', obraId: unica.id, qtd: 1 })).rejects.toThrow();
+    const serie = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'C', tipo: 'SERIE', quantidade: 1 });
+    await expect(uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', obraId: serie.id, qtd: 0 })).rejects.toThrow();
+    await expect(uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', obraId: serie.id, qtd: 5 })).rejects.toThrow();
+    expect(await pedidos.findByUsuario('a1111111-1111-4111-8111-111111111111')).toHaveLength(0);
   });
 
   it('caso 5 orquestração: Cliente Avulso único reutilizado', async () => {
     const obras = new InMemoryObraRepository(); const pedidos = new InMemoryPedidoRepository();
     const clientes = new InMemoryClienteRepository(); const sync = new FakeSyncGateway();
     const cad = new CadastrarObraUseCase(obras, sync);
-    const obra = await cad.execute({ usuarioId: 'u1', nome: 'C', tipo: 'SERIE', quantidade: 10 });
+    const obra = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'C', tipo: 'SERIE', quantidade: 10 });
     const uc = new VendaDiretaUseCase(obras, pedidos, clientes, sync);
-    const p1 = await uc.execute({ usuarioId: 'u1', obraId: obra.id, qtd: 1 });
-    const p2 = await uc.execute({ usuarioId: 'u1', obraId: obra.id, qtd: 1 });
+    const p1 = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', obraId: obra.id, qtd: 1 });
+    const p2 = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', obraId: obra.id, qtd: 1 });
     expect(p1.clienteId).toBe(p2.clienteId);
   });
 });
@@ -1093,7 +1095,7 @@ describe('Evento use cases', () => {
     const repo = new InMemoryEventoRepository(); const sync = new FakeSyncGateway();
     const gps = new FakeLocationGateway();
     const uc = new CadastrarEventoUseCase(repo, sync, gps);
-    const e = await uc.execute({ usuarioId: 'u1', nome: 'Feira', data: new Date('2026-10-12'), endereco: 'Praça', localizacao: new Coordenada(0, 0) });
+    const e = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Feira', data: new Date('2026-10-12'), endereco: 'Praça', localizacao: new Coordenada(0, 0) });
     expect(e.nome).toBe('Feira');
     expect(sync.queue[0]).toMatchObject({ entidade: 'Evento', tipo: 'CRIAR' });
   });
@@ -1102,7 +1104,7 @@ describe('Evento use cases', () => {
     const repo = new InMemoryEventoRepository(); const sync = new FakeSyncGateway();
     const gps = new FakeLocationGateway(new Coordenada(1, 1));
     const uc = new CadastrarEventoUseCase(repo, sync, gps);
-    const e = await uc.execute({ usuarioId: 'u1', nome: 'Feira GPS', data: new Date('2026-10-12'), endereco: 'x', usarGps: true });
+    const e = await uc.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'Feira GPS', data: new Date('2026-10-12'), endereco: 'x', usarGps: true });
     expect(e.localizacao.latitude).toBe(1);
   });
 
@@ -1110,7 +1112,7 @@ describe('Evento use cases', () => {
     const repo = new InMemoryEventoRepository(); const sync = new FakeSyncGateway();
     const gps = new FakeLocationGateway();
     const cad = new CadastrarEventoUseCase(repo, sync, gps);
-    const e = await cad.execute({ usuarioId: 'u1', nome: 'F', data: new Date('2026-10-12'), endereco: 'x', localizacao: new Coordenada(0, 0) });
+    const e = await cad.execute({ usuarioId: 'a1111111-1111-4111-8111-111111111111', nome: 'F', data: new Date('2026-10-12'), endereco: 'x', localizacao: new Coordenada(0, 0) });
     const rem = new RemoverEventoUseCase(repo, sync);
     await expect(rem.execute({ eventoId: e.id, confirmado: false })).rejects.toThrow(/confirma/i);
     expect(await repo.findById(e.id)).not.toBeNull();
