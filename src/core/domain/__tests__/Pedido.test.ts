@@ -109,16 +109,29 @@ describe('Pedido editar/vincular/cancelar', () => {
       usuarioId,
       clienteId,
       obraId: 'd6666666-6666-4666-8666-666666666666',
+      quantidade: 3,
       descricao: 'Coruja pronta entrega',
       canalOrigem: 'PRESENCIAL',
     });
     expect(v.status).toBe('FEITO');
     expect(v.vendaDireta).toBe(true);
+    expect(v.quantidadeObra).toBe(3);
+    expect(() =>
+      Pedido.criarVendaDireta({
+        usuarioId,
+        clienteId,
+        obraId: 'd6666666-6666-4666-8666-666666666666',
+        quantidade: 0,
+        descricao: 'x',
+        canalOrigem: 'PRESENCIAL',
+      }),
+    ).toThrow(/quantidade/i);
     expect(() =>
       Pedido.criarVendaDireta({
         usuarioId,
         clienteId,
         obraId: '',
+        quantidade: 1,
         descricao: 'x',
         canalOrigem: 'PRESENCIAL',
       }),

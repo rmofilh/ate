@@ -47,6 +47,16 @@ describe('Obra UNICA', () => {
     const u = Obra.criar({ usuarioId, nome: 'U', tipo: 'UNICA' });
     expect(() => u.decrementarUnidades()).toThrow();
   });
+
+  it('restaura UNICA entregue ao estoque depois de cancelamento', () => {
+    const o = Obra.criar({ usuarioId, nome: 'A', tipo: 'UNICA' });
+    o.reservar();
+    o.darBaixa();
+
+    o.restaurarAposCancelamento();
+
+    expect(o.statusObra).toBe('DISPONIVEL');
+  });
 });
 
 describe('Obra SERIE estoque', () => {

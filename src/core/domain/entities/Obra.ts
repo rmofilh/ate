@@ -140,6 +140,20 @@ export class Obra {
     this._props.statusSync = 'PENDENTE';
   }
 
+  restaurarAposCancelamento(): void {
+    this.assertViva();
+    if (
+      this._props.tipo !== 'UNICA' ||
+      (this._props.statusObra !== 'RESERVADA' && this._props.statusObra !== 'ENTREGUE')
+    ) {
+      throw new ObraInvalidaError(
+        'restaurarAposCancelamento() valido somente para UNICA RESERVADA ou ENTREGUE',
+      );
+    }
+    this._props.statusObra = 'DISPONIVEL';
+    this._props.statusSync = 'PENDENTE';
+  }
+
   adicionarUnidades(qtd: number): void {
     this.assertViva();
     if (this._props.tipo !== 'SERIE') {

@@ -38,6 +38,7 @@
 - `app/(tabs)/_layout.tsx` — Tabs `kanban|estoque|eventos` com labels explícitos.
 - `app/(tabs)/kanban.tsx`, `app/(tabs)/estoque.tsx`, `app/(tabs)/eventos.tsx` — TelaKanban / TelaEstoque / TelaEventos completas (moram aqui).
 - `app/pedido/novo.tsx`, `app/cliente/novo.tsx`, `app/obra/nova.tsx`, `app/evento/novo.tsx` — Stacks de cadastro (componentes moram aqui).
+- `app/cliente/[id].tsx`, `app/pedido/[id]/editar.tsx`, `app/evento/[id]/editar.tsx` — Stacks de edição (UC19/UC20/UC24; componentes moram aqui, autocontidos, sem refatorar as telas de cadastro).
 - `src/presentation/hooks/AppProviders.tsx` — `AuthProvider/DataProvider/NetworkProvider` + `useAuth/useData/useNetwork`.
 - `src/main/factories/makeFakeProviders.ts` — instancia fakes + `seedFixtures()` e injeta nos use cases (DI da fase protótipo).
 - `src/presentation/components/OfflineBanner.tsx` — banner por `isOnline`.
@@ -60,9 +61,12 @@
 
 **Interfaces:**
 - Consumes: fakes + `seedFixtures()` + use cases do Plano 2 (mesmos `execute()`); `Coordenada`, entities para tipar contexto.
-- Produces: `useAuth(): {session, login(email,password): Promise<void>, logout(): Promise<void>}`, `useData(): {pedidos: Pedido[], obras: Obra[], eventos: Evento[], clientes: Cliente[], reload(): Promise<void>}`, `useNetwork(): {isOnline: boolean, setOnline(b:boolean): void}` e `makeFakeProviders()` que Tasks 2–6 consomem para injetar contexto fake nos testes.
+- Produces: `useAuth(): {session, login(email,password): Promise<void>, logout(): Promise<void>}`, `useData(): {pedidos: Pedido[], obras: Obra[], eventos: Evento[], clientes: Cliente[], reload(): Promise<void>}`, `useNetwork(): {isOnline: boolean, setOnline(b:boolean): void}` e `makeFakeProviders()` que Tasks 2–9 consomem para injetar contexto fake nos testes.
 
-- [ ] **Step 1: Instalar RNTL e escrever teste de shell**
+- [ ] **Step 1: Instalar Router + RNTL e escrever teste de shell**
+
+Run: `npx expo install expo-router`
+Expected: instala a versão compatível com o SDK 51 sem erro.
 
 Run: `npm install -D @testing-library/react-native @testing-library/jest-native react-test-renderer`
 Expected: instala sem erro.
@@ -70,8 +74,8 @@ Expected: instala sem erro.
 ```tsx
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import { FakeProviders } from '../main/factories/makeFakeProviders';
-import { OfflineBanner } from '../presentation/components/OfflineBanner';
+import { FakeProviders } from '../../main/factories/makeFakeProviders';
+import { OfflineBanner } from '../components/OfflineBanner';
 
 describe('shell', () => {
   it('banner aparece offline e some online', () => {
@@ -90,12 +94,22 @@ describe('shell', () => {
 
 Salvar em `src/presentation/__tests__/Shell.test.tsx`.
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [ ] **Step 2: Liberar `.tsx` no Jest e `app/` no TypeScript**
+
+Em `jest.config.js`, trocar o `testMatch` por:
+
+```js
+testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
+```
+
+Em `tsconfig.json`, trocar `"include": ["src/**/*"]` por `"include": ["src/**/*", "app/**/*"]`.
+
+- [ ] **Step 3: Rodar e ver falhar**
 
 Run: `npx jest src/presentation/__tests__/Shell.test.tsx --verbose`
-Expected: FAIL "Cannot find module '../main/factories/makeFakeProviders'".
+Expected: FAIL "Cannot find module '../../main/factories/makeFakeProviders'".
 
-- [ ] **Step 3: Criar AppProviders.tsx (Context API)**
+- [ ] **Step 4: Criar AppProviders.tsx (Context API)**
 
 ```tsx
 import React, { createContext, useContext, useState } from 'react';
@@ -119,7 +133,7 @@ export function useNetwork(): NetCtx { return useContext(NetworkContext); }
 
 Salvar em `src/presentation/hooks/AppProviders.tsx`.
 
-- [ ] **Step 4: Criar makeFakeProviders.ts (DI fake + seed)**
+- [ ] **Step 5: Criar makeFakeProviders.ts (DI fake + seed)**
 
 ```ts
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
@@ -134,7 +148,7 @@ export const FakeProviders = {
 
 Salvar em `src/main/factories/makeFakeProviders.ts`. (Na implementação real da task, o executor expande para instanciar `InMemory*` + use cases e provedores React; o harness acima é o mínimo que o teste trava.)
 
-- [ ] **Step 5: Criar OfflineBanner.tsx**
+- [ ] **Step 6: Criar OfflineBanner.tsx**
 
 ```tsx
 import React from 'react';
@@ -150,7 +164,7 @@ export function OfflineBanner({ isOnline }: { isOnline: boolean }) {
 }
 ```
 
-- [ ] **Step 6: Criar layouts Expo Router (telas completas vêm nas Tasks 2–6, direto em `app/`)**
+- [ ] **Step 7: Criar layouts Expo Router (telas completas vêm nas Tasks 2–9, direto em `app/`)**
 
 `app/_layout.tsx`:
 ```tsx
@@ -180,13 +194,13 @@ export default function TabsLayout() {
 `app/(tabs)/eventos.tsx` — TelaEventos completa.
 `app/(auth)/_layout.tsx`: Stack com `login` sem header de tabs.
 
-- [ ] **Step 7: Rodar e ver passar + commit**
+- [ ] **Step 8: Rodar e ver passar + commit**
 
 Run: `npx jest src/presentation/__tests__/Shell.test.tsx --verbose`
 Expected: PASS (2 passed).
 
 ```bash
-git add app src/presentation/hooks/AppProviders.tsx src/main/factories/makeFakeProviders.ts src/presentation/components/OfflineBanner.tsx src/presentation/__tests__/Shell.test.tsx
+git add app src/presentation/hooks/AppProviders.tsx src/main/factories/makeFakeProviders.ts src/presentation/components/OfflineBanner.tsx src/presentation/__tests__/Shell.test.tsx jest.config.js tsconfig.json package.json
 git commit -m "feat(ui): add shell router providers banner"
 ```
 
@@ -243,7 +257,7 @@ Expected: FAIL "Cannot find module '../../../app/(auth)/login'".
 ```tsx
 import React, { useState } from 'react';
 import { Button, Text, TextInput, View } from 'react-native';
-import { useAuth } from '../hooks/AppProviders';
+import { useAuth } from '../../src/presentation/hooks/AppProviders';
 
 export default function TelaLogin() {
   const { login } = useAuth();
@@ -303,15 +317,15 @@ git commit -m "feat(ui): add TelaLogin com erro FA1"
 
 **Interfaces:**
 - Consumes: `useData()` (Task 1) + `ConcluirPedidoUseCase.execute({pedidoId,fotoPath})` via `FakeCameraGateway.capture()` (Plano 2 Task 1) + `IniciarProducaoUseCase`.
-- Produces: `TelaKanban` com 3 colunas `coluna-a-fazer/fazendo/feito`, cards `pedido-<id>`, botões `mover-<id>-fazendo` e `mover-<id>-feito`, aviso `aviso-foto-obrigatoria` (UC05 FA1), desabilita botão em loading (Review Focus duplo clique).
+- Produces: `TelaKanban` com 3 colunas `coluna-a-fazer/fazendo/feito`, cards `pedido-<id>`, botões `mover-<id>-fazendo`, `mover-<id>-feito`, `cancelar-<id>` e `botao-sair` (UC02/RF02), diálogo `dialog-confirm` para cancelar (UC21), aviso `aviso-foto-obrigatoria` com a mensagem real do erro (UC05 FA1, RNF12), erro `erro-cancelar`, desabilita botão em loading (Review Focus duplo clique).
 
-- [ ] **Step 1: Escrever testes (colunas, concluir com foto fake, cancela câmera)**
+- [ ] **Step 1: Escrever testes (colunas, concluir com foto fake, cancela câmera, cancelar, negada)**
 
 ```tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import TelaKanban from '../../../app/(tabs)/kanban';
-import { DataContext } from '../hooks/AppProviders';
+import { AuthContext, DataContext } from '../hooks/AppProviders';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
 
 describe('TelaKanban', () => {
@@ -319,7 +333,7 @@ describe('TelaKanban', () => {
     const seed = seedFixtures();
     render(
       <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
-        <TelaKanban onIniciar={async () => {}} onConcluir={async () => {}} />
+        <TelaKanban onIniciar={async () => {}} onConcluir={async () => {}} onCancelar={async () => {}} />
       </DataContext.Provider>
     );
     expect(screen.getByLabelText('coluna-a-fazer')).toBeTruthy();
@@ -334,11 +348,91 @@ describe('TelaKanban', () => {
     const onConcluir = jest.fn(async () => { throw new Error('Foto obrigatória para concluir o pedido.'); });
     render(
       <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
-        <TelaKanban onIniciar={async () => {}} onConcluir={onConcluir} pedidoAlvo={fazendo.id} />
+        <TelaKanban onIniciar={async () => {}} onConcluir={onConcluir} onCancelar={async () => {}} pedidoAlvo={fazendo.id} />
       </DataContext.Provider>
     );
     fireEvent.press(screen.getByLabelText(`mover-${fazendo.id}-feito`));
     await waitFor(() => expect(screen.getByLabelText('aviso-foto-obrigatoria')).toBeTruthy());
+  });
+
+  it('cancelar pedido pede confirmação antes de chamar onCancelar (UC21)', async () => {
+    const seed = seedFixtures();
+    const onCancelar = jest.fn(async () => {});
+    render(
+      <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
+        <TelaKanban onIniciar={async () => {}} onConcluir={async () => {}} onCancelar={onCancelar} />
+      </DataContext.Provider>
+    );
+    const id = seed.pedidos[0].id;
+    fireEvent.press(screen.getByLabelText(`cancelar-${id}`));
+    expect(screen.getByLabelText('dialog-confirm')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('dialog-confirm-btn'));
+    await waitFor(() => expect(onCancelar).toHaveBeenCalledWith(id));
+  });
+
+  it('abortar o diálogo não chama onCancelar', async () => {
+    const seed = seedFixtures();
+    const onCancelar = jest.fn(async () => {});
+    render(
+      <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
+        <TelaKanban onIniciar={async () => {}} onConcluir={async () => {}} onCancelar={onCancelar} />
+      </DataContext.Provider>
+    );
+    fireEvent.press(screen.getByLabelText(`cancelar-${seed.pedidos[0].id}`));
+    fireEvent.press(screen.getByLabelText('dialog-cancel'));
+    expect(onCancelar).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('dialog-confirm')).toBeNull();
+  });
+
+  it('botão sair chama logout (UC02/RF02)', async () => {
+    const seed = seedFixtures();
+    const logout = jest.fn(async () => {});
+    render(
+      <AuthContext.Provider value={{ session: { userId: seed.usuarioId, token: 'fake' }, login: async () => {}, logout }}>
+        <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
+          <TelaKanban onIniciar={async () => {}} onConcluir={async () => {}} onCancelar={async () => {}} />
+        </DataContext.Provider>
+      </AuthContext.Provider>
+    );
+    fireEvent.press(screen.getByLabelText('botao-sair'));
+    await waitFor(() => expect(logout).toHaveBeenCalled());
+  });
+
+  it('permissão negada exibe a instrução do gateway (RNF12)', async () => {
+    const seed = seedFixtures();
+    const fazendo = seed.pedidos.find(p => p.status === 'FAZENDO')!;
+    const onConcluir = jest.fn(async () => { throw new Error('Permissão de câmera negada — habilite nas configurações do dispositivo'); });
+    render(
+      <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
+        <TelaKanban onIniciar={async () => {}} onConcluir={onConcluir} onCancelar={async () => {}} />
+      </DataContext.Provider>
+    );
+    fireEvent.press(screen.getByLabelText(`mover-${fazendo.id}-feito`));
+    await waitFor(() => expect(screen.getByLabelText('aviso-foto-obrigatoria').props.children).toMatch(/configurações/));
+  });
+
+  it('desabilita o botão durante o salvamento (duplo clique)', async () => {
+    const seed = seedFixtures();
+    const fazendo = seed.pedidos.find(p => p.status === 'FAZENDO')!;
+    let liberar!: () => void;
+    const onConcluir = jest.fn(() => new Promise<void>(res => { liberar = res; }));
+    render(
+      <DataContext.Provider value={{ pedidos: seed.pedidos, obras: seed.obras, eventos: [], clientes: seed.clientes, reload: async () => {} }}>
+        <TelaKanban onIniciar={async () => {}} onConcluir={onConcluir} onCancelar={async () => {}} />
+      </DataContext.Provider>
+    );
+    fireEvent.press(screen.getByLabelText(`mover-${fazendo.id}-feito`));
+    await waitFor(() => expect(screen.getByText('Salvando...')).toBeTruthy());
+    liberar();
+  });
+
+  it('coluna vazia mostra estado guiado (Review Focus)', () => {
+    render(
+      <DataContext.Provider value={{ pedidos: [], obras: [], eventos: [], clientes: [], reload: async () => {} }}>
+        <TelaKanban onIniciar={async () => {}} onConcluir={async () => {}} onCancelar={async () => {}} />
+      </DataContext.Provider>
+    );
+    expect(screen.getAllByText('Nenhum pedido aqui — toque em Novo Pedido').length).toBe(3);
   });
 });
 ```
@@ -355,8 +449,8 @@ import React from 'react';
 import { Button, Text, View } from 'react-native';
 import type { Pedido } from '../../core/domain/entities/Pedido';
 
-export function PedidoCard({ pedido, onIniciar, onConcluir, loading }: {
-  pedido: Pedido; onIniciar(): void; onConcluir(): void; loading: boolean;
+export function PedidoCard({ pedido, onIniciar, onConcluir, onCancelar, loading }: {
+  pedido: Pedido; onIniciar(): void; onConcluir(): void; onCancelar(): void; loading: boolean;
 }) {
   return (
     <View accessibilityLabel={`pedido-${pedido.id}`}>
@@ -371,6 +465,9 @@ export function PedidoCard({ pedido, onIniciar, onConcluir, loading }: {
           <Button title={loading ? 'Salvando...' : 'Mover para Feito (tirar foto)'} onPress={onConcluir} disabled={loading} />
         </View>
       ) : null}
+      <View accessibilityLabel={`cancelar-${pedido.id}`}>
+        <Button title="Cancelar pedido" onPress={onCancelar} disabled={loading} />
+      </View>
     </View>
   );
 }
@@ -380,27 +477,46 @@ export function PedidoCard({ pedido, onIniciar, onConcluir, loading }: {
 
 ```tsx
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
-import { useData } from '../hooks/AppProviders';
-import { PedidoCard } from '../components/PedidoCard';
-import { OfflineBanner } from '../components/OfflineBanner';
-import { useNetwork } from '../hooks/AppProviders';
+import { Button, Text, View } from 'react-native';
+import { useData } from '../../src/presentation/hooks/AppProviders';
+import { PedidoCard } from '../../src/presentation/components/PedidoCard';
+import { OfflineBanner } from '../../src/presentation/components/OfflineBanner';
+import { ConfirmDialog } from '../../src/presentation/components/ConfirmDialog';
+import { useNetwork, useAuth } from '../../src/presentation/hooks/AppProviders';
 
-export default function TelaKanban({ onIniciar, onConcluir, pedidoAlvo }: {
-  onIniciar(pedidoId: string): Promise<void>; onConcluir(pedidoId: string): Promise<void>; pedidoAlvo?: string;
+export default function TelaKanban({ onIniciar, onConcluir, onCancelar, pedidoAlvo }: {
+  onIniciar(pedidoId: string): Promise<void>; onConcluir(pedidoId: string): Promise<void>; onCancelar(pedidoId: string): Promise<void>; pedidoAlvo?: string;
 }) {
   const { pedidos } = useData();
   const { isOnline } = useNetwork();
+  const { logout } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [alvoCancel, setAlvoCancel] = useState<string | null>(null);
+  const [erroCancel, setErroCancel] = useState<string | null>(null);
 
   async function concluir(id: string) {
     setLoadingId(id);
     setAviso(null);
     try {
       await onConcluir(id);
-    } catch {
-      setAviso('Foto obrigatória para concluir o pedido.');
+    } catch (e) {
+      setAviso(e instanceof Error ? e.message : 'Foto obrigatória para concluir o pedido.');
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  async function cancelarConfirmado() {
+    if (!alvoCancel) return;
+    const id = alvoCancel;
+    setAlvoCancel(null);
+    setErroCancel(null);
+    setLoadingId(id);
+    try {
+      await onCancelar(id);
+    } catch (e) {
+      setErroCancel(e instanceof Error ? e.message : 'Não foi possível cancelar o pedido');
     } finally {
       setLoadingId(null);
     }
@@ -412,7 +528,7 @@ export default function TelaKanban({ onIniciar, onConcluir, pedidoAlvo }: {
         <Text>{status === 'A_FAZER' ? 'A Fazer' : status === 'FAZENDO' ? 'Fazendo' : 'Feito'}</Text>
         {pedidos.filter(p => p.status === status).map(p => (
           <PedidoCard key={p.id} pedido={p} loading={loadingId === p.id}
-            onIniciar={() => onIniciar(p.id)} onConcluir={() => concluir(p.id)} />
+            onIniciar={() => onIniciar(p.id)} onConcluir={() => concluir(p.id)} onCancelar={() => setAlvoCancel(p.id)} />
         ))}
         {pedidos.filter(p => p.status === status).length === 0 ? <Text>Nenhum pedido aqui — toque em Novo Pedido</Text> : null}
       </View>
@@ -423,10 +539,15 @@ export default function TelaKanban({ onIniciar, onConcluir, pedidoAlvo }: {
     <View>
       <OfflineBanner isOnline={isOnline} />
       <Text accessibilityLabel="titulo-kanban">Meus Pedidos</Text>
+      <View accessibilityLabel="botao-sair"><Button title="Sair" onPress={() => { void logout(); }} /></View>
       {aviso ? <Text accessibilityLabel="aviso-foto-obrigatoria">{aviso}</Text> : null}
+      {erroCancel ? <Text accessibilityLabel="erro-cancelar">{erroCancel}</Text> : null}
       {coluna('A_FAZER', 'coluna-a-fazer')}
       {coluna('FAZENDO', 'coluna-fazendo')}
       {coluna('FEITO', 'coluna-feito')}
+      {alvoCancel ? (
+        <ConfirmDialog titulo="Cancelar este pedido? O estoque vinculado será devolvido." onCancel={() => setAlvoCancel(null)} onConfirm={cancelarConfirmado} />
+      ) : null}
     </View>
   );
 }
@@ -435,18 +556,18 @@ export default function TelaKanban({ onIniciar, onConcluir, pedidoAlvo }: {
 - [ ] **Step 5: Rodar e ver passar**
 
 Run: `npx jest src/presentation/__tests__/TelaKanban.test.tsx --verbose`
-Expected: PASS (2 passed).
+Expected: PASS (8 passed).
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/presentation/components/PedidoCard.tsx app/(tabs)/kanban.tsx src/presentation/__tests__/TelaKanban.test.tsx
-git commit -m "feat(ui): add Kanban 3 colunas com foto obrigatoria"
+git commit -m "feat(ui): add Kanban 3 colunas com foto obrigatoria e cancelar"
 ```
 
 ---
 
-### Task 4: Novo Pedido / Novo Cliente (Stacks UC07/UC08/UC09 + RF19 editar)
+### Task 4: Novo Pedido / Novo Cliente (Stacks UC07/UC08/UC09)
 
 **Files:**
 - Create: `app/pedido/novo.tsx` (TelaNovoPedido completa)
@@ -455,7 +576,7 @@ git commit -m "feat(ui): add Kanban 3 colunas com foto obrigatoria"
 
 **Interfaces:**
 - Consumes: `useData()` + `CadastrarPedidoUseCase.execute` / `CadastrarClienteUseCase.execute` (Plano 2); props `clientes: Cliente[]`, `obras: Obra[]`.
-- Produces: `TelaNovoPedido` com campos `campo-descricao/canal/data/cliente/obra`, botão `botao-salvar-pedido`, erro `erro-pedido`; `TelaNovoCliente` com `campo-nome/contato` + `botao-salvar-cliente`; wrappers `app/pedido/novo.tsx`, `app/cliente/novo.tsx`.
+- Produces: `TelaNovoPedido` com `campo-descricao`, seletores `escolher-cliente-<id>` (UC08) e `escolher-obra-<id>` (UC10), botão `botao-salvar-pedido`, erro `erro-pedido`; `TelaNovoCliente` com `campo-nome/contato` + `botao-salvar-cliente`; rotas `app/pedido/novo.tsx`, `app/cliente/novo.tsx`. (Edição de pedido é a Task 8; edição de cliente é a Task 7.)
 
 - [ ] **Step 1: Escrever teste (salva + cliente novo via extend UC09)**
 
@@ -483,6 +604,19 @@ describe('TelaNovoPedido', () => {
     await waitFor(() => expect(screen.getByLabelText('erro-pedido')).toBeTruthy());
     expect(onSalvar).not.toHaveBeenCalled();
   });
+
+  it('escolhe cliente e obra antes de salvar (UC08/UC10)', async () => {
+    const seed = seedFixtures();
+    const onSalvar = jest.fn(async () => {});
+    render(<TelaNovoPedido clientes={seed.clientes} obras={seed.obras} onSalvar={onSalvar} />);
+    const cli = seed.clientes[0];
+    const obra = seed.obras[0];
+    fireEvent.changeText(screen.getByLabelText('campo-descricao'), 'Peca com obra');
+    fireEvent.press(screen.getByLabelText(`escolher-cliente-${cli.id}`));
+    fireEvent.press(screen.getByLabelText(`escolher-obra-${obra.id}`));
+    fireEvent.press(screen.getByLabelText('botao-salvar-pedido'));
+    await waitFor(() => expect(onSalvar).toHaveBeenCalledWith(expect.objectContaining({ clienteId: cli.id, obraId: obra.id })));
+  });
 });
 ```
 
@@ -497,8 +631,8 @@ Expected: FAIL "Cannot find module '../../../app/pedido/novo'".
 // TelaNovoPedido.tsx
 import React, { useState } from 'react';
 import { Button, Text, TextInput, View } from 'react-native';
-import type { Cliente } from '../../core/domain/entities/Cliente';
-import type { Obra } from '../../core/domain/entities/Obra';
+import type { Cliente } from '../../src/core/domain/entities/Cliente';
+import type { Obra } from '../../src/core/domain/entities/Obra';
 
 export default function TelaNovoPedido({ clientes, obras, onSalvar }: {
   clientes: Cliente[]; obras: Obra[]; onSalvar(args: { descricao: string; clienteId: string; obraId: string | null }): Promise<void>;
@@ -522,7 +656,17 @@ export default function TelaNovoPedido({ clientes, obras, onSalvar }: {
       <Text>Descrição da peça</Text>
       <TextInput accessibilityLabel="campo-descricao" value={descricao} onChangeText={setDescricao} />
       <Text>Cliente: {clientes.find(c => c.id === clienteId)?.nome ?? 'escolha'}</Text>
+      {clientes.map(c => (
+        <View key={c.id} accessibilityLabel={`escolher-cliente-${c.id}`}>
+          <Button title={c.id === clienteId ? `✓ ${c.nome}` : c.nome} onPress={() => setClienteId(c.id)} />
+        </View>
+      ))}
       <Text>Obras: {obras.length} no estoque (obra opcional)</Text>
+      {obras.map(o => (
+        <View key={o.id} accessibilityLabel={`escolher-obra-${o.id}`}>
+          <Button title={o.id === obraId ? `✓ ${o.nome}` : o.nome} onPress={() => setObraId(o.id)} />
+        </View>
+      ))}
       {erro ? <Text accessibilityLabel="erro-pedido">{erro}</Text> : null}
       <View accessibilityLabel="botao-salvar-pedido">
         <Button title="Salvar Pedido" onPress={salvar} />
@@ -542,7 +686,7 @@ export default function TelaNovoPedido({ clientes, obras, onSalvar }: {
 - [ ] **Step 5: Rodar e ver passar + commit**
 
 Run: `npx jest src/presentation/__tests__/TelaNovoPedido.test.tsx --verbose`
-Expected: PASS.
+Expected: PASS (3 passed).
 
 ```bash
 git add app/pedido/novo.tsx app/cliente/novo.tsx src/presentation/__tests__/TelaNovoPedido.test.tsx
@@ -596,6 +740,44 @@ describe('TelaEstoque', () => {
     fireEvent.press(screen.getByLabelText(`venda-${serie.id}`));
     await waitFor(() => expect(onVenda).toHaveBeenCalled());
   });
+
+  it('remover unidades exige dupla confirmação (RF25)', async () => {
+    const seed = seedFixtures();
+    const serie = seed.obras.find(o => o.tipo === 'SERIE')!;
+    const onRemoverUnidades = jest.fn(async () => {});
+    render(
+      <DataContext.Provider value={{ pedidos: [], obras: seed.obras, eventos: [], clientes: [], reload: async () => {} }}>
+        <TelaEstoque onVenda={async () => {}} onAdicionar={async () => {}} onRemoverUnidades={onRemoverUnidades} onRemoverObra={async () => {}} />
+      </DataContext.Provider>
+    );
+    fireEvent.press(screen.getByLabelText(`remover-unidades-${serie.id}`));
+    expect(screen.getByLabelText('dialog-confirm')).toBeTruthy();
+    expect(screen.getByLabelText('dialog-confirm-btn')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('dialog-confirm-dupla'));
+    await waitFor(() => expect(onRemoverUnidades).toHaveBeenCalledWith(serie.id));
+  });
+
+  it('remoção bloqueada (RF22) exibe o erro sem travar', async () => {
+    const seed = seedFixtures();
+    const onRemoverObra = jest.fn(async () => { throw new Error('Obra vinculada a pedido aberto não pode ser removida'); });
+    render(
+      <DataContext.Provider value={{ pedidos: [], obras: seed.obras, eventos: [], clientes: [], reload: async () => {} }}>
+        <TelaEstoque onVenda={async () => {}} onAdicionar={async () => {}} onRemoverUnidades={async () => {}} onRemoverObra={onRemoverObra} />
+      </DataContext.Provider>
+    );
+    fireEvent.press(screen.getByLabelText(`remover-obra-${seed.obras[0].id}`));
+    fireEvent.press(screen.getByLabelText('dialog-confirm-btn'));
+    await waitFor(() => expect(screen.getByLabelText('erro-estoque')).toBeTruthy());
+  });
+
+  it('estoque vazio mostra estado guiado (Review Focus)', () => {
+    render(
+      <DataContext.Provider value={{ pedidos: [], obras: [], eventos: [], clientes: [], reload: async () => {} }}>
+        <TelaEstoque onVenda={async () => {}} onAdicionar={async () => {}} onRemoverUnidades={async () => {}} onRemoverObra={async () => {}} />
+      </DataContext.Provider>
+    );
+    expect(screen.getByText('Nenhuma obra — toque em Nova Obra')).toBeTruthy();
+  });
 });
 ```
 
@@ -635,13 +817,17 @@ import React from 'react';
 import { Button, Text, View } from 'react-native';
 import type { Obra } from '../../core/domain/entities/Obra';
 
-export function ObraCard({ obra, onVenda, onAdicionar }: { obra: Obra; onVenda(): void; onAdicionar(): void }) {
+export function ObraCard({ obra, onVenda, onAdicionar, onRemoverUnidades, onRemoverObra }: {
+  obra: Obra; onVenda(): void; onAdicionar(): void; onRemoverUnidades(): void; onRemoverObra(): void;
+}) {
   return (
     <View accessibilityLabel={`obra-${obra.id}`}>
       <Text>{obra.nome} ({obra.tipo})</Text>
       <Text accessibilityLabel={`qtd-${obra.id}`}>Qtd: {obra.quantidade}{obra.quantidade === 0 ? ' (Esgotada)' : ''}</Text>
       <View accessibilityLabel={`venda-${obra.id}`}><Button title="Venda direta" onPress={onVenda} /></View>
       <View accessibilityLabel={`add-${obra.id}`}><Button title="Adicionar unidades" onPress={onAdicionar} /></View>
+      <View accessibilityLabel={`remover-unidades-${obra.id}`}><Button title="Remover unidades" onPress={onRemoverUnidades} /></View>
+      <View accessibilityLabel={`remover-obra-${obra.id}`}><Button title="Remover obra" onPress={onRemoverObra} /></View>
     </View>
   );
 }
@@ -650,20 +836,63 @@ export function ObraCard({ obra, onVenda, onAdicionar }: { obra: Obra; onVenda()
 - [ ] **Step 4: Criar TelaEstoque.tsx + TelaNovaObra.tsx**
 
 ```tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Text, View } from 'react-native';
-import { useData } from '../hooks/AppProviders';
-import { ObraCard } from '../components/ObraCard';
+import { useData } from '../../src/presentation/hooks/AppProviders';
+import { ObraCard } from '../../src/presentation/components/ObraCard';
+import { ConfirmDialog } from '../../src/presentation/components/ConfirmDialog';
 
 export default function TelaEstoque({ onVenda, onAdicionar, onRemoverUnidades, onRemoverObra }: {
   onVenda(obraId: string): Promise<void>; onAdicionar(obraId: string): Promise<void>; onRemoverUnidades(obraId: string): Promise<void>; onRemoverObra(obraId: string): Promise<void>;
 }) {
   const { obras } = useData();
+  const [alvoUnidades, setAlvoUnidades] = useState<string | null>(null);
+  const [alvoObra, setAlvoObra] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function confirmarRemocaoUnidades() {
+    if (!alvoUnidades) return;
+    const id = alvoUnidades;
+    setAlvoUnidades(null);
+    setErro(null);
+    try {
+      await onRemoverUnidades(id);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível remover as unidades');
+    }
+  }
+
+  async function confirmarRemocaoObra() {
+    if (!alvoObra) return;
+    const id = alvoObra;
+    setAlvoObra(null);
+    setErro(null);
+    try {
+      await onRemoverObra(id);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível remover a obra');
+    }
+  }
+
   return (
     <View>
       <Text accessibilityLabel="titulo-estoque">Estoque de Obras</Text>
+      {erro ? <Text accessibilityLabel="erro-estoque">{erro}</Text> : null}
       {obras.length === 0 ? <Text>Nenhuma obra — toque em Nova Obra</Text> : null}
-      {obras.map(o => <ObraCard key={o.id} obra={o} onVenda={() => onVenda(o.id)} onAdicionar={() => onAdicionar(o.id)} />)}
+      {obras.map(o => (
+        <ObraCard key={o.id} obra={o}
+          onVenda={() => onVenda(o.id)}
+          onAdicionar={() => onAdicionar(o.id)}
+          onRemoverUnidades={() => setAlvoUnidades(o.id)}
+          onRemoverObra={() => setAlvoObra(o.id)} />
+      ))}
+      {alvoUnidades ? (
+        <ConfirmDialog titulo="Remover unidades? Baixa definitiva no estoque." dupla
+          onCancel={() => setAlvoUnidades(null)} onConfirm={confirmarRemocaoUnidades} onConfirmDupla={confirmarRemocaoUnidades} />
+      ) : null}
+      {alvoObra ? (
+        <ConfirmDialog titulo="Remover obra do estoque?" onCancel={() => setAlvoObra(null)} onConfirm={confirmarRemocaoObra} />
+      ) : null}
     </View>
   );
 }
@@ -675,7 +904,7 @@ export default function TelaEstoque({ onVenda, onAdicionar, onRemoverUnidades, o
 - [ ] **Step 5: Rodar e ver passar + commit**
 
 Run: `npx jest src/presentation/__tests__/TelaEstoque.test.tsx --verbose`
-Expected: PASS.
+Expected: PASS (5 passed).
 
 ```bash
 git add src/presentation/components/ObraCard.tsx src/presentation/components/ConfirmDialog.tsx app/(tabs)/estoque.tsx app/obra/nova.tsx src/presentation/__tests__/TelaEstoque.test.tsx
@@ -731,6 +960,15 @@ describe('TelaEventos', () => {
     fireEvent.press(screen.getByLabelText('dialog-confirm-btn'));
     await waitFor(() => expect(onRemover).toHaveBeenCalledWith(id));
   });
+
+  it('sem eventos mostra estado guiado (Review Focus)', () => {
+    render(
+      <DataContext.Provider value={{ pedidos: [], obras: [], eventos: [], clientes: [], reload: async () => {} }}>
+        <TelaEventos onNovo={() => {}} onRemover={async () => {}} />
+      </DataContext.Provider>
+    );
+    expect(screen.getByText('Nenhum evento — toque em Novo Evento')).toBeTruthy();
+  });
 });
 ```
 
@@ -766,9 +1004,9 @@ export function EventoCard({ evento, onRemover }: { evento: Evento; onRemover():
 // TelaEventos.tsx
 import React, { useState } from 'react';
 import { Button, Text, View } from 'react-native';
-import { useData } from '../hooks/AppProviders';
-import { EventoCard } from '../components/EventoCard';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useData } from '../../src/presentation/hooks/AppProviders';
+import { EventoCard } from '../../src/presentation/components/EventoCard';
+import { ConfirmDialog } from '../../src/presentation/components/ConfirmDialog';
 
 export default function TelaEventos({ onNovo, onRemover }: { onNovo(): void; onRemover(eventoId: string): Promise<void> }) {
   const { eventos } = useData();
@@ -837,4 +1075,367 @@ Expected: grep não acha nada (telas usam só fakes via Context).
 ```bash
 git add src/presentation/components/EventoCard.tsx app/(tabs)/eventos.tsx app/evento/novo.tsx src/presentation/__tests__/TelaEventos.test.tsx
 git commit -m "feat(ui): add Eventos com pins e confirmacao"
+```
+
+---
+
+### Task 7: Editar Cliente (UC19/RF18)
+
+**Files:**
+- Create: `app/cliente/[id].tsx` (TelaEditarCliente completa, autocontida)
+- Test: `src/presentation/__tests__/TelaEditarCliente.test.tsx`
+
+**Interfaces:**
+- Consumes: `EditarClienteUseCase.execute({clienteId,nome,contato}): Promise<Cliente>` (Plano 2) — rejeita Cliente Avulso e nome/contato vazios.
+- Produces: `TelaEditarCliente` com `campo-nome`/`campo-contato` pré-preenchidos, `botao-salvar-cliente`, `erro-cliente`; rota `app/cliente/[id].tsx`.
+
+- [ ] **Step 1: Escrever testes (pré-preenchido, salvar, Avulso)**
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import TelaEditarCliente from '../../../app/cliente/[id]';
+import { seedFixtures } from '../../infrastructure/seed/fixtures';
+
+describe('TelaEditarCliente', () => {
+  it('pré-preenche nome e contato do cliente', () => {
+    const seed = seedFixtures();
+    render(<TelaEditarCliente cliente={seed.clientes[0]} onSalvar={async () => {}} />);
+    expect(screen.getByLabelText('campo-nome').props.value).toBe('Joao da Silva');
+    expect(screen.getByLabelText('campo-contato').props.value).toBe('(11) 99999-9999');
+  });
+
+  it('salva chamando onSalvar com os novos valores', async () => {
+    const seed = seedFixtures();
+    const onSalvar = jest.fn(async () => {});
+    render(<TelaEditarCliente cliente={seed.clientes[0]} onSalvar={onSalvar} />);
+    fireEvent.changeText(screen.getByLabelText('campo-nome'), 'Joao Editado');
+    fireEvent.press(screen.getByLabelText('botao-salvar-cliente'));
+    await waitFor(() => expect(onSalvar).toHaveBeenCalledWith(expect.objectContaining({ nome: 'Joao Editado' })));
+  });
+
+  it('erro do use case (ex. Cliente Avulso) aparece sem travar (UC19)', async () => {
+    const seed = seedFixtures();
+    const onSalvar = jest.fn(async () => { throw new Error('Cliente Avulso não pode ser editado'); });
+    render(<TelaEditarCliente cliente={seed.clientes[0]} onSalvar={onSalvar} />);
+    fireEvent.press(screen.getByLabelText('botao-salvar-cliente'));
+    await waitFor(() => expect(screen.getByLabelText('erro-cliente')).toBeTruthy());
+    expect(onSalvar).toHaveBeenCalled();
+  });
+});
+```
+
+Salvar em `src/presentation/__tests__/TelaEditarCliente.test.tsx`.
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+Run: `npx jest src/presentation/__tests__/TelaEditarCliente.test.tsx --verbose`
+Expected: FAIL "Cannot find module '../../../app/cliente/[id]'".
+
+- [ ] **Step 3: Implementação mínima (labels explícitos RNF05)**
+
+```tsx
+import React, { useState } from 'react';
+import { Button, Text, TextInput, View } from 'react-native';
+import type { Cliente } from '../../../src/core/domain/entities/Cliente';
+
+export default function TelaEditarCliente({ cliente, onSalvar }: {
+  cliente: Cliente; onSalvar(args: { nome: string; contato: string }): Promise<void>;
+}) {
+  const [nome, setNome] = useState(cliente.nome);
+  const [contato, setContato] = useState(cliente.contato);
+  const [erro, setErro] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function salvar() {
+    setLoading(true);
+    setErro(null);
+    try {
+      await onSalvar({ nome, contato });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível salvar');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <View>
+      <Text accessibilityLabel="titulo-editar-cliente">Editar Cliente</Text>
+      <Text>Nome</Text>
+      <TextInput accessibilityLabel="campo-nome" value={nome} onChangeText={setNome} />
+      <Text>Contato</Text>
+      <TextInput accessibilityLabel="campo-contato" value={contato} onChangeText={setContato} />
+      {erro ? <Text accessibilityLabel="erro-cliente">{erro}</Text> : null}
+      <View accessibilityLabel="botao-salvar-cliente">
+        <Button title={loading ? 'Salvando...' : 'Salvar'} onPress={salvar} disabled={loading} />
+      </View>
+    </View>
+  );
+}
+```
+
+Salvar em `app/cliente/[id].tsx`.
+
+- [ ] **Step 4: Rodar e ver passar**
+
+Run: `npx jest src/presentation/__tests__/TelaEditarCliente.test.tsx --verbose`
+Expected: PASS (3 passed).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/cliente/\[id\].tsx src/presentation/__tests__/TelaEditarCliente.test.tsx
+git commit -m "feat(ui): add Editar Cliente com Avulso bloqueado"
+```
+
+---
+
+### Task 8: Editar Pedido (UC20/RF19)
+
+**Files:**
+- Create: `app/pedido/[id]/editar.tsx` (TelaEditarPedido completa, autocontida)
+- Test: `src/presentation/__tests__/TelaEditarPedido.test.tsx`
+
+**Interfaces:**
+- Consumes: `EditarPedidoUseCase.execute({pedidoId,descricao,dataEntrega}): Promise<Pedido>` (Plano 2) — válido somente em `A_FAZER`; troca de obra fora de escopo (cancelar + recriar).
+- Produces: `TelaEditarPedido` com `campo-descricao`/`campo-data` pré-preenchidos, `botao-salvar-pedido`, `erro-pedido`; rota `app/pedido/[id]/editar.tsx`.
+
+- [ ] **Step 1: Escrever testes (pré-preenchido, salvar, erro)**
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import TelaEditarPedido from '../../../app/pedido/[id]/editar';
+import { seedFixtures } from '../../infrastructure/seed/fixtures';
+
+describe('TelaEditarPedido', () => {
+  it('pré-preenche descrição do pedido', () => {
+    const seed = seedFixtures();
+    const pedido = seed.pedidos.find(p => p.status === 'A_FAZER')!;
+    render(<TelaEditarPedido pedido={pedido} onSalvar={async () => {}} />);
+    expect(screen.getByLabelText('campo-descricao').props.value).toBe('Escultura de Onca');
+  });
+
+  it('salva chamando onSalvar com descrição e data', async () => {
+    const seed = seedFixtures();
+    const pedido = seed.pedidos.find(p => p.status === 'A_FAZER')!;
+    const onSalvar = jest.fn(async () => {});
+    render(<TelaEditarPedido pedido={pedido} onSalvar={onSalvar} />);
+    fireEvent.changeText(screen.getByLabelText('campo-descricao'), 'Onca com base');
+    fireEvent.press(screen.getByLabelText('botao-salvar-pedido'));
+    await waitFor(() => expect(onSalvar).toHaveBeenCalledWith(expect.objectContaining({ descricao: 'Onca com base' })));
+    const chamada = onSalvar.mock.calls[0][0] as { dataEntrega: unknown };
+    expect(chamada.dataEntrega).toBeInstanceOf(Date);
+  });
+
+  it('erro do use case (ex. pedido fora de A_FAZER) aparece sem travar (UC20)', async () => {
+    const seed = seedFixtures();
+    const pedido = seed.pedidos.find(p => p.status === 'A_FAZER')!;
+    const onSalvar = jest.fn(async () => { throw new Error('editar() válido somente em A_FAZER'); });
+    render(<TelaEditarPedido pedido={pedido} onSalvar={onSalvar} />);
+    fireEvent.press(screen.getByLabelText('botao-salvar-pedido'));
+    await waitFor(() => expect(screen.getByLabelText('erro-pedido')).toBeTruthy());
+  });
+});
+```
+
+Salvar em `src/presentation/__tests__/TelaEditarPedido.test.tsx`.
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+Run: `npx jest src/presentation/__tests__/TelaEditarPedido.test.tsx --verbose`
+Expected: FAIL "Cannot find module '../../../app/pedido/[id]/editar'".
+
+- [ ] **Step 3: Implementação mínima**
+
+```tsx
+import React, { useState } from 'react';
+import { Button, Text, TextInput, View } from 'react-native';
+import type { Pedido } from '../../../src/core/domain/entities/Pedido';
+
+export default function TelaEditarPedido({ pedido, onSalvar }: {
+  pedido: Pedido; onSalvar(args: { descricao: string; dataEntrega: Date }): Promise<void>;
+}) {
+  const [descricao, setDescricao] = useState(pedido.descricao);
+  const [dataTexto, setDataTexto] = useState(pedido.dataEntrega.toISOString().slice(0, 10));
+  const [erro, setErro] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function salvar() {
+    setLoading(true);
+    setErro(null);
+    try {
+      await onSalvar({ descricao, dataEntrega: new Date(dataTexto) });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível salvar');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <View>
+      <Text accessibilityLabel="titulo-editar-pedido">Editar Pedido</Text>
+      <Text>Descrição da peça</Text>
+      <TextInput accessibilityLabel="campo-descricao" value={descricao} onChangeText={setDescricao} />
+      <Text>Data de entrega (AAAA-MM-DD)</Text>
+      <TextInput accessibilityLabel="campo-data" value={dataTexto} onChangeText={setDataTexto} />
+      {erro ? <Text accessibilityLabel="erro-pedido">{erro}</Text> : null}
+      <View accessibilityLabel="botao-salvar-pedido">
+        <Button title={loading ? 'Salvando...' : 'Salvar'} onPress={salvar} disabled={loading} />
+      </View>
+    </View>
+  );
+}
+```
+
+Salvar em `app/pedido/[id]/editar.tsx`. (A troca da obra vinculada não está nesta tela: fora de `A_FAZER` o use case rejeita, e a troca exige compensação não especificada — cancela-se e recria-se o pedido.)
+
+- [ ] **Step 4: Rodar e ver passar**
+
+Run: `npx jest src/presentation/__tests__/TelaEditarPedido.test.tsx --verbose`
+Expected: PASS (3 passed).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add "app/pedido/[id]/editar.tsx" src/presentation/__tests__/TelaEditarPedido.test.tsx
+git commit -m "feat(ui): add Editar Pedido em A_FAZER"
+```
+
+---
+
+### Task 9: Editar Evento (UC24/RF23) + suíte final
+
+**Files:**
+- Create: `app/evento/[id]/editar.tsx` (TelaEditarEvento completa, autocontida)
+- Test: `src/presentation/__tests__/TelaEditarEvento.test.tsx`
+
+**Interfaces:**
+- Consumes: `EditarEventoUseCase.execute({eventoId,nome,data,endereco,localizacao,observacoes}): Promise<Evento>` (Plano 2) + `FakeLocationGateway.getCurrent()` para atualizar o pin (opcional; pin atual vem na prop).
+- Produces: `TelaEditarEvento` com campos pré-preenchidos, pin atual como texto, `botao-usar-gps`, `botao-salvar-evento`, `erro-evento`; rota `app/evento/[id]/editar.tsx`.
+
+- [ ] **Step 1: Escrever testes (pré-preenchido, pin, GPS, salvar)**
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import TelaEditarEvento from '../../../app/evento/[id]/editar';
+import { seedFixtures } from '../../infrastructure/seed/fixtures';
+
+describe('TelaEditarEvento', () => {
+  it('pré-preenche campos e exibe o pin atual', () => {
+    const seed = seedFixtures();
+    render(<TelaEditarEvento evento={seed.eventos[0]} onGps={async () => ({ latitude: 0, longitude: 0 })} onSalvar={async () => {}} />);
+    expect(screen.getByLabelText('campo-nome-evento').props.value).toBe('Feira da Praca');
+    expect(screen.getByLabelText('pin-atual')).toBeTruthy();
+  });
+
+  it('botão GPS atualiza o ponto exibido', async () => {
+    const seed = seedFixtures();
+    render(<TelaEditarEvento evento={seed.eventos[0]} onGps={async () => ({ latitude: 1, longitude: 2 })} onSalvar={async () => {}} />);
+    fireEvent.press(screen.getByLabelText('botao-usar-gps'));
+    await waitFor(() => expect(screen.getByLabelText('ponto-selecionado')).toBeTruthy());
+  });
+
+  it('salva chamando onSalvar com os novos valores', async () => {
+    const seed = seedFixtures();
+    const onSalvar = jest.fn(async () => {});
+    render(<TelaEditarEvento evento={seed.eventos[0]} onGps={async () => ({ latitude: 0, longitude: 0 })} onSalvar={onSalvar} />);
+    fireEvent.changeText(screen.getByLabelText('campo-nome-evento'), 'Feira Nova');
+    fireEvent.press(screen.getByLabelText('botao-salvar-evento'));
+    await waitFor(() => expect(onSalvar).toHaveBeenCalledWith(expect.objectContaining({ nome: 'Feira Nova' })));
+  });
+});
+```
+
+Salvar em `src/presentation/__tests__/TelaEditarEvento.test.tsx`.
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+Run: `npx jest src/presentation/__tests__/TelaEditarEvento.test.tsx --verbose`
+Expected: FAIL "Cannot find module '../../../app/evento/[id]/editar'".
+
+- [ ] **Step 3: Implementação mínima**
+
+```tsx
+import React, { useState } from 'react';
+import { Button, Text, TextInput, View } from 'react-native';
+import type { Evento } from '../../../src/core/domain/entities/Evento';
+import { Coordenada } from '../../../src/core/domain/value-objects/Coordenada';
+
+export default function TelaEditarEvento({ evento, onGps, onSalvar }: {
+  evento: Evento;
+  onGps(): Promise<{ latitude: number; longitude: number }>;
+  onSalvar(args: { nome: string; data: Date; endereco: string; localizacao: Coordenada; observacoes: string }): Promise<void>;
+}) {
+  const [nome, setNome] = useState(evento.nome);
+  const [dataTexto, setDataTexto] = useState(evento.data.toISOString().slice(0, 10));
+  const [endereco, setEndereco] = useState(evento.endereco);
+  const [observacoes, setObservacoes] = useState(evento.observacoes);
+  const [ponto, setPonto] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function salvar() {
+    setLoading(true);
+    setErro(null);
+    try {
+      const localizacao = ponto
+        ? new Coordenada(ponto.latitude, ponto.longitude)
+        : evento.localizacao;
+      await onSalvar({ nome, data: new Date(dataTexto), endereco, localizacao, observacoes });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível salvar');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <View>
+      <Text accessibilityLabel="titulo-editar-evento">Editar Evento</Text>
+      <Text>Nome da feira</Text>
+      <TextInput accessibilityLabel="campo-nome-evento" value={nome} onChangeText={setNome} />
+      <Text>Data (AAAA-MM-DD)</Text>
+      <TextInput accessibilityLabel="campo-data-evento" value={dataTexto} onChangeText={setDataTexto} />
+      <Text>Endereço</Text>
+      <TextInput accessibilityLabel="campo-endereco-evento" value={endereco} onChangeText={setEndereco} />
+      <Text>Observações</Text>
+      <TextInput accessibilityLabel="campo-obs-evento" value={observacoes} onChangeText={setObservacoes} />
+      <Text accessibilityLabel="pin-atual">Pin atual: {evento.localizacao.latitude}, {evento.localizacao.longitude}</Text>
+      <View accessibilityLabel="botao-usar-gps">
+        <Button title="Atualizar localização" onPress={() => onGps().then(setPonto)} />
+      </View>
+      {ponto ? <Text accessibilityLabel="ponto-selecionado">{ponto.latitude},{ponto.longitude}</Text> : null}
+      {erro ? <Text accessibilityLabel="erro-evento">{erro}</Text> : null}
+      <View accessibilityLabel="botao-salvar-evento">
+        <Button title={loading ? 'Salvando...' : 'Salvar'} onPress={salvar} disabled={loading} />
+      </View>
+    </View>
+  );
+}
+```
+
+Salvar em `app/evento/[id]/editar.tsx`.
+
+- [ ] **Step 4: Rodar e ver passar**
+
+Run: `npx jest src/presentation/__tests__/TelaEditarEvento.test.tsx --verbose`
+Expected: PASS (3 passed).
+
+- [ ] **Step 5: Rodar suíte presentation completa + checagem de arquitetura**
+
+Run: `npx jest src/presentation --verbose`
+Expected: PASS (9 arquivos: Shell, Login, Kanban, NovoPedido, Estoque, Eventos, EditarCliente, EditarPedido, EditarEvento).
+
+Run: `npm run typecheck && ! grep -r "expo-sqlite\|supabase-js\|expo-camera\|expo-location" src/presentation app || echo "VIOLACAO"`
+Expected: grep não acha nada (telas usam só fakes via Context).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add "app/evento/[id]/editar.tsx" src/presentation/__tests__/TelaEditarEvento.test.tsx
+git commit -m "feat(ui): add Editar Evento com pin e GPS opcional"
 ```

@@ -80,6 +80,7 @@ describe('identificadores UUID v4', () => {
     expect(() =>
       Pedido.criarVendaDireta({
         ...ids,
+        quantidade: 1,
         descricao: 'Venda',
         canalOrigem: 'PRESENCIAL',
       }),

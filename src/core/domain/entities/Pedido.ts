@@ -16,6 +16,7 @@ export interface PedidoProps {
   status: StatusPedido;
   fotoConclusaoPath: string | null;
   vendaDireta: boolean;
+  quantidadeObra: number;
   statusSync: StatusSync;
   criadoEmLocal: Date;
   deletedAt: Date | null;
@@ -62,6 +63,7 @@ export class Pedido {
       status: 'A_FAZER',
       fotoConclusaoPath: null,
       vendaDireta: false,
+      quantidadeObra: args.obraId ? 1 : 0,
       statusSync: 'PENDENTE',
       criadoEmLocal: new Date(),
       deletedAt: null,
@@ -72,6 +74,7 @@ export class Pedido {
     usuarioId: string;
     clienteId: string;
     obraId: string;
+    quantidade: number;
     descricao: string;
     canalOrigem: CanalOrigem;
   }): Pedido {
@@ -79,6 +82,9 @@ export class Pedido {
     if (!isUuidV4(args.clienteId)) throw new PedidoInvalidoError('clienteId deve ser UUID v4');
     if (!isUuidV4(args.obraId)) {
       throw new PedidoInvalidoError('vendaDireta exige obraId UUID v4 de SERIE');
+    }
+    if (!Number.isInteger(args.quantidade) || args.quantidade <= 0) {
+      throw new PedidoInvalidoError('Quantidade da venda direta deve ser inteiro > 0');
     }
     const descricao = args.descricao.trim();
     if (!descricao) throw new PedidoInvalidoError('Descrição do pedido é obrigatória');
@@ -94,6 +100,7 @@ export class Pedido {
       status: 'FEITO',
       fotoConclusaoPath: null,
       vendaDireta: true,
+      quantidadeObra: args.quantidade,
       statusSync: 'PENDENTE',
       criadoEmLocal: new Date(),
       deletedAt: null,
@@ -138,6 +145,10 @@ export class Pedido {
 
   get vendaDireta(): boolean {
     return this._props.vendaDireta;
+  }
+
+  get quantidadeObra(): number {
+    return this._props.quantidadeObra;
   }
 
   get statusSync(): StatusSync {
@@ -197,6 +208,7 @@ export class Pedido {
       throw new PedidoInvalidoError('pedido já possui obra vinculada');
     }
     this._props.obraId = obraId;
+    this._props.quantidadeObra = 1;
     this._props.statusSync = 'PENDENTE';
   }
 
