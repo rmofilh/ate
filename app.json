@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "ate",
+    "slug": "ate",
+    "scheme": "ate",
+    "plugins": ["expo-router"]
+  }
+}
