@@ -6,6 +6,8 @@ import TelaEventos from '../../../app/(tabs)/eventos';
 import TelaKanban from '../../../app/(tabs)/kanban';
 import TelaNovoPedido from '../../../app/pedido/novo';
 import TelaNovoCliente from '../../../app/cliente/novo';
+import { Cliente } from '../../core/domain/entities/Cliente';
+import { Pedido } from '../../core/domain/entities/Pedido';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
 import { makeFakeProviders } from '../../main/factories/makeFakeProviders';
 import {
@@ -51,6 +53,46 @@ describe('ações de navegação', () => {
     expect(navigation.novoPedido).toHaveBeenCalledTimes(1);
     expect(navigation.editarPedido).toHaveBeenCalledWith(pedido.id);
     expect(navigation.editarCliente).toHaveBeenCalledWith(pedido.clienteId);
+  });
+
+  it('permite editar cliente comum chamado Cliente Avulso', () => {
+    const seed = seedFixtures();
+    const navigation = makeNavigation();
+    const cliente = Cliente.criar({
+      usuarioId: seed.usuarioId,
+      nome: 'Cliente Avulso',
+      contato: '(11) 97777-6666',
+    });
+    const pedido = Pedido.criar({
+      usuarioId: seed.usuarioId,
+      clienteId: cliente.id,
+      descricao: 'Pedido do cliente homônimo',
+      canalOrigem: 'TELEFONE',
+      dataEntrega: new Date('2026-12-15'),
+    });
+    render(
+      <NavigationContext.Provider value={navigation}>
+        <DataContext.Provider
+          value={{
+            pedidos: [pedido],
+            obras: [],
+            eventos: [],
+            clientes: [cliente],
+            reload: async () => {},
+          }}
+        >
+          <TelaKanban
+            onIniciar={async () => {}}
+            onConcluir={async () => {}}
+            onCancelar={async () => {}}
+          />
+        </DataContext.Provider>
+      </NavigationContext.Provider>,
+    );
+
+    fireEvent.press(screen.getByTestId(`editar-cliente-${pedido.id}`));
+
+    expect(navigation.editarCliente).toHaveBeenCalledWith(cliente.id);
   });
 
   it('Estoque e Eventos expõem criar e editar', () => {

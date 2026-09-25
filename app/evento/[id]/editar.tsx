@@ -75,6 +75,11 @@ export default function TelaEditarEvento({
   }
 
   function usarLocalizacaoManual() {
+    if (!latitudeTexto.trim() || !longitudeTexto.trim()) {
+      setErro('Informe latitude e longitude válidas');
+      return;
+    }
+
     const latitude = Number(latitudeTexto.replace(',', '.'));
     const longitude = Number(longitudeTexto.replace(',', '.'));
     try {

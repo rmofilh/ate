@@ -146,4 +146,18 @@ describe('TelaEventos', () => {
     await waitFor(() => expect(screen.getByTestId('erro-evento')).toBeTruthy());
     expect(onSalvar).not.toHaveBeenCalled();
   });
+
+  it('Novo Evento não converte coordenadas manuais vazias em zero', async () => {
+    const onSalvar = jest.fn(async () => {});
+    render(<TelaNovoEvento onSalvar={onSalvar} />);
+
+    fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira Manual');
+    fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-11');
+    fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Manual');
+    fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
+    fireEvent.press(screen.getByTestId('botao-salvar-evento'));
+
+    await waitFor(() => expect(screen.getByTestId('erro-evento')).toBeTruthy());
+    expect(onSalvar).not.toHaveBeenCalled();
+  });
 });

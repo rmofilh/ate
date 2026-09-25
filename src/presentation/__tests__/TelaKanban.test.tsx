@@ -26,9 +26,9 @@ describe('TelaKanban', () => {
       </DataContext.Provider>,
     );
 
-    expect(screen.getByLabelText('coluna-a-fazer')).toBeTruthy();
-    expect(screen.getByLabelText('coluna-fazendo')).toBeTruthy();
-    expect(screen.getByLabelText('coluna-feito')).toBeTruthy();
+    expect(screen.getByTestId('coluna-a-fazer')).toBeTruthy();
+    expect(screen.getByTestId('coluna-fazendo')).toBeTruthy();
+    expect(screen.getByTestId('coluna-feito')).toBeTruthy();
     expect(screen.getAllByTestId(/pedido-/).length).toBeGreaterThanOrEqual(3);
     expect(screen.getByTestId('scroll-kanban')).toBeTruthy();
   });

@@ -109,33 +109,38 @@ export default function TelaKanban({
 
   function coluna(status: 'A_FAZER' | 'FAZENDO' | 'FEITO', label: string) {
     const pedidosDaColuna = pedidos.filter((pedido) => pedido.status === status);
+    const titulo =
+      status === 'A_FAZER' ? 'A Fazer' : status === 'FAZENDO' ? 'Fazendo' : 'Feito';
 
     return (
-      <View accessibilityLabel={label}>
-        <Text>
-          {status === 'A_FAZER' ? 'A Fazer' : status === 'FAZENDO' ? 'Fazendo' : 'Feito'}
-        </Text>
-        {pedidosDaColuna.map((pedido) => (
-          <PedidoCard
-            key={pedido.id}
-            pedido={pedido}
-            loading={loadingId === pedido.id}
-            onIniciar={() => void iniciar(pedido.id)}
-            onConcluir={() => void concluir(pedido.id)}
-            onCancelar={() => setAlvoCancel(pedido.id)}
-            onEditarPedido={
-              pedido.status === 'A_FAZER'
-                ? () => navigation.editarPedido(pedido.id)
-                : undefined
-            }
-            onEditarCliente={
-              clientes.find((cliente) => cliente.id === pedido.clienteId)?.nome !==
-              'Cliente Avulso'
-                ? () => navigation.editarCliente(pedido.clienteId)
-                : undefined
-            }
-          />
-        ))}
+      <View testID={label} accessibilityLabel={`Coluna ${titulo}`}>
+        <Text>{titulo}</Text>
+        {pedidosDaColuna.map((pedido) => {
+          const cliente = clientes.find((item) => item.id === pedido.clienteId);
+          const clienteBalcao =
+            cliente?.nome === 'Cliente Avulso' && cliente.contato === '';
+
+          return (
+            <PedidoCard
+              key={pedido.id}
+              pedido={pedido}
+              loading={loadingId === pedido.id}
+              onIniciar={() => void iniciar(pedido.id)}
+              onConcluir={() => void concluir(pedido.id)}
+              onCancelar={() => setAlvoCancel(pedido.id)}
+              onEditarPedido={
+                pedido.status === 'A_FAZER'
+                  ? () => navigation.editarPedido(pedido.id)
+                  : undefined
+              }
+              onEditarCliente={
+                cliente && !clienteBalcao
+                  ? () => navigation.editarCliente(pedido.clienteId)
+                  : undefined
+              }
+            />
+          );
+        })}
         {pedidosDaColuna.length === 0 ? (
           <Text>Nenhum pedido aqui — toque em Novo Pedido</Text>
         ) : null}
