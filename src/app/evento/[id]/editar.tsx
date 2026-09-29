@@ -28,7 +28,12 @@ interface TelaEditarEventoProps {
   onConcluido?(): void;
 }
 
-export default function TelaEditarEvento({
+export default function TelaEditarEvento(props: TelaEditarEventoProps = {}) {
+  const { id } = useRouteParams();
+  return <FormularioEditarEvento key={props.evento?.id ?? id} {...props} />;
+}
+
+function FormularioEditarEvento({
   evento: eventoRecebido,
   onGps,
   onSalvar,

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 
 import type { AuthSession } from '../../core/application/gateways/IAuthGateway';
 import type { Cliente } from '../../core/domain/entities/Cliente';
@@ -102,7 +103,10 @@ export function useAppNavigation(): NavigationCtx {
 }
 
 export function useRouteParams(): RouteParamsCtx {
-  return useContext(RouteParamsContext);
+  const override = useContext(RouteParamsContext);
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const routeId = Array.isArray(params.id) ? params.id[0] : params.id;
+  return { id: override.id ?? routeId };
 }
 
 export function usePedidoDraft(): PedidoDraftCtx {
