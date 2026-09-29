@@ -1339,3 +1339,44 @@ Expected: `merge-base` código 0; push fast-forward na mesma `main` que antes ap
 - Requisitos do documento de produto que não existem no projeto antigo (SQLite, Supabase/RLS, Storage, câmera/localização reais, mapa visual, sync automático) não são parte da migração de protótipo confirmada pelo solicitante; o README informa essa fronteira. Interfaces, validações, telas e comportamento fake representativos desses requisitos são mantidos.
 - Os cinco riscos do Review Focus estão associados a testes novos nas Tasks 2/3, 4, 5, 6 e 9. Cada task de migração executa teste dirigido, suíte acumulada, typecheck e lint antes do commit.
 - Nenhum `git mv` pode preservar automaticamente histórico por arquivo entre estes repositórios; o merge `-s ours` preserva ancestralidade remota e deixa o novo scaffold como proprietário da árvore, habilitando push fast-forward para `main` sem force.
+
+## Registro da execução nativa — 29/09/2026
+
+- [x] Task 1: `main` conectada ao histórico remoto pelo merge `d39ed8b`; nenhuma árvore/configuração antiga importada para a raiz.
+- [x] Task 2: domínio com ID externo, harness SDK 57 e testes de contrato (`2544199`).
+- [x] Task 3: aplicação, repositórios/gateways fake e fixtures (`8a5f313`).
+- [x] Task 4: UUID na borda e composição dos fakes (`9bd2435`).
+- [x] Task 5: shell/login/Kanban protegidos em `src/app` (`0d30db7`).
+- [x] Task 6: Estoque, venda direta e dupla confirmação (`c2ac6de`).
+- [x] Task 7: Eventos textuais/GPS fake/edição (`883e9ad`).
+- [x] Task 8: pedido/cliente por stacks (`4575266`).
+- [x] Task 9: edições, parâmetros locais e reinicialização dos campos por identidade (`46a9df3`).
+- [x] Task 10: README atualizado, reset e código dos exemplos removidos; verificação automatizada e bundles concluídos.
+- [ ] Verificação visual/manual em aparelhos Android e iOS: indisponível neste ambiente Linux, sem `adb`/emulador e sem `xcrun`/simulador. Os testes de navegação usam o Router real com RNTL; os bundles nativos foram exportados, mas isso não substitui o teste visual dos insets no aparelho.
+
+### Ajustes confirmados durante a execução
+
+1. O SDK 57 requer tipos Jest explicitamente disponíveis: criado `src/test-support/jest.d.ts`, mantendo `tsconfig.json` do scaffold.
+2. RNTL instalado pelo Expo é 14.0.1: todas as chamadas `render`, `fireEvent` e `rerender` das suítes migradas foram adaptadas para `await`. Instalado `test-renderer@1.2.0` via Expo para acompanhar React 19.2 (1.3.0 exigia React 19.3).
+3. O preset Jest do SDK 57 resolve o UUID pela exportação browser ESM: o allowlist de transformação foi estendido só para `uuid`, usando o preset atual como base.
+4. `renderRouter` do SDK 57 acrescenta helpers ao resultado assíncrono, não ao `screen` do RNTL 14: os testes conferem `app.getPathname()` após aguardar o render.
+5. A nova regra de lint do React encontrou atualização síncrona no efeito do draft do pedido; seleção do cliente recém-criado agora sincroniza pelo draft com guarda, e o fluxo UC09 continua testado.
+6. O teste de troca de `id` na mesma rota expôs campos do registro anterior. Os três formulários de edição agora são reinicializados pela chave da entidade; cliente, pedido e evento possuem testes de troca do parâmetro em foco, além do ID desconhecido.
+7. Removidos apenas os componentes/hooks/CSS e script de reset dos exemplos depois de montar as rotas do ate. A declaração CSS temporária também foi removida; o scaffold gerou seus tipos ao iniciar Metro. Assets/configuração do novo scaffold e `.opencode/` local foram preservados.
+
+### Evidências finais
+
+| Verificação | Resultado |
+| --- | --- |
+| `npx jest --runInBand` | 34 suítes, 166 testes aprovados; nenhum snapshot |
+| `npx tsc --noEmit` | aprovado, inclusive depois da geração de tipos do Expo Router |
+| `npx expo lint` | aprovado, sem erros ou avisos |
+| `npx expo install --check` | dependências alinhadas |
+| `npx expo-doctor` | 21/21 checks aprovados |
+| `npx expo export --platform android` | bundle Hermes exportado, 1328 módulos |
+| `npx expo export --platform ios` | bundle Hermes exportado, 1193 módulos |
+| `npx expo start --offline --port 8087` | Metro iniciou e escutou; encerrado após smoke test |
+| Configuração raiz | `app.json` e `tsconfig.json` idênticos ao scaffold `248fdde`; entry point continua `expo-router/entry` |
+| Arquitetura | sem imports React/Expo/UUID no código de domínio/application; geração somente na borda |
+
+A ampliação para quatro Value Objects fica para uma entrega própria, conforme decisão do solicitante antes da execução.

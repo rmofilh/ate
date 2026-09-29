@@ -1,56 +1,67 @@
-# Welcome to your Expo app 👋
+# ate — protótipo Expo SDK 57
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo de gestão para artesãos: Kanban de pedidos, clientes, estoque de peças
+únicas/em série e eventos. O protótipo usa repositórios em memória e gateways fake
+de autenticação, câmera, localização e sincronização. Os dados reiniciam quando
+o app reinicia. Os pins de eventos são representados por coordenadas textuais.
 
-## Get started
+## Desenvolvimento
 
-1. Install dependencies
+Requisitos: Node >= 22.13, npm e Expo Go compatível com SDK 57 em Android/iOS.
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+npm ci
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Conta de demonstração: **artesao@email.com** / **123456**.
 
-### Other setup steps
+Instale ou ajuste dependências com `npx expo install <pacote>` para preservar
+compatibilidade com o SDK. O projeto usa React 19.2.3 e React Native 0.86.3.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Verificações
 
-## Learn more
+```sh
+npm test
+npm run typecheck
+npm run lint
+npx expo install --check
+npx expo-doctor
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Os testes usam RNTL 14, com `await render(...)` e `await fireEvent.*(...)`.
+`test-renderer@1.2.0` acompanha React 19.2; não instalar o renderer antigo do
+protótipo React 18. O Jest adapta apenas os bytes nativos usados para gerar UUIDs.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Para conferir os bundles das duas plataformas:
 
-## Join the community
+```sh
+npx expo export --platform android
+npx expo export --platform ios
+```
 
-Join our community of developers creating universal apps.
+## Estrutura
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `src/app/`: rotas Expo Router; login público, tabs e stacks protegidas.
+- `src/core/domain/`: entidades, regras, enums e `Coordenada`; IDs v4 recebidos pelas factories.
+- `src/core/application/`: casos de uso e interfaces de gateways/repositórios.
+- `src/infrastructure/`: fakes, fixtures e UUIDs gerados com `uuid`/`expo-crypto`.
+- `src/main/factories/`: composição e injeção de dependências.
+- `src/presentation/`: componentes, Contexts e testes de tela/navegação.
+
+## Documentação
+
+O [plano de migração](docs/superpowers/plans/2026-09-29-migracao-ate-expo-57.md)
+registra o mapeamento do protótipo anterior e os resultados da execução.
+As especificações e planos originais são acessíveis pelo histórico preservado:
+
+```sh
+git show 7042cac0:docs/ate-fase1.md
+git show 7042cac0:docs/ate-fase2.md
+git show 7042cac0:docs/superpowers/plans/2026-09-21-ate-dominio.md
+git show 7042cac0:docs/superpowers/plans/2026-09-21-ate-aplicacao.md
+git show 7042cac0:docs/superpowers/plans/2026-09-21-ate-apresentacao.md
+```
+
+SQLite, Supabase, câmera/GPS reais e mapa visual fazem parte da especificação do
+produto; esta entrega conserva o comportamento demonstrativo dos fakes.
