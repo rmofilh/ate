@@ -32,6 +32,8 @@ function RootNavigator() {
             <Stack.Screen name="obra/nova" options={{ title: 'Nova Obra' }} />
             <Stack.Screen name="evento/novo" options={{ title: 'Novo Evento' }} />
             <Stack.Screen name="evento/[id]/editar" options={{ title: 'Editar Evento' }} />
+            <Stack.Screen name="pedido/novo" options={{ title: 'Novo Pedido' }} />
+            <Stack.Screen name="cliente/novo" options={{ title: 'Novo Cliente' }} />
           </Stack.Protected>
         </Stack>
       </NavigationContext.Provider>
