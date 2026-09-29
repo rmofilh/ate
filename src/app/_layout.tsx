@@ -29,6 +29,7 @@ function RootNavigator() {
           </Stack.Protected>
           <Stack.Protected guard={!!session}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="obra/nova" options={{ title: 'Nova Obra' }} />
           </Stack.Protected>
         </Stack>
       </NavigationContext.Provider>
