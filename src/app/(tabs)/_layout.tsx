@@ -6,6 +6,7 @@ export default function TabsLayout() {
     <Tabs screenOptions={{ headerShown: true }}>
       <Tabs.Screen name="kanban" options={{ title: 'Pedidos' }} />
       <Tabs.Screen name="estoque" options={{ title: 'Estoque' }} />
+      <Tabs.Screen name="eventos" options={{ title: 'Eventos' }} />
     </Tabs>
   );
 }
