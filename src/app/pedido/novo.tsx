@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Cliente } from '@/core/domain/entities/Cliente';
 import type { Obra } from '@/core/domain/entities/Obra';
 import { CANAIS_ORIGEM, type CanalOrigem } from '@/core/domain/enums/CanalOrigem';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -113,26 +115,33 @@ export default function TelaNovoPedido({
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView testID="scroll-novo-pedido" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-      <Text accessibilityRole="header">Novo Pedido</Text>
-      <Text>Descrição da peça</Text>
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView testID="scroll-novo-pedido" contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+      <View style={uiStyles.formColumn}>
+      <Text accessibilityRole="header" style={uiStyles.title}>Novo Pedido</Text>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Descrição da peça</Text>
       <TextInput
         accessibilityLabel="Descrição da peça"
         testID="campo-descricao"
         value={descricao}
         onChangeText={setDescricao}
       />
-      <Text>Data de entrega (AAAA-MM-DD)</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Data de entrega (AAAA-MM-DD)</Text>
       <TextInput
         accessibilityLabel="Data de entrega"
         testID="campo-data-entrega"
         value={dataEntregaTexto}
         onChangeText={setDataEntregaTexto}
       />
-      <Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>
         Cliente: {clientes.find((cliente) => cliente.id === clienteId)?.nome ?? 'escolha'}
       </Text>
+      <View style={uiStyles.choices}>
       {clientes.map((cliente) => (
         <ActionButton
           key={cliente.id}
@@ -140,15 +149,23 @@ export default function TelaNovoPedido({
           title={cliente.id === clienteId ? `Selecionado: ${cliente.nome}` : cliente.nome}
           onPress={() => setClienteId(cliente.id)}
           disabled={loading}
+          appearance={cliente.id === clienteId ? 'primary' : 'secondary'}
+          style={uiStyles.choice}
+          textStyle={uiStyles.choiceText}
         />
       ))}
+      </View>
       <ActionButton
         label="novo-cliente"
         title="Cadastrar novo cliente"
         onPress={navigation.novoCliente}
         disabled={loading}
+        appearance="quiet"
       />
-      <Text>Canal de origem</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Canal de origem</Text>
+      <View style={uiStyles.choicesRow}>
       {CANAIS_ORIGEM.map((canal) => (
         <ActionButton
           key={canal}
@@ -156,9 +173,14 @@ export default function TelaNovoPedido({
           title={canal === canalOrigem ? `Selecionado: ${canal}` : canal}
           onPress={() => setCanalOrigem(canal)}
           disabled={loading}
+          appearance={canal === canalOrigem ? 'primary' : 'secondary'}
         />
       ))}
-      <Text>Obras: {obrasDisponiveis.length} disponíveis (obra opcional)</Text>
+      </View>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Obras: {obrasDisponiveis.length} disponíveis (obra opcional)</Text>
+      <View style={uiStyles.choices}>
       {obrasDisponiveis.map((obra) => (
         <ActionButton
           key={obra.id}
@@ -166,10 +188,15 @@ export default function TelaNovoPedido({
           title={obra.id === obraId ? `Selecionada: ${obra.nome}` : obra.nome}
           onPress={() => setObraId(obra.id)}
           disabled={loading}
+          appearance={obra.id === obraId ? 'primary' : 'secondary'}
+          style={uiStyles.choice}
+          textStyle={uiStyles.choiceText}
         />
       ))}
+      </View>
+      </View>
       {erro ? (
-        <Text testID="erro-pedido" accessibilityLiveRegion="polite">
+        <Text testID="erro-pedido" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
         </Text>
       ) : null}
@@ -178,7 +205,9 @@ export default function TelaNovoPedido({
         title={loading ? 'Salvando...' : 'Salvar Pedido'}
         onPress={() => void salvar()}
         disabled={loading}
+        appearance="primary"
       />
+      </View>
     </ScrollView>
     </SafeAreaView>
   );

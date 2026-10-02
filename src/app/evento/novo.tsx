@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Coordenada } from '@/core/domain/value-objects/Coordenada';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -128,46 +130,58 @@ export default function TelaNovoEvento({
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-      <Text accessibilityRole="header">Novo Evento</Text>
-      <Text>Nome da feira</Text>
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+      <View style={uiStyles.formColumn}>
+      <Text accessibilityRole="header" style={uiStyles.title}>Novo Evento</Text>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Nome da feira</Text>
       <TextInput
         accessibilityLabel="Nome da feira"
         testID="campo-nome-evento"
         value={nome}
         onChangeText={setNome}
       />
-      <Text>Data (AAAA-MM-DD)</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Data (AAAA-MM-DD)</Text>
       <TextInput
         accessibilityLabel="Data do evento"
         testID="campo-data-evento"
         value={dataTexto}
         onChangeText={setDataTexto}
       />
-      <Text>Endereço</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Endereço</Text>
       <TextInput
         accessibilityLabel="Endereço"
         testID="campo-endereco-evento"
         value={endereco}
         onChangeText={setEndereco}
       />
-      <Text>Observações (opcional)</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Observações (opcional)</Text>
       <TextInput
         accessibilityLabel="Observações"
         testID="campo-obs-evento"
         value={observacoes}
         onChangeText={setObservacoes}
       />
+      </View>
       <ActionButton
         label="botao-usar-gps"
         title={gpsLoading ? 'Buscando localização...' : 'Usar minha localização'}
         onPress={() => void usarGps()}
         disabled={gpsLoading || loading}
+        appearance="secondary"
       />
-      <Text>Ou informe as coordenadas manualmente</Text>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.body}>Ou informe as coordenadas manualmente</Text>
       <TextInput
         accessibilityLabel="Latitude"
+        placeholder="Latitude"
         testID="campo-latitude-manual"
         value={latitudeTexto}
         onChangeText={setLatitudeTexto}
@@ -175,24 +189,27 @@ export default function TelaNovoEvento({
       />
       <TextInput
         accessibilityLabel="Longitude"
+        placeholder="Longitude"
         testID="campo-longitude-manual"
         value={longitudeTexto}
         onChangeText={setLongitudeTexto}
         keyboardType="numbers-and-punctuation"
       />
+      </View>
       <ActionButton
         label="usar-localizacao-manual"
         title="Usar localização informada"
         onPress={usarLocalizacaoManual}
         disabled={gpsLoading || loading}
+        appearance="secondary"
       />
       {ponto ? (
-        <Text testID="ponto-selecionado">
+        <Text testID="ponto-selecionado" style={uiStyles.notice}>
           Local selecionado: {ponto.latitude}, {ponto.longitude}
         </Text>
       ) : null}
       {erro ? (
-        <Text testID="erro-evento" accessibilityLiveRegion="polite">
+        <Text testID="erro-evento" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
         </Text>
       ) : null}
@@ -201,7 +218,9 @@ export default function TelaNovoEvento({
         title={loading ? 'Salvando...' : 'Salvar Evento'}
         onPress={() => void salvar()}
         disabled={loading || gpsLoading}
+        appearance="primary"
       />
+      </View>
     </ScrollView>
     </SafeAreaView>
   );

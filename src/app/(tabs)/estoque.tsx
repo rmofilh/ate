@@ -1,11 +1,15 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
+import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
 import { ObraCard } from '@/presentation/components/ObraCard';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
+import { borderRadius, borderWidths, colors, layout, spacing } from '@/constants/theme';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useData,
   useAppNavigation,
@@ -177,17 +181,18 @@ export default function TelaEstoque({
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView testID="scroll-estoque" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView testID="scroll-estoque" contentContainerStyle={uiStyles.formContent}>
+      <View style={uiStyles.formColumn}>
       <OfflineBanner isOnline={isOnline} />
-      <Text accessibilityRole="header">Estoque de Obras</Text>
+      <Text accessibilityRole="header" style={uiStyles.title}>Estoque de Obras</Text>
       <ActionButton
         label="nova-obra"
         title="Nova Obra"
         onPress={navigation.novaObra}
+        appearance="primary"
       />
-      {erro ? <Text testID="erro-estoque">{erro}</Text> : null}
-      {obras.length === 0 ? <Text>Nenhuma obra — toque em Nova Obra</Text> : null}
+      {obras.length === 0 ? <Text style={uiStyles.empty}>Nenhuma obra — toque em Nova Obra</Text> : null}
       {obras.map((obra) => (
         <ObraCard
           key={obra.id}
@@ -211,10 +216,15 @@ export default function TelaEstoque({
           }}
         />
       ))}
+      </View>
+    </ScrollView>
+      {erro || alvoVenda || alvoUnidades || alvoObra ? (
+      <ConfirmationLayer>
+      {erro ? <Text testID="erro-estoque" style={[uiStyles.error, styles.error]}>{erro}</Text> : null}
       {alvoVenda ? (
-        <View testID="dialog-venda" accessibilityLabel="Confirmar venda direta" accessibilityRole="alert">
-          <Text>Confirmar venda direta</Text>
-          <Text>Quantidade a vender</Text>
+        <View testID="dialog-venda" accessibilityLabel="Confirmar venda direta" accessibilityRole="alert" style={styles.panel}>
+          <Text style={uiStyles.heading}>Confirmar venda direta</Text>
+          <Text style={uiStyles.label}>Quantidade a vender</Text>
           <TextInput
             accessibilityLabel="Quantidade a vender"
             testID="campo-qtd-venda"
@@ -228,18 +238,20 @@ export default function TelaEstoque({
             title="Voltar sem vender"
             onPress={() => setAlvoVenda(null)}
             disabled={vendaLoading}
+            appearance="secondary"
           />
           <ActionButton
             label="confirmar-venda"
             title={vendaLoading ? 'Salvando venda...' : 'Confirmar venda'}
             onPress={() => void confirmarVenda()}
             disabled={vendaLoading}
+            appearance="primary"
           />
         </View>
       ) : null}
       {alvoUnidades ? (
-        <View>
-          <Text>Quantidade a remover</Text>
+        <View style={styles.panel}>
+          <Text style={uiStyles.label}>Quantidade a remover</Text>
           <TextInput
             accessibilityLabel="Quantidade a remover"
             testID="campo-qtd-remover"
@@ -264,6 +276,8 @@ export default function TelaEstoque({
             }}
             onFirstConfirm={prepararRemocaoUnidades}
             onConfirm={() => void confirmarRemocaoUnidades()}
+            appearance="panel"
+            style={styles.panelContent}
           />
         </View>
       ) : null}
@@ -272,9 +286,37 @@ export default function TelaEstoque({
           titulo="Remover obra do estoque?"
           onCancel={() => setAlvoObra(null)}
           onConfirm={() => void confirmarRemocaoObra()}
+          appearance="panel"
         />
       ) : null}
-    </ScrollView>
+      </ConfirmationLayer>
+      ) : null}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  panel: {
+    width: '100%',
+    maxWidth: layout.formMaxWidth,
+    backgroundColor: colors.surface,
+    borderWidth: borderWidths.focus,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
+    padding: spacing.x4,
+    gap: spacing.x4,
+  },
+  panelContent: {
+    padding: spacing.none,
+    borderWidth: spacing.none,
+  },
+  error: {
+    width: '100%',
+    maxWidth: layout.formMaxWidth,
+    backgroundColor: colors.surface,
+    borderWidth: borderWidths.focus,
+    borderColor: colors.error,
+    borderRadius: borderRadius.control,
+    padding: spacing.x3,
+  },
+});

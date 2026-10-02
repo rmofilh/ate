@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { TipoObra } from '@/core/domain/enums/TipoObra';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -78,17 +80,21 @@ export default function TelaNovaObra({
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-      <Text accessibilityRole="header">Nova Obra</Text>
-      <Text>Nome da obra</Text>
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+      <View style={uiStyles.formColumn}>
+      <Text accessibilityRole="header" style={uiStyles.title}>Nova Obra</Text>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Nome da obra</Text>
       <TextInput
         accessibilityLabel="Nome da obra"
         testID="campo-nome-obra"
         value={nome}
         onChangeText={setNome}
       />
-      <Text>Tipo da obra: digite UNICA ou SERIE</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Tipo da obra: digite UNICA ou SERIE</Text>
       <TextInput
         accessibilityLabel="Tipo da obra"
         testID="campo-tipo-obra"
@@ -96,9 +102,10 @@ export default function TelaNovaObra({
         onChangeText={setTipoTexto}
         autoCapitalize="characters"
       />
+      </View>
       {tipoNormalizado === 'SERIE' ? (
-        <>
-          <Text>Quantidade de unidades</Text>
+        <View style={uiStyles.field}>
+          <Text style={uiStyles.label}>Quantidade de unidades</Text>
           <TextInput
             accessibilityLabel="Quantidade de unidades"
             testID="campo-qtd-obra"
@@ -106,10 +113,10 @@ export default function TelaNovaObra({
             onChangeText={setQuantidadeTexto}
             keyboardType="number-pad"
           />
-        </>
+        </View>
       ) : null}
       {erro ? (
-        <Text testID="erro-obra" accessibilityLiveRegion="polite">
+        <Text testID="erro-obra" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
         </Text>
       ) : null}
@@ -118,7 +125,9 @@ export default function TelaNovaObra({
         title={loading ? 'Salvando...' : 'Salvar Obra'}
         onPress={() => void salvar()}
         disabled={loading}
+        appearance="primary"
       />
+      </View>
     </ScrollView>
     </SafeAreaView>
   );

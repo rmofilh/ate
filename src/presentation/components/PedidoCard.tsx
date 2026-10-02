@@ -1,5 +1,7 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { borderRadius, borderWidths, colors, spacing, textStyles } from '@/constants/theme';
 
 import type { Pedido } from '../../core/domain/entities/Pedido';
 import { ActionButton } from './ActionButton';
@@ -22,8 +24,8 @@ export function PedidoCard({
   loading: boolean;
 }) {
   return (
-    <View testID={`pedido-${pedido.id}`}>
-      <Text>{pedido.descricao}</Text>
+    <View testID={`pedido-${pedido.id}`} style={styles.card}>
+      <Text style={styles.description}>{pedido.descricao}</Text>
       {pedido.status === 'A_FAZER' ? (
         <>
           <ActionButton
@@ -31,12 +33,14 @@ export function PedidoCard({
             title="Editar pedido"
             onPress={onEditarPedido ?? (() => {})}
             disabled={loading || !onEditarPedido}
+            appearance="secondary"
           />
           <ActionButton
             label={`mover-${pedido.id}-fazendo`}
             title={loading ? 'Salvando...' : 'Começar a fazer'}
             onPress={onIniciar}
             disabled={loading}
+            appearance="primary"
           />
         </>
       ) : null}
@@ -46,6 +50,7 @@ export function PedidoCard({
           title="Editar cliente"
           onPress={onEditarCliente}
           disabled={loading}
+          appearance="quiet"
         />
       ) : null}
       {pedido.status === 'FAZENDO' ? (
@@ -54,6 +59,7 @@ export function PedidoCard({
           title={loading ? 'Salvando...' : 'Mover para Feito (tirar foto)'}
           onPress={onConcluir}
           disabled={loading}
+          appearance="primary"
         />
       ) : null}
       <ActionButton
@@ -61,7 +67,24 @@ export function PedidoCard({
         title="Cancelar pedido"
         onPress={onCancelar}
         disabled={loading}
+        appearance="danger"
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: borderWidths.control,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
+    padding: spacing.x4,
+    gap: spacing.x2,
+  },
+  description: {
+    ...textStyles.heading,
+    color: colors.text,
+    marginBottom: spacing.x2,
+  },
+});

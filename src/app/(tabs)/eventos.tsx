@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
+import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
 import { EventoCard } from '@/presentation/components/EventoCard';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useData,
   useAppNavigation,
@@ -52,10 +54,11 @@ export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView testID="scroll-eventos" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView testID="scroll-eventos" contentContainerStyle={uiStyles.formContent}>
+      <View style={uiStyles.formColumn}>
       <OfflineBanner isOnline={isOnline} />
-      <Text accessibilityRole="header">Mapa de Eventos</Text>
+      <Text accessibilityRole="header" style={uiStyles.title}>Mapa de Eventos</Text>
       <ActionButton
         label="novo-evento"
         title="Novo Evento"
@@ -63,9 +66,10 @@ export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}
           if (onNovo) onNovo();
           else navigation.novoEvento();
         }}
+        appearance="primary"
       />
-      {erro ? <Text testID="erro-eventos">{erro}</Text> : null}
-      {eventos.length === 0 ? <Text>Nenhum evento — toque em Novo Evento</Text> : null}
+      {erro ? <Text testID="erro-eventos" style={uiStyles.error}>{erro}</Text> : null}
+      {eventos.length === 0 ? <Text style={uiStyles.empty}>Nenhum evento — toque em Novo Evento</Text> : null}
       {eventos.map((evento) => (
         <EventoCard
           key={evento.id}
@@ -75,14 +79,18 @@ export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}
           onRemover={() => setAlvo(evento.id)}
         />
       ))}
+      </View>
+    </ScrollView>
       {alvo ? (
+        <ConfirmationLayer>
         <ConfirmDialog
           titulo="Remover este evento cancelado?"
           onCancel={() => setAlvo(null)}
           onConfirm={() => void removerConfirmado()}
+          appearance="panel"
         />
+        </ConfirmationLayer>
       ) : null}
-    </ScrollView>
     </SafeAreaView>
   );
 }

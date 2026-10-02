@@ -1,8 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -66,25 +68,30 @@ export default function TelaNovoCliente({
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-      <Text accessibilityRole="header">Novo Cliente</Text>
-      <Text>Nome</Text>
-      <TextInput
-        accessibilityLabel="Nome"
-        testID="campo-nome"
-        value={nome}
-        onChangeText={setNome}
-      />
-      <Text>Contato</Text>
-      <TextInput
-        accessibilityLabel="Contato"
-        testID="campo-contato"
-        value={contato}
-        onChangeText={setContato}
-      />
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+      <View style={uiStyles.formColumn}>
+      <Text accessibilityRole="header" style={uiStyles.title}>Novo Cliente</Text>
+      <View style={uiStyles.field}>
+        <Text style={uiStyles.label}>Nome</Text>
+        <TextInput
+          accessibilityLabel="Nome"
+          testID="campo-nome"
+          value={nome}
+          onChangeText={setNome}
+        />
+      </View>
+      <View style={uiStyles.field}>
+        <Text style={uiStyles.label}>Contato</Text>
+        <TextInput
+          accessibilityLabel="Contato"
+          testID="campo-contato"
+          value={contato}
+          onChangeText={setContato}
+        />
+      </View>
       {erro ? (
-        <Text testID="erro-cliente" accessibilityLiveRegion="polite">
+        <Text testID="erro-cliente" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
         </Text>
       ) : null}
@@ -93,7 +100,9 @@ export default function TelaNovoCliente({
         title={loading ? 'Salvando...' : 'Salvar Cliente'}
         onPress={() => void salvar()}
         disabled={loading}
+        appearance="primary"
       />
+      </View>
     </ScrollView>
     </SafeAreaView>
   );

@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Pedido } from '@/core/domain/entities/Pedido';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -78,29 +80,34 @@ function FormularioEditarPedido({
   }
 
   if (!pedido) {
-    return <Text testID="erro-pedido">Pedido não encontrado</Text>;
+    return <Text testID="erro-pedido" style={uiStyles.notice}>Pedido não encontrado</Text>;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-      <Text accessibilityRole="header">Editar Pedido</Text>
-      <Text>Descrição da peça</Text>
-      <TextInput
-        accessibilityLabel="Descrição da peça"
-        testID="campo-descricao"
-        value={descricao}
-        onChangeText={setDescricao}
-      />
-      <Text>Data de entrega (AAAA-MM-DD)</Text>
-      <TextInput
-        accessibilityLabel="Data de entrega"
-        testID="campo-data"
-        value={dataTexto}
-        onChangeText={setDataTexto}
-      />
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+      <View style={uiStyles.formColumn}>
+      <Text accessibilityRole="header" style={uiStyles.title}>Editar Pedido</Text>
+      <View style={uiStyles.field}>
+        <Text style={uiStyles.label}>Descrição da peça</Text>
+        <TextInput
+          accessibilityLabel="Descrição da peça"
+          testID="campo-descricao"
+          value={descricao}
+          onChangeText={setDescricao}
+        />
+      </View>
+      <View style={uiStyles.field}>
+        <Text style={uiStyles.label}>Data de entrega (AAAA-MM-DD)</Text>
+        <TextInput
+          accessibilityLabel="Data de entrega"
+          testID="campo-data"
+          value={dataTexto}
+          onChangeText={setDataTexto}
+        />
+      </View>
       {erro ? (
-        <Text testID="erro-pedido" accessibilityLiveRegion="polite">
+        <Text testID="erro-pedido" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
         </Text>
       ) : null}
@@ -109,7 +116,9 @@ function FormularioEditarPedido({
         title={loading ? 'Salvando...' : 'Salvar Pedido'}
         onPress={() => void salvar()}
         disabled={loading}
+        appearance="primary"
       />
+      </View>
     </ScrollView>
     </SafeAreaView>
   );

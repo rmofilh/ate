@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Evento } from '@/core/domain/entities/Evento';
 import { Coordenada } from '@/core/domain/value-objects/Coordenada';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { uiStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -139,42 +141,51 @@ function FormularioEditarEvento({
   }
 
   if (!evento) {
-    return <Text testID="erro-evento">Evento não encontrado</Text>;
+    return <Text testID="erro-evento" style={uiStyles.notice}>Evento não encontrado</Text>;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-      <Text accessibilityRole="header">Editar Evento</Text>
-      <Text>Nome da feira</Text>
+    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
+    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+      <View style={uiStyles.formColumn}>
+      <Text accessibilityRole="header" style={uiStyles.title}>Editar Evento</Text>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Nome da feira</Text>
       <TextInput
         accessibilityLabel="Nome da feira"
         testID="campo-nome-evento"
         value={nome}
         onChangeText={setNome}
       />
-      <Text>Data (AAAA-MM-DD)</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Data (AAAA-MM-DD)</Text>
       <TextInput
         accessibilityLabel="Data do evento"
         testID="campo-data-evento"
         value={dataTexto}
         onChangeText={setDataTexto}
       />
-      <Text>Endereço</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Endereço</Text>
       <TextInput
         accessibilityLabel="Endereço"
         testID="campo-endereco-evento"
         value={endereco}
         onChangeText={setEndereco}
       />
-      <Text>Observações</Text>
+      </View>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.label}>Observações</Text>
       <TextInput
         accessibilityLabel="Observações"
         testID="campo-obs-evento"
         value={observacoes}
         onChangeText={setObservacoes}
       />
-      <Text testID="pin-atual">
+      </View>
+      <Text testID="pin-atual" style={uiStyles.notice}>
         Pin atual: {evento.localizacao.latitude}, {evento.localizacao.longitude}
       </Text>
       <ActionButton
@@ -182,10 +193,13 @@ function FormularioEditarEvento({
         title={gpsLoading ? 'Atualizando localização...' : 'Atualizar localização'}
         onPress={() => void atualizarGps()}
         disabled={gpsLoading || loading}
+        appearance="secondary"
       />
-      <Text>Ou informe as novas coordenadas</Text>
+      <View style={uiStyles.field}>
+      <Text style={uiStyles.body}>Ou informe as novas coordenadas</Text>
       <TextInput
         accessibilityLabel="Latitude"
+        placeholder="Latitude"
         testID="campo-latitude-manual"
         value={latitudeTexto}
         onChangeText={setLatitudeTexto}
@@ -193,24 +207,27 @@ function FormularioEditarEvento({
       />
       <TextInput
         accessibilityLabel="Longitude"
+        placeholder="Longitude"
         testID="campo-longitude-manual"
         value={longitudeTexto}
         onChangeText={setLongitudeTexto}
         keyboardType="numbers-and-punctuation"
       />
+      </View>
       <ActionButton
         label="usar-localizacao-manual"
         title="Usar localização informada"
         onPress={usarLocalizacaoManual}
         disabled={gpsLoading || loading}
+        appearance="secondary"
       />
       {ponto ? (
-        <Text testID="ponto-selecionado">
+        <Text testID="ponto-selecionado" style={uiStyles.notice}>
           Novo pin: {ponto.latitude}, {ponto.longitude}
         </Text>
       ) : null}
       {erro ? (
-        <Text testID="erro-evento" accessibilityLiveRegion="polite">
+        <Text testID="erro-evento" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
         </Text>
       ) : null}
@@ -219,7 +236,9 @@ function FormularioEditarEvento({
         title={loading ? 'Salvando...' : 'Salvar Evento'}
         onPress={() => void salvar()}
         disabled={loading || gpsLoading}
+        appearance="primary"
       />
+      </View>
     </ScrollView>
     </SafeAreaView>
   );

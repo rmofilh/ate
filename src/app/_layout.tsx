@@ -1,7 +1,9 @@
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 
+import { colors, fontWeights, textStyles } from '@/constants/theme';
 import { makeFakeProviders } from '@/main/factories/makeFakeProviders';
+import { FontLoader } from '@/presentation/components/FontLoader';
 import { AppProviders, NavigationContext, RouteParamsContext, useAuth } from '@/presentation/hooks/AppProviders';
 
 function RootNavigator() {
@@ -20,7 +22,13 @@ function RootNavigator() {
         editarEvento: (eventoId) => router.push({ pathname: '/evento/[id]/editar', params: { id: eventoId } }),
         voltar: () => router.back(),
       }}>
-        <Stack>
+        <Stack screenOptions={{
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { ...textStyles.heading, fontWeight: fontWeights.regular },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Protected guard={!session}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -43,5 +51,9 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const [providers] = useState(makeFakeProviders);
-  return <AppProviders providers={providers}><RootNavigator /></AppProviders>;
+  return (
+    <FontLoader>
+      <AppProviders providers={providers}><RootNavigator /></AppProviders>
+    </FontLoader>
+  );
 }
