@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import TelaKanban from '../../app/(tabs)/kanban';
+import { SairButton } from '../components/SairButton';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
 import { AppProviders, AuthContext, DataContext } from '../hooks/AppProviders';
 import { makeFakeProviders } from '../../main/factories/makeFakeProviders';
@@ -137,27 +138,93 @@ describe('TelaKanban', () => {
           logout,
         }}
       >
-        <DataContext.Provider
-          value={{
-            pedidos: seed.pedidos,
-            obras: seed.obras,
-            eventos: [],
-            clientes: seed.clientes,
-            reload: async () => {},
-          }}
-        >
-          <TelaKanban
-            onIniciar={async () => {}}
-            onConcluir={async () => {}}
-            onCancelar={async () => {}}
-          />
-        </DataContext.Provider>
+        <SairButton />
       </AuthContext.Provider>,
     );
 
     await fireEvent.press(screen.getByTestId('botao-sair'));
 
     await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+  });
+
+  it('toolbar compacta expõe menu, título e novo pedido', async () => {
+    const seed = seedFixtures();
+    await render(
+      <DataContext.Provider
+        value={{
+          pedidos: seed.pedidos,
+          obras: seed.obras,
+          eventos: [],
+          clientes: seed.clientes,
+          reload: async () => {},
+        }}
+      >
+        <TelaKanban
+          onIniciar={async () => {}}
+          onConcluir={async () => {}}
+          onCancelar={async () => {}}
+        />
+      </DataContext.Provider>,
+    );
+
+    expect(screen.getByTestId('botao-menu')).toBeTruthy();
+    expect(screen.getByTestId('novo-pedido')).toBeTruthy();
+    expect(screen.getByText('Meus Pedidos')).toBeTruthy();
+  });
+
+  it('grade 2+1: superior com A Fazer+Fazendo, inferior com Feito', async () => {
+    const seed = seedFixtures();
+    await render(
+      <DataContext.Provider
+        value={{
+          pedidos: seed.pedidos,
+          obras: seed.obras,
+          eventos: [],
+          clientes: seed.clientes,
+          reload: async () => {},
+        }}
+      >
+        <TelaKanban
+          onIniciar={async () => {}}
+          onConcluir={async () => {}}
+          onCancelar={async () => {}}
+        />
+      </DataContext.Provider>,
+    );
+
+    const superior = screen.getByTestId('linha-superior');
+    const inferior = screen.getByTestId('linha-inferior');
+    expect(superior).toBeTruthy();
+    expect(inferior).toBeTruthy();
+    expect(screen.getByTestId('coluna-a-fazer')).toBeTruthy();
+    expect(screen.getByTestId('coluna-fazendo')).toBeTruthy();
+    expect(screen.getByTestId('coluna-feito')).toBeTruthy();
+  });
+
+  it('cabeçalhos anunciam a contagem de pedidos da coluna', async () => {
+    const seed = seedFixtures();
+    await render(
+      <DataContext.Provider
+        value={{
+          pedidos: seed.pedidos,
+          obras: seed.obras,
+          eventos: [],
+          clientes: seed.clientes,
+          reload: async () => {},
+        }}
+      >
+        <TelaKanban
+          onIniciar={async () => {}}
+          onConcluir={async () => {}}
+          onCancelar={async () => {}}
+        />
+      </DataContext.Provider>,
+    );
+
+    const fazer = seed.pedidos.filter((pedido) => pedido.status === 'A_FAZER').length;
+    expect(screen.getByTestId('coluna-a-fazer').props.accessibilityLabel).toBe(
+      `Coluna A Fazer, ${fazer} pedidos`,
+    );
   });
 
   it('permissão negada exibe a instrução do gateway (RNF12)', async () => {

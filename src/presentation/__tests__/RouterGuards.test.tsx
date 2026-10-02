@@ -1,6 +1,8 @@
 import { renderRouter, screen } from 'expo-router/testing-library';
 import { act, fireEvent } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, Slot } from 'expo-router';
+import React from 'react';
+import { SairButton } from '../components/SairButton';
 import TelaEditarCliente from '../../app/cliente/[id]';
 import { DataContext } from '../hooks/AppProviders';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
@@ -8,8 +10,18 @@ import RootLayout from '../../app/_layout';
 import Index from '../../app/index';
 import AuthLayout from '../../app/(auth)/_layout';
 import Login from '../../app/(auth)/login';
-import TabsLayout from '../../app/(tabs)/_layout';
 import Kanban from '../../app/(tabs)/kanban';
+// O Drawer real depende de reanimated animado (sem suporte no Jest):
+// no teste de rotas ele é substituído por um stub que preserva
+// a estrutura de navegação + logout.
+function StubTabsLayout() {
+  return (
+    <>
+      <Slot />
+      <SairButton />
+    </>
+  );
+}
 import Estoque from '../../app/(tabs)/estoque';
 import Eventos from '../../app/(tabs)/eventos';
 import NovoPedido from '../../app/pedido/novo';
@@ -25,7 +37,7 @@ import { gerarIdTeste } from '../../test-support/ids';
 const routes = {
   _layout: RootLayout, index: Index,
   '(auth)/_layout': AuthLayout, '(auth)/login': Login,
-  '(tabs)/_layout': TabsLayout, '(tabs)/kanban': () => <Kanban />,
+  '(tabs)/_layout': StubTabsLayout, '(tabs)/kanban': () => <Kanban />,
   '(tabs)/estoque': () => <Estoque />, '(tabs)/eventos': () => <Eventos />,
   'pedido/novo': () => <NovoPedido />, 'cliente/novo': () => <NovoCliente />,
   'obra/nova': () => <NovaObra />, 'evento/novo': () => <NovoEvento />,
