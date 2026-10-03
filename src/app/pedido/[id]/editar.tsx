@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import type { Pedido } from '@/core/domain/entities/Pedido';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { DateField } from '@/presentation/components/DateField';
+import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -35,6 +36,7 @@ function FormularioEditarPedido({
   onSalvar,
   onConcluido,
 }: TelaEditarPedidoProps = {}) {
+  const uiStyles = useUIStyles();
   const { pedidos, reload } = useData();
   const services = useServices();
   const navigation = useAppNavigation();
@@ -84,8 +86,7 @@ function FormularioEditarPedido({
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+    <FormScreen>
       <View style={uiStyles.formColumn}>
       <Text accessibilityRole="header" style={uiStyles.title}>Editar Pedido</Text>
       <View style={uiStyles.field}>
@@ -98,12 +99,13 @@ function FormularioEditarPedido({
         />
       </View>
       <View style={uiStyles.field}>
-        <Text style={uiStyles.label}>Data de entrega (AAAA-MM-DD)</Text>
-        <TextInput
+        <Text style={uiStyles.label}>Data de entrega</Text>
+        <DateField
           accessibilityLabel="Data de entrega"
           testID="campo-data"
           value={dataTexto}
           onChangeText={setDataTexto}
+          editable={!loading}
         />
       </View>
       {erro ? (
@@ -117,9 +119,10 @@ function FormularioEditarPedido({
         onPress={() => void salvar()}
         disabled={loading}
         appearance="primary"
+        icon="check"
+        busy={loading}
       />
       </View>
-    </ScrollView>
-    </SafeAreaView>
+    </FormScreen>
   );
 }

@@ -2,32 +2,68 @@
  * Fonte única de verdade visual do ate.
  * Telas e componentes devem consumir estes tokens.
  */
-const palette = {
-  white: '#FFFFFF',
-  yellow: '#FFE000',
-  black: '#000000',
-  gold: '#765700',
-  silver: '#E5E7EB',
-  red: '#A52432',
+export const colors = {
+  primary: '#2F5D50',
+  primaryPressed: '#23463C',
+  onPrimary: '#FFFFFF',
+  background: '#F7F7F2',
+  surface: '#FFFFFF',
+  surfaceSecondary: '#EDF2EC',
+  text: '#23352D',
+  textSecondary: '#59645B',
+  border: '#D9DED8',
+  controlBorder: '#7B877E',
+  focus: '#2F5D50',
+  link: '#2F5D50',
+  error: '#9E3546',
+  errorSurface: '#FFF0F1',
+  onError: '#FFFFFF',
+  success: '#365E4A',
+  selection: '#E4EFE6',
+  onSelection: '#23352D',
+  accent: '#B5924D',
+  todo: '#45617F',
+  todoSurface: '#EDF2F8',
+  doing: '#7A5A20',
+  doingSurface: '#FAF3E4',
+  done: '#365E4A',
+  doneSurface: '#EDF4EE',
+  scrim: '#101C16B8',
 } as const;
 
-export const colors = {
-  primary: palette.yellow,
-  onPrimary: palette.black,
-  background: palette.white,
-  surface: palette.white,
-  surfaceSecondary: palette.silver,
-  text: palette.black,
-  border: palette.black,
-  focus: palette.gold,
-  link: palette.gold,
-  error: palette.red,
-  onError: palette.white,
-  // Sucesso é comunicado por check e texto, conforme a identidade.
-  success: palette.black,
-  selection: palette.yellow,
-  onSelection: palette.black,
-} as const;
+export type ThemeColors = { [Key in keyof typeof colors]: string };
+
+export const darkColors: ThemeColors = {
+  primary: '#B5D0BD',
+  primaryPressed: '#96B9A1',
+  onPrimary: '#17231E',
+  background: '#17231E',
+  surface: '#213129',
+  surfaceSecondary: '#2B3D32',
+  text: '#F2F3EC',
+  textSecondary: '#B5C2B8',
+  border: '#4B6152',
+  controlBorder: '#899B8E',
+  focus: '#B5D0BD',
+  link: '#B5D0BD',
+  error: '#F2ACB6',
+  errorSurface: '#432A30',
+  onError: '#17231E',
+  success: '#B5D0BD',
+  selection: '#344C3D',
+  onSelection: '#F2F3EC',
+  accent: '#D3B478',
+  todo: '#BDD0E9',
+  todoSurface: '#293B4E',
+  doing: '#E9CD93',
+  doingSurface: '#443923',
+  done: '#B5D0BD',
+  doneSurface: '#2D4435',
+  scrim: '#050C08CC',
+};
+
+export const iconSizes = { small: 18, control: 24, feature: 32 } as const;
+export const motion = { feedback: 120, transition: 180 } as const;
 
 /** O carregamento das fontes deve usar exatamente estes nomes de registro. */
 export const fontFamilies = {
@@ -44,10 +80,14 @@ export const fontWeights = {
 } as const;
 
 export const fontSizes = {
+  eyebrow: 12,
+  caption: 14,
   body: 16,
+  cardHeading: 18,
   heading: 20,
   title: 24,
   display: 32,
+  wordmark: 44,
 } as const;
 
 export const lineHeights = {
@@ -139,8 +179,9 @@ export const spacing = {
 } as const;
 
 export const borderRadius = {
-  control: 8,
-  card: 12,
+  control: 12,
+  card: 20,
+  pill: 999,
 } as const;
 
 export const borderWidths = {
@@ -152,6 +193,8 @@ export const layout = {
   screenPadding: spacing.x5,
   minTouchTarget: spacing.x12,
   formMaxWidth: 480,
+  listMaxWidth: 960,
+  columnMinWidth: 248,
   tabletBreakpoint: 768,
   tabBarContentHeight: 64,
 } as const;

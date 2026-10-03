@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
 
 import { borderRadius, colors, layout, spacing, textStyles } from '@/constants/theme';
+import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 
-export const uiStyles = StyleSheet.create({
+const makeStyles = (colors: import('@/constants/theme').ThemeColors) => ({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -15,12 +16,23 @@ export const uiStyles = StyleSheet.create({
   formContent: {
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.x6,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   formColumn: {
     width: '100%',
     maxWidth: layout.formMaxWidth,
     gap: spacing.x6,
+    backgroundColor: colors.surface,
+    padding: spacing.x5,
+    borderRadius: borderRadius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  listColumn: {
+    width: '100%',
+    maxWidth: layout.listMaxWidth,
+    gap: spacing.x4,
+    alignSelf: 'center',
   },
   field: {
     gap: spacing.x2,
@@ -29,15 +41,15 @@ export const uiStyles = StyleSheet.create({
     gap: spacing.x2,
   },
   choicesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
     gap: spacing.x2,
   },
   choice: {
-    alignItems: 'stretch',
+    alignItems: 'stretch' as const,
   },
   choiceText: {
-    textAlign: 'left',
+    textAlign: 'left' as const,
   },
   title: {
     ...textStyles.title,
@@ -55,9 +67,16 @@ export const uiStyles = StyleSheet.create({
     ...textStyles.body,
     color: colors.text,
   },
+  muted: {
+    ...textStyles.body,
+    color: colors.textSecondary,
+  },
   error: {
     ...textStyles.body,
     color: colors.error,
+    backgroundColor: colors.errorSurface,
+    padding: spacing.x3,
+    borderRadius: borderRadius.control,
   },
   notice: {
     ...textStyles.body,
@@ -71,8 +90,12 @@ export const uiStyles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surfaceSecondary,
     padding: spacing.x4,
+    borderRadius: borderRadius.control,
   },
   actions: {
     gap: spacing.x2,
   },
-});
+} as const);
+
+export const uiStyles = StyleSheet.create(makeStyles(colors));
+export const useUIStyles = createThemedStyles(makeStyles);

@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -24,6 +24,7 @@ export default function TelaNovoCliente({
   onSalvar?(args: NovoClienteInput): Promise<void>;
   onConcluido?(): void;
 } = {}) {
+  const uiStyles = useUIStyles();
   const { reload } = useData();
   const services = useServices();
   const navigation = useAppNavigation();
@@ -68,10 +69,10 @@ export default function TelaNovoCliente({
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+    <FormScreen>
       <View style={uiStyles.formColumn}>
       <Text accessibilityRole="header" style={uiStyles.title}>Novo Cliente</Text>
+      <Text style={uiStyles.muted}>Cada criação começa com uma conexão.</Text>
       <View style={uiStyles.field}>
         <Text style={uiStyles.label}>Nome</Text>
         <TextInput
@@ -101,9 +102,10 @@ export default function TelaNovoCliente({
         onPress={() => void salvar()}
         disabled={loading}
         appearance="primary"
+        icon="check"
+        busy={loading}
       />
       </View>
-    </ScrollView>
-    </SafeAreaView>
+    </FormScreen>
   );
 }

@@ -7,6 +7,6 @@ import { ActionButton } from './ActionButton';
 export function SairButton() {
   const { logout } = useAuth();
   return (
-    <ActionButton label="botao-sair" title="Sair" onPress={() => void logout()} appearance="quiet" />
+    <ActionButton label="botao-sair" title="Sair" icon="logout" onPress={() => void logout()} appearance="quiet" />
   );
 }

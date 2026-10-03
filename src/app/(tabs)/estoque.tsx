@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/presentation/components/ActionButton';
@@ -8,8 +8,10 @@ import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
 import { ObraCard } from '@/presentation/components/ObraCard';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
-import { borderRadius, borderWidths, colors, layout, spacing } from '@/constants/theme';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { ScreenHeader } from '@/presentation/components/ScreenHeader';
+import { borderRadius, borderWidths, layout, spacing } from '@/constants/theme';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
+import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 import {
   useData,
   useAppNavigation,
@@ -35,6 +37,8 @@ export default function TelaEstoque({
   onRemoverUnidades,
   onRemoverObra,
 }: TelaEstoqueProps = {}) {
+  const uiStyles = useUIStyles();
+  const styles = useStyles();
   const { obras, reload } = useData();
   const { isOnline } = useNetwork();
   const services = useServices();
@@ -181,19 +185,16 @@ export default function TelaEstoque({
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView testID="scroll-estoque" contentContainerStyle={uiStyles.formContent}>
-      <View style={uiStyles.formColumn}>
+    <SafeAreaView style={uiStyles.screen} edges={['top', 'bottom', 'left', 'right']}>
+    <FlatList testID="scroll-estoque" data={obras} keyExtractor={(obra) => obra.id}
+      contentContainerStyle={uiStyles.scrollContent}
+      ListHeaderComponent={<View style={uiStyles.listColumn}>
       <OfflineBanner isOnline={isOnline} />
-      <Text accessibilityRole="header" style={uiStyles.title}>Estoque de Obras</Text>
-      <ActionButton
-        label="nova-obra"
-        title="Nova Obra"
-        onPress={navigation.novaObra}
-        appearance="primary"
-      />
-      {obras.length === 0 ? <Text style={uiStyles.empty}>Nenhuma obra — toque em Nova Obra</Text> : null}
-      {obras.map((obra) => (
+      <ScreenHeader title="Estoque de Obras" action={{ testID: 'nova-obra', title: 'Nova Obra', displayTitle: 'Nova', onPress: navigation.novaObra }} />
+      <Text style={uiStyles.muted}>Suas criações, prontas para o próximo encontro.</Text>
+      </View>}
+      ListEmptyComponent={<Text style={uiStyles.empty}>Nenhuma obra — toque em Nova Obra</Text>}
+      renderItem={({ item: obra }) => <View style={uiStyles.listColumn}>
         <ObraCard
           key={obra.id}
           obra={obra}
@@ -215,15 +216,21 @@ export default function TelaEstoque({
             setAlvoObra(obra.id);
           }}
         />
-      ))}
       </View>
-    </ScrollView>
+      } />
       {erro || alvoVenda || alvoUnidades || alvoObra ? (
-      <ConfirmationLayer>
-      {erro ? <Text testID="erro-estoque" style={[uiStyles.error, styles.error]}>{erro}</Text> : null}
+      <ConfirmationLayer busy={vendaLoading || (alvoUnidades !== null && loadingObraId === alvoUnidades)} onDismiss={() => {
+        setAlvoVenda(null);
+        setAlvoUnidades(null);
+        setQtdRemoverConfirmada(null);
+        setAlvoObra(null);
+        setErro(null);
+      }}>
+      {erro ? <Text testID="erro-estoque" accessibilityLiveRegion="polite" style={[uiStyles.error, styles.error]}>{erro}</Text> : null}
       {alvoVenda ? (
         <View testID="dialog-venda" accessibilityLabel="Confirmar venda direta" accessibilityRole="alert" style={styles.panel}>
           <Text style={uiStyles.heading}>Confirmar venda direta</Text>
+          <Text style={uiStyles.muted}>{obras.find((obra) => obra.id === alvoVenda)?.nome} · {obras.find((obra) => obra.id === alvoVenda)?.quantidade} disponíveis</Text>
           <Text style={uiStyles.label}>Quantidade a vender</Text>
           <TextInput
             accessibilityLabel="Quantidade a vender"
@@ -246,6 +253,8 @@ export default function TelaEstoque({
             onPress={() => void confirmarVenda()}
             disabled={vendaLoading}
             appearance="primary"
+            icon="sale"
+            busy={vendaLoading}
           />
         </View>
       ) : null}
@@ -295,15 +304,12 @@ export default function TelaEstoque({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   panel: {
     width: '100%',
     maxWidth: layout.formMaxWidth,
     backgroundColor: colors.surface,
-    borderWidth: borderWidths.focus,
-    borderColor: colors.border,
-    borderRadius: borderRadius.card,
-    padding: spacing.x4,
+    padding: spacing.none,
     gap: spacing.x4,
   },
   panelContent: {
@@ -319,4 +325,4 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.control,
     padding: spacing.x3,
   },
-});
+}));

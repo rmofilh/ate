@@ -1,16 +1,16 @@
-import { useNavigation } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
 import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
 import { PedidoCard } from '@/presentation/components/PedidoCard';
-import { ActionButton } from '@/presentation/components/ActionButton';
-import { borderRadius, borderWidths, colors, fontSizes, layout, spacing, textStyles } from '@/constants/theme';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { KanbanBoard } from '@/presentation/components/KanbanBoard';
+import { ScreenHeader } from '@/presentation/components/ScreenHeader';
+import { layout, spacing } from '@/constants/theme';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
+import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 import {
   useAppNavigation,
   useData,
@@ -30,32 +30,16 @@ type StatusColuna = 'A_FAZER' | 'FAZENDO' | 'FEITO';
 
 const MemoPedidoCard = React.memo(PedidoCard);
 
-/**
- * Abre o drawer quando há navegador (produção); nos testes unitários a
- * tela é renderizada isolada, sem navegação — nesse caso vira no-op.
- */
-function useAbrirMenu(): () => void {
-  let nav: { openDrawer?: () => void } | null = null;
-  try {
-    // A tela também é renderizada isolada nos testes unitários, sem navegador —
-    // fora do Drawer o botão de menu vira no-op. O hook é ambiental, não condicional por estado.
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    nav = useNavigation() as unknown as { openDrawer?: () => void };
-  } catch {
-    nav = null;
-  }
-  return useCallback(() => nav?.openDrawer?.(), [nav]);
-}
-
 export default function TelaKanban({
   onIniciar,
   onConcluir,
   onCancelar,
 }: TelaKanbanProps) {
+  const uiStyles = useUIStyles();
+  const styles = useStyles();
   const { pedidos, clientes, reload } = useData();
   const { isOnline } = useNetwork();
   const services = useServices();
-  const abrirMenuHook = useAbrirMenu();
   const busyIds = useRef(new Set<string>());
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -152,6 +136,7 @@ export default function TelaKanban({
           pedido={pedido}
           loading={loadingId === pedido.id}
           compact={!isTablet}
+          clienteNome={cliente?.nome}
           onIniciar={() => void iniciar(pedido.id)}
           onConcluir={() => void concluir(pedido.id)}
           onCancelar={() => setAlvoCancel(pedido.id)}
@@ -168,87 +153,13 @@ export default function TelaKanban({
     [clientes, loadingId, isTablet],
   );
 
-  const keyExtractor = useCallback((pedido: Pedido) => pedido.id, []);
-
-  function abrirMenu() {
-    abrirMenuHook();
-  }
-
-  function coluna(status: StatusColuna, label: string) {
-    const pedidosDaColuna = pedidosPorStatus[status];
-    const titulo = status === 'A_FAZER' ? 'A Fazer' : status === 'FAZENDO' ? 'Fazendo' : 'Feito';
-
-    return (
-      <View
-        testID={label}
-        accessibilityLabel={`Coluna ${titulo}, ${pedidosDaColuna.length} pedidos`}
-        style={[styles.column, styles.columnCard, isTablet && styles.tabletColumn]}
-      >
-        <View
-          style={[
-            styles.columnHeader,
-            status === 'FAZENDO' && styles.headerDoing,
-            status === 'FEITO' && styles.headerDone,
-          ]}
-        >
-          <Text accessibilityRole="header" style={styles.columnTitle}>
-            {titulo}
-          </Text>
-          <View accessible={false} style={styles.countPill}>
-            <Text style={styles.countText}>{pedidosDaColuna.length}</Text>
-          </View>
-        </View>
-        <FlatList
-          data={pedidosDaColuna}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          scrollEnabled
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          style={styles.list}
-          ListEmptyComponent={
-            <Text style={[uiStyles.empty, styles.emptyFix]}>
-              Nenhum pedido aqui — toque em Novo Pedido
-            </Text>
-          }
-        />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={uiStyles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <View testID="scroll-kanban" style={styles.screen}>
         <OfflineBanner isOnline={isOnline} />
-        <View style={styles.toolbar}>
-          <Pressable
-            testID="botao-menu"
-            accessibilityRole="button"
-            accessibilityLabel="Abrir menu"
-            onPress={abrirMenu}
-            style={styles.menuButton}
-          >
-            <SymbolView
-              accessible={false}
-              name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }}
-              size={fontSizes.title}
-              tintColor={colors.text}
-            />
-          </Pressable>
-          <Text accessibilityRole="header" style={styles.toolbarTitle}>
-            Meus Pedidos
-          </Text>
-          <ActionButton
-            label="novo-pedido"
-            title="+ Novo"
-            onPress={navigation.novoPedido}
-            appearance="primary"
-            style={styles.newOrder}
-          />
-        </View>
+        <ScreenHeader title="Meus Pedidos" action={{ testID: 'novo-pedido', title: 'Novo Pedido', onPress: navigation.novoPedido }} />
         {aviso ? (
-          <Text testID="aviso-foto-obrigatoria" style={uiStyles.notice}>
+          <Text testID="aviso-foto-obrigatoria" accessibilityLiveRegion="polite" style={uiStyles.notice}>
             {aviso}
           </Text>
         ) : null}
@@ -257,26 +168,10 @@ export default function TelaKanban({
             {erroCancel}
           </Text>
         ) : null}
-        {isTablet ? (
-          <View style={[styles.board, styles.tabletBoard]}>
-            {coluna('A_FAZER', 'coluna-a-fazer')}
-            {coluna('FAZENDO', 'coluna-fazendo')}
-            {coluna('FEITO', 'coluna-feito')}
-          </View>
-        ) : (
-          <View style={styles.board}>
-            <View testID="linha-superior" style={styles.topRow}>
-              {coluna('A_FAZER', 'coluna-a-fazer')}
-              {coluna('FAZENDO', 'coluna-fazendo')}
-            </View>
-            <View testID="linha-inferior" style={styles.bottomRow}>
-              {coluna('FEITO', 'coluna-feito')}
-            </View>
-          </View>
-        )}
+        <KanbanBoard groups={pedidosPorStatus} renderItem={renderItem} />
       </View>
       {alvoCancel ? (
-        <ConfirmationLayer>
+        <ConfirmationLayer onDismiss={() => setAlvoCancel(null)}>
           <ConfirmDialog
             titulo="Cancelar este pedido? O estoque vinculado será devolvido."
             onCancel={() => setAlvoCancel(null)}
@@ -289,119 +184,11 @@ export default function TelaKanban({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles(() => ({
   screen: {
     flex: 1,
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.x2,
     gap: spacing.x2,
   },
-  toolbar: {
-    flexDirection: 'row',
-    gap: spacing.x2,
-    alignItems: 'center',
-  },
-  menuButton: {
-    minHeight: layout.minTouchTarget,
-    minWidth: layout.minTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: borderWidths.control,
-    borderColor: colors.border,
-    borderRadius: borderRadius.control,
-    backgroundColor: colors.surface,
-  },
-  toolbarTitle: {
-    ...textStyles.label,
-    color: colors.text,
-    flex: 1,
-  },
-  newOrder: {
-    minHeight: layout.minTouchTarget,
-  },
-  board: {
-    flex: 1,
-    gap: spacing.x2,
-  },
-  tabletBoard: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: spacing.x4,
-  },
-  topRow: {
-    flex: 1.15,
-    flexDirection: 'row',
-    gap: spacing.x2,
-    minHeight: 0,
-  },
-  bottomRow: {
-    flex: 0.85,
-    minHeight: 0,
-  },
-  column: {
-    gap: spacing.x2,
-    minHeight: 0,
-  },
-  columnCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: borderWidths.control,
-    borderColor: colors.border,
-    borderRadius: borderRadius.card,
-    padding: spacing.x2,
-    minWidth: 0,
-  },
-  tabletColumn: {
-    flex: 1,
-  },
-  columnHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.x2,
-    backgroundColor: colors.surface,
-    borderWidth: borderWidths.control,
-    borderColor: colors.border,
-    borderRadius: borderRadius.control,
-    paddingHorizontal: spacing.x2,
-    paddingVertical: spacing.x2,
-  },
-  headerDoing: {
-    backgroundColor: colors.primary,
-  },
-  headerDone: {
-    backgroundColor: colors.surfaceSecondary,
-  },
-  columnTitle: {
-    ...textStyles.label,
-    color: colors.text,
-    flex: 1,
-  },
-  countPill: {
-    backgroundColor: colors.surface,
-    borderWidth: borderWidths.control,
-    borderColor: colors.border,
-    borderRadius: borderRadius.control,
-    paddingHorizontal: spacing.x2,
-    paddingVertical: spacing.x1,
-    minWidth: spacing.x8,
-    alignItems: 'center',
-  },
-  countText: {
-    ...textStyles.label,
-    color: colors.text,
-  },
-  list: {
-    flex: 1,
-    minHeight: 0,
-  },
-  listContent: {
-    gap: spacing.x2,
-    paddingBottom: spacing.x2,
-  },
-  emptyFix: {
-    borderRadius: borderRadius.control,
-    borderWidth: borderWidths.control,
-    borderColor: colors.border,
-  },
-});
+}));

@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import type { Cliente } from '@/core/domain/entities/Cliente';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -34,6 +34,7 @@ function FormularioEditarCliente({
   onSalvar,
   onConcluido,
 }: TelaEditarClienteProps = {}) {
+  const uiStyles = useUIStyles();
   const { clientes, reload } = useData();
   const services = useServices();
   const navigation = useAppNavigation();
@@ -78,8 +79,7 @@ function FormularioEditarCliente({
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+    <FormScreen>
       <View style={uiStyles.formColumn}>
       <Text accessibilityRole="header" style={uiStyles.title}>Editar Cliente</Text>
       <View style={uiStyles.field}>
@@ -111,9 +111,10 @@ function FormularioEditarCliente({
         onPress={() => void salvar()}
         disabled={loading}
         appearance="primary"
+        icon="check"
+        busy={loading}
       />
       </View>
-    </ScrollView>
-    </SafeAreaView>
+    </FormScreen>
   );
 }

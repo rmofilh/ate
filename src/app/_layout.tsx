@@ -1,14 +1,17 @@
 import { Stack, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 
-import { colors, fontWeights, textStyles } from '@/constants/theme';
+import { textStyles } from '@/constants/theme';
 import { makeFakeProviders } from '@/main/factories/makeFakeProviders';
 import { FontLoader } from '@/presentation/components/FontLoader';
 import { AppProviders, NavigationContext, RouteParamsContext, useAuth } from '@/presentation/hooks/AppProviders';
+import { useDesignTheme } from '@/presentation/hooks/useDesignTheme';
 
 function RootNavigator() {
   const { session } = useAuth();
   const router = useRouter();
+  const { colors, scheme } = useDesignTheme();
 
   return (
     <RouteParamsContext.Provider value={{}}>
@@ -22,10 +25,11 @@ function RootNavigator() {
         editarEvento: (eventoId) => router.push({ pathname: '/evento/[id]/editar', params: { id: eventoId } }),
         voltar: () => router.back(),
       }}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Stack screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
-          headerTitleStyle: { ...textStyles.heading, fontWeight: fontWeights.regular },
+          headerTitleStyle: { ...textStyles.heading },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
         }}>

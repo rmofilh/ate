@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { borderRadius, borderWidths, colors, layout, spacing, textStyles } from '@/constants/theme';
+import { layout, spacing, textStyles } from '@/constants/theme';
+import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 
 import { ActionButton } from './ActionButton';
 
@@ -30,6 +31,7 @@ export function ConfirmDialog({
   style?: StyleProp<ViewStyle>;
 }) {
   const [confirmedOnce, setConfirmedOnce] = useState(false);
+  const styles = useStyles();
 
   return (
     <View
@@ -38,7 +40,10 @@ export function ConfirmDialog({
       accessibilityRole="alert"
       style={[appearance === 'panel' && styles.panel, style]}
     >
-      <Text style={appearance === 'panel' && styles.title}>{titulo}</Text>
+      {requireDouble ? <Text accessibilityLiveRegion="polite" style={styles.step}>
+        Etapa {confirmedOnce ? '2' : '1'} de 2
+      </Text> : null}
+      <Text style={styles.title}>{titulo}</Text>
       <ActionButton
         label="dialog-cancel"
         title={cancelLabel}
@@ -76,15 +81,12 @@ export function ConfirmDialog({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   panel: {
     width: '100%',
     maxWidth: layout.formMaxWidth,
     backgroundColor: colors.surface,
-    borderWidth: borderWidths.focus,
-    borderColor: colors.error,
-    borderRadius: borderRadius.card,
-    padding: spacing.x4,
+    padding: spacing.none,
     gap: spacing.x4,
   },
   title: {
@@ -95,4 +97,5 @@ const styles = StyleSheet.create({
     ...textStyles.body,
     color: colors.text,
   },
-});
+  step: { ...textStyles.label, color: colors.error },
+}));

@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import type { Cliente } from '@/core/domain/entities/Cliente';
 import type { Obra } from '@/core/domain/entities/Obra';
 import { CANAIS_ORIGEM, type CanalOrigem } from '@/core/domain/enums/CanalOrigem';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { DateField } from '@/presentation/components/DateField';
+import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -15,6 +16,7 @@ import {
   useServices,
 } from '@/presentation/hooks/AppProviders';
 import { parseCalendarDate } from '@/presentation/utils/date';
+import { channelLabels } from '@/presentation/utils/labels';
 
 interface NovoPedidoInput {
   descricao: string;
@@ -37,6 +39,7 @@ export default function TelaNovoPedido({
   onSalvar,
   onConcluido,
 }: TelaNovoPedidoProps = {}) {
+  const uiStyles = useUIStyles();
   const data = useData();
   const services = useServices();
   const navigation = useAppNavigation();
@@ -115,10 +118,10 @@ export default function TelaNovoPedido({
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView testID="scroll-novo-pedido" contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+    <FormScreen testID="scroll-novo-pedido">
       <View style={uiStyles.formColumn}>
       <Text accessibilityRole="header" style={uiStyles.title}>Novo Pedido</Text>
+      <Text style={uiStyles.muted}>Organize a próxima criação do seu ateliê.</Text>
       <View style={uiStyles.field}>
       <Text style={uiStyles.label}>Descrição da peça</Text>
       <TextInput
@@ -129,12 +132,13 @@ export default function TelaNovoPedido({
       />
       </View>
       <View style={uiStyles.field}>
-      <Text style={uiStyles.label}>Data de entrega (AAAA-MM-DD)</Text>
-      <TextInput
+      <Text style={uiStyles.label}>Data de entrega</Text>
+      <DateField
         accessibilityLabel="Data de entrega"
         testID="campo-data-entrega"
         value={dataEntregaTexto}
         onChangeText={setDataEntregaTexto}
+        editable={!loading}
       />
       </View>
       <View style={uiStyles.field}>
@@ -150,6 +154,9 @@ export default function TelaNovoPedido({
           onPress={() => setClienteId(cliente.id)}
           disabled={loading}
           appearance={cliente.id === clienteId ? 'primary' : 'secondary'}
+          selected={cliente.id === clienteId}
+          icon={cliente.id === clienteId ? 'check' : 'person'}
+          displayTitle={cliente.nome}
           style={uiStyles.choice}
           textStyle={uiStyles.choiceText}
         />
@@ -161,6 +168,7 @@ export default function TelaNovoPedido({
         onPress={navigation.novoCliente}
         disabled={loading}
         appearance="quiet"
+        icon="plus"
       />
       </View>
       <View style={uiStyles.field}>
@@ -171,6 +179,9 @@ export default function TelaNovoPedido({
           key={canal}
           label={`escolher-canal-${canal}`}
           title={canal === canalOrigem ? `Selecionado: ${canal}` : canal}
+          displayTitle={channelLabels[canal]}
+          selected={canal === canalOrigem}
+          icon={canal === canalOrigem ? 'check' : undefined}
           onPress={() => setCanalOrigem(canal)}
           disabled={loading}
           appearance={canal === canalOrigem ? 'primary' : 'secondary'}
@@ -189,6 +200,9 @@ export default function TelaNovoPedido({
           onPress={() => setObraId(obra.id)}
           disabled={loading}
           appearance={obra.id === obraId ? 'primary' : 'secondary'}
+          selected={obra.id === obraId}
+          displayTitle={obra.nome}
+          icon={obra.id === obraId ? 'check' : 'stock'}
           style={uiStyles.choice}
           textStyle={uiStyles.choiceText}
         />
@@ -206,9 +220,10 @@ export default function TelaNovoPedido({
         onPress={() => void salvar()}
         disabled={loading}
         appearance="primary"
+        icon="check"
+        busy={loading}
       />
       </View>
-    </ScrollView>
-    </SafeAreaView>
+    </FormScreen>
   );
 }

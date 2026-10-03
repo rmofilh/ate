@@ -1,13 +1,16 @@
 import React, { forwardRef, useState } from 'react';
-import { Platform, StyleSheet, TextInput as NativeTextInput } from 'react-native';
+import { Platform, TextInput as NativeTextInput } from 'react-native';
 import type { TextInputProps } from 'react-native';
 
-import { borderRadius, borderWidths, colors, layout, spacing, textStyles } from '@/constants/theme';
+import { borderRadius, borderWidths, layout, spacing, textStyles } from '@/constants/theme';
+import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesignTheme';
 
 export const StyledTextInput = forwardRef<NativeTextInput, TextInputProps>(function StyledTextInput(
   { style, onFocus, onBlur, ...props }, ref,
 ) {
   const [focused, setFocused] = useState(false);
+  const { colors } = useDesignTheme();
+  const styles = useStyles();
 
   return (
     <NativeTextInput
@@ -15,7 +18,7 @@ export const StyledTextInput = forwardRef<NativeTextInput, TextInputProps>(funct
       selectionColor={Platform.select({ android: colors.selection, default: colors.focus })}
       cursorColor={colors.focus}
       selectionHandleColor={colors.focus}
-      placeholderTextColor={colors.link}
+      placeholderTextColor={colors.textSecondary}
       {...props}
       style={[styles.input, props.editable === false && styles.readOnly, focused && styles.focused, style]}
       onFocus={(event) => {
@@ -30,7 +33,7 @@ export const StyledTextInput = forwardRef<NativeTextInput, TextInputProps>(funct
   );
 });
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((colors) => ({
   input: {
     ...textStyles.body,
     color: colors.text,
@@ -40,8 +43,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.x3,
     paddingVertical: spacing.x2,
     borderRadius: borderRadius.control,
-    borderWidth: borderWidths.control,
-    borderColor: colors.border,
+    borderWidth: borderWidths.focus,
+    borderColor: colors.controlBorder,
     outlineWidth: spacing.none,
   },
   focused: {
@@ -51,4 +54,4 @@ const styles = StyleSheet.create({
   readOnly: {
     backgroundColor: colors.surfaceSecondary,
   },
-});
+}));

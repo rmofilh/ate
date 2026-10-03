@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import type { TipoObra } from '@/core/domain/enums/TipoObra';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
@@ -25,6 +25,7 @@ export default function TelaNovaObra({
   onSalvar?(args: NovaObraInput): Promise<void>;
   onConcluido?(): void;
 } = {}) {
+  const uiStyles = useUIStyles();
   const { reload } = useData();
   const services = useServices();
   const navigation = useAppNavigation();
@@ -80,10 +81,10 @@ export default function TelaNovaObra({
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView contentContainerStyle={uiStyles.formContent} keyboardShouldPersistTaps="handled">
+    <FormScreen>
       <View style={uiStyles.formColumn}>
       <Text accessibilityRole="header" style={uiStyles.title}>Nova Obra</Text>
+      <Text style={uiStyles.muted}>Dê um lugar à sua próxima criação.</Text>
       <View style={uiStyles.field}>
       <Text style={uiStyles.label}>Nome da obra</Text>
       <TextInput
@@ -94,7 +95,16 @@ export default function TelaNovaObra({
       />
       </View>
       <View style={uiStyles.field}>
-      <Text style={uiStyles.label}>Tipo da obra: digite UNICA ou SERIE</Text>
+      <Text style={uiStyles.label}>Tipo da obra</Text>
+      <View style={uiStyles.choicesRow}>
+        <ActionButton label="tipo-unica" title="Peça única" icon="stock" selected={tipoNormalizado === 'UNICA'}
+          appearance={tipoNormalizado === 'UNICA' ? 'primary' : 'secondary'} disabled={loading}
+          onPress={() => setTipoTexto('UNICA')} />
+        <ActionButton label="tipo-serie" title="Em série" icon="series" selected={tipoNormalizado === 'SERIE'}
+          appearance={tipoNormalizado === 'SERIE' ? 'primary' : 'secondary'} disabled={loading}
+          onPress={() => setTipoTexto('SERIE')} />
+      </View>
+      <Text style={uiStyles.muted}>Código do tipo: UNICA ou SERIE</Text>
       <TextInput
         accessibilityLabel="Tipo da obra"
         testID="campo-tipo-obra"
@@ -126,9 +136,10 @@ export default function TelaNovaObra({
         onPress={() => void salvar()}
         disabled={loading}
         appearance="primary"
+        icon="check"
+        busy={loading}
       />
       </View>
-    </ScrollView>
-    </SafeAreaView>
+    </FormScreen>
   );
 }

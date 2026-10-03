@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/presentation/components/ActionButton';
+import { ScreenHeader } from '@/presentation/components/ScreenHeader';
 import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
 import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
 import { EventoCard } from '@/presentation/components/EventoCard';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
-import { uiStyles } from '@/presentation/styles/uiStyles';
+import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useData,
   useAppNavigation,
@@ -21,6 +21,7 @@ interface TelaEventosProps {
 }
 
 export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}) {
+  const uiStyles = useUIStyles();
   const { eventos, reload } = useData();
   const { isOnline } = useNetwork();
   const navigation = useAppNavigation();
@@ -54,23 +55,20 @@ export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}
   }
 
   return (
-    <SafeAreaView style={uiStyles.screen} edges={['bottom', 'left', 'right']}>
-    <ScrollView testID="scroll-eventos" contentContainerStyle={uiStyles.formContent}>
-      <View style={uiStyles.formColumn}>
+    <SafeAreaView style={uiStyles.screen} edges={['top', 'bottom', 'left', 'right']}>
+    <FlatList testID="scroll-eventos" data={eventos} keyExtractor={(evento) => evento.id}
+      contentContainerStyle={uiStyles.scrollContent}
+      ListHeaderComponent={<View style={uiStyles.listColumn}>
       <OfflineBanner isOnline={isOnline} />
-      <Text accessibilityRole="header" style={uiStyles.title}>Mapa de Eventos</Text>
-      <ActionButton
-        label="novo-evento"
-        title="Novo Evento"
-        onPress={() => {
+      <ScreenHeader title="Eventos" action={{ testID: 'novo-evento', title: 'Novo Evento', onPress: () => {
           if (onNovo) onNovo();
           else navigation.novoEvento();
-        }}
-        appearance="primary"
-      />
+        } }} />
+      <Text style={uiStyles.muted}>Onde suas obras encontram novas histórias.</Text>
       {erro ? <Text testID="erro-eventos" style={uiStyles.error}>{erro}</Text> : null}
-      {eventos.length === 0 ? <Text style={uiStyles.empty}>Nenhum evento — toque em Novo Evento</Text> : null}
-      {eventos.map((evento) => (
+      </View>}
+      ListEmptyComponent={<Text style={uiStyles.empty}>Nenhum evento — toque em Novo Evento</Text>}
+      renderItem={({ item: evento }) => <View style={uiStyles.listColumn}>
         <EventoCard
           key={evento.id}
           evento={evento}
@@ -78,11 +76,10 @@ export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}
           onEditar={() => navigation.editarEvento(evento.id)}
           onRemover={() => setAlvo(evento.id)}
         />
-      ))}
       </View>
-    </ScrollView>
+      } />
       {alvo ? (
-        <ConfirmationLayer>
+        <ConfirmationLayer onDismiss={() => setAlvo(null)}>
         <ConfirmDialog
           titulo="Remover este evento cancelado?"
           onCancel={() => setAlvo(null)}
