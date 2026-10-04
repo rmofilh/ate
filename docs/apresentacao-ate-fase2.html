@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Prova da fase 2 do ate: Clean Architecture, TDD e interface com fakes. Oito slides, nove minutos com demonstração." />
+    <title>ate — fase 2 · Domínio e interface primeiro</title>
+    <link rel="icon" href="../assets/images/fleur-de-lis-dark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="vendor/reveal/6.0.2/dist/reset.css" />
+    <link rel="stylesheet" href="vendor/reveal/6.0.2/dist/reveal.css" />
+    <style>
+      @font-face {
+        font-family: "Bricolage";
+        src: url("../assets/fonts/BricolageGrotesque_700Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Atkinson";
+        src: url("../assets/fonts/AtkinsonHyperlegibleNext_400Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Atkinson";
+        src: url("../assets/fonts/AtkinsonHyperlegibleNext_700Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: light;
+        --paper: #f7f7f2;
+        --ink: #263444;
+        --muted: #5b6470;
+        --blue: #355676;
+        --night: #192432;
+        --gold: #b5924d;
+        --line: #d9dfe5;
+        --green: #365e4a;
+        --red: #9e3546;
+        --r-background-color: var(--paper);
+        --r-main-font: "Atkinson", sans-serif;
+        --r-main-font-size: 26px;
+        --r-main-color: var(--ink);
+        --r-heading-font: "Bricolage", sans-serif;
+        --r-heading-color: var(--ink);
+        --r-link-color: var(--blue);
+        --r-link-color-hover: #28435e;
+        --r-selection-background-color: #d5e2ef;
+      }
+      * { box-sizing: border-box; }
+      body { background: var(--night); }
+      .reveal { font-family: var(--r-main-font); font-size: 26px; line-height: 1.35; color: var(--ink); }
+      .reveal .slides { text-align: left; }
+      .reveal .slides > section { padding: 0; }
+      .reveal h1, .reveal h2, .reveal h3, .reveal p { margin: 0; }
+      .reveal h1, .reveal h2 { font-family: "Bricolage", sans-serif; font-weight: 700; line-height: 1.06; letter-spacing: -.035em; text-transform: none; }
+      .reveal h1 { font-size: 128px; }
+      .reveal h2 { font-size: 51px; }
+      .reveal h3 { font-size: 28px; font-weight: 700; line-height: 1.15; }
+      .reveal strong { font-weight: 700; }
+      .reveal small { font-size: inherit; }
+      .reveal code { font-family: ui-monospace, "Cascadia Code", "DejaVu Sans Mono", monospace; }
+      .reveal a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+      .reveal a:focus-visible { outline: 3px solid var(--blue); outline-offset: 5px; }
+      .reveal .controls { color: var(--blue); }
+      .reveal .progress { color: var(--gold); height: 4px; }
+      .reveal .slide-number { background: var(--night); color: var(--paper); font-family: "Atkinson", sans-serif; font-size: 16px; padding: 7px 11px; border-radius: 7px; right: 15px; bottom: 14px; }
+      .slide-shell { width: 1280px; height: 720px; padding: 44px 58px 30px; display: flex; flex-direction: column; gap: 22px; background: var(--paper); }
+      .slide-shell.dark { background: var(--night); color: var(--paper); }
+      .slide-shell.dark h1, .slide-shell.dark h2, .slide-shell.dark h3 { color: var(--paper); }
+      .slide-shell.dark .muted { color: #b9c4d2; }
+      .slide-shell.dark .slide-footer { border-color: #4f647b; color: #b9c4d2; }
+      .slide-shell.dark a { color: #b8cde5; }
+      .slide-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; font-size: 20px; color: var(--muted); }
+      .slide-shell.dark .slide-header { color: #b9c4d2; }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand-icon { width: 38px; height: 38px; background: var(--blue); border-radius: 9px; padding: 5px; }
+      .brand-name { font-family: "Bricolage", sans-serif; font-size: 29px; color: var(--blue); }
+      .dark .brand-name { color: var(--paper); }
+      .time { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 18px; }
+      .slide-footer { margin-top: auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); padding: 13px 140px 0 0; color: var(--muted); font-size: 17px; line-height: 1.3; }
+      .slide-footer .source { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+      .slide-footer .cue { flex-shrink: 0; color: var(--blue); font-weight: 700; }
+      .dark .slide-footer .cue { color: #d3b478; }
+      .muted { color: var(--muted); }
+      .lede { font-size: 28px; line-height: 1.35; }
+      .split { display: grid; grid-template-columns: 1fr 1.12fr; gap: 42px; align-items: start; }
+      .grow { flex: 1; }
+      .annotation { font-size: 20px; line-height: 1.4; color: var(--muted); }
+      .path { font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; color: var(--muted); }
+      .statement { border-left: 4px solid var(--gold); padding-left: 20px; font-size: 25px; line-height: 1.35; }
+      .hero-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 55px; align-items: center; flex: 1; }
+      .hero-copy { display: flex; flex-direction: column; gap: 25px; }
+      .hero-copy h2 { font-size: 48px; max-width: 630px; }
+      .hero-copy .lede { max-width: 605px; color: #b9c4d2; }
+      .hero-stage { display: flex; flex-direction: column; gap: 14px; border-left: 1px solid #4f647b; padding-left: 48px; }
+      .hero-state { font-size: 34px; font-weight: 700; padding: 12px 0; }
+      .hero-guard { border: 1px solid #8c9caf; border-radius: 12px; padding: 19px 20px; display: flex; align-items: center; gap: 18px; font-size: 23px; }
+      .camera-icon { width: 36px; height: 36px; flex: none; color: #d3b478; }
+      .scope-strip { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-top: 1px solid #4f647b; font-size: 24px; gap: 28px; }
+      .scope-strip span { display: flex; align-items: center; gap: 10px; }
+      .scope-strip span::before { content: ""; width: 7px; height: 7px; background: #d3b478; border-radius: 50%; }
+      .architecture { display: grid; grid-template-columns: 1fr 42px 1.03fr 42px 1fr; gap: 10px; align-items: stretch; }
+      .arch-node { padding: 20px 24px; border: 1px solid var(--line); border-radius: 14px; background: #fff; min-height: 166px; display: flex; flex-direction: column; gap: 12px; }
+      .arch-node.core { background: var(--blue); color: #fff; border-color: var(--blue); }
+      .arch-node.core .path { color: #e1e9f1; }
+      .arch-node p { font-size: 23px; }
+      .arch-arrow { display: flex; align-items: center; justify-content: center; color: var(--blue); font-size: 36px; }
+      .infra-node { grid-column: 1 / 2; background: #edf1f5; min-height: 125px; }
+      .infra-contract { grid-column: 3 / 6; align-self: center; padding: 12px 0 12px 20px; border-left: 3px solid var(--blue); font-size: 24px; line-height: 1.4; }
+      .infra-contract .path { margin-top: 9px; }
+      .composition { background: #edf1f5; border-radius: 10px; padding: 16px 22px; font-size: 23px; }
+      .composition strong { color: var(--blue); }
+      .rule-stack { display: flex; flex-direction: column; gap: 24px; }
+      #dominio .split { grid-template-columns: .82fr 1.3fr; }
+      .states { display: flex; align-items: center; gap: 11px; font-size: 23px; white-space: nowrap; }
+      .state { padding: 14px 15px; border-radius: 10px; font-weight: 700; }
+      .state.todo { background: #f2edf8; color: #6c5a86; }
+      .state.doing { background: #fff0de; color: #995419; }
+      .state.done { background: #eaf4ee; color: #2d6954; }
+      .state-arrow { color: var(--muted); }
+      .rule-copy { font-size: 25px; }
+      .domain-types { border-top: 1px solid var(--line); padding-top: 20px; display: flex; flex-direction: column; gap: 12px; font-size: 23px; }
+      .code-panel { border-radius: 12px; background: var(--night); color: #f2f3ec; padding: 22px 25px; }
+      .code-panel .code-caption { color: #b9c4d2; font-size: 18px; margin-bottom: 15px; }
+      .reveal .code-panel pre { width: 100%; margin: 0; padding: 0; box-shadow: none; font-size: 20px; line-height: 1.52; text-align: left; background: none; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .reveal .code-panel code { padding: 0; max-height: none; overflow: visible; white-space: pre-wrap; }
+      .code-key { color: #b8cde5; }
+      .code-string { color: #d3b478; }
+      .code-note { margin-top: 13px; font-size: 18px; color: #b9c4d2; }
+      .sequence { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 20px; counter-reset: step; }
+      .sequence li { display: grid; grid-template-columns: 35px 1fr; gap: 15px; align-items: start; font-size: 24px; }
+      .sequence li::before { counter-increment: step; content: counter(step); color: var(--blue); font-weight: 700; font-size: 26px; border-bottom: 2px solid var(--gold); padding-bottom: 5px; text-align: center; }
+      .sequence li span { display: block; font-size: 21px; margin-top: 3px; color: var(--muted); }
+      .adapters-code { display: flex; flex-direction: column; gap: 18px; }
+      .adapters-code .code-panel { padding-top: 17px; padding-bottom: 18px; }
+      .adapters-code .code-panel pre { font-size: 19px; line-height: 1.4; }
+      .provider-tree { display: flex; flex-direction: column; gap: 13px; }
+      .provider-root { font-size: 22px; color: var(--muted); }
+      .provider-scope { padding: 18px 0 5px 23px; border-left: 3px solid var(--blue); }
+      .provider-scope h3 { color: var(--blue); font-size: 25px; }
+      .provider-scope p { margin-top: 5px; font-size: 21px; color: var(--muted); }
+      .provider-leaf { padding: 16px 20px; margin-top: 13px; background: #e6eef7; border-radius: 9px; font-size: 23px; color: var(--blue); }
+      .context-copy { display: flex; flex-direction: column; gap: 26px; font-size: 25px; }
+      .session-boundary { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 20px; display: flex; flex-direction: column; gap: 9px; }
+      .session-boundary p { font-size: 23px; }
+      .testing .slide-shell { gap: 17px; }
+      .testing h2 { font-size: 47px; }
+      .tdd-cycle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+      .tdd-phase { padding-top: 12px; border-top: 3px solid var(--blue); }
+      .tdd-phase:first-child { border-color: var(--red); }
+      .tdd-phase:nth-child(2) { border-color: var(--green); }
+      .tdd-phase strong { display: block; font-size: 25px; }
+      .tdd-phase span { font-size: 21px; color: var(--muted); }
+      .testing-grid { display: grid; grid-template-columns: 1.08fr 1fr; gap: 52px; }
+      .test-levels { display: flex; flex-direction: column; gap: 14px; }
+      .test-level { border-left: 3px solid var(--line); padding-left: 16px; }
+      .test-level strong { display: block; font-size: 23px; }
+      .test-level p { font-size: 21px; margin-top: 3px; }
+      .test-level .path { font-size: 16px; margin-top: 5px; }
+      .test-total { font-size: 24px; color: var(--green); font-weight: 700; padding-top: 9px; }
+      .coverage { display: flex; flex-direction: column; gap: 13px; }
+      .coverage-row { display: grid; grid-template-columns: 1fr auto; gap: 5px 16px; font-size: 23px; }
+      .coverage-row strong { font-variant-numeric: tabular-nums; }
+      .coverage-track { grid-column: 1 / 3; height: 6px; background: #d9dfe5; border-radius: 3px; overflow: hidden; }
+      .coverage-fill { height: 100%; background: var(--blue); }
+      .coverage-row.branches .coverage-fill { background: var(--red); }
+      .coverage-goal { margin-top: 7px; font-size: 19px; line-height: 1.4; }
+      .testing .slide-footer { font-size: 15px; }
+      .demo .slide-shell { gap: 27px; }
+      .demo .sequence { gap: 22px; }
+      .demo .sequence li::before { color: #b8cde5; }
+      .demo .sequence li span { color: #b9c4d2; }
+      .demo-flow { border-left: 1px solid #4f647b; padding-left: 42px; display: flex; flex-direction: column; gap: 25px; }
+      .demo-flow .demo-status { font-size: 31px; font-weight: 700; }
+      .demo-flow .demo-status small { display: block; font-size: 21px; font-weight: 400; color: #b9c4d2; margin-top: 5px; }
+      .demo-flow .demo-arrow { color: #d3b478; font-size: 30px; }
+      .demo-flow .hero-guard { padding: 18px 20px; }
+      .closing-content { display: grid; grid-template-columns: 1.1fr 1fr; gap: 70px; flex: 1; align-items: center; }
+      .proof-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 25px; }
+      .proof-list li { display: flex; align-items: center; gap: 16px; font-size: 28px; }
+      .proof-list li::before { content: "✓"; color: var(--green); font-weight: 700; font-size: 31px; }
+      .next-integrations { border-left: 1px solid var(--line); padding-left: 35px; display: flex; flex-direction: column; gap: 19px; }
+      .next-integrations h3 { color: var(--blue); }
+      .next-integrations p { font-size: 25px; }
+      .construction-order { font-size: 23px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+      .construction-order strong { color: var(--blue); }
+      .boot-message { position: fixed; inset: 0; display: grid; place-items: center; padding: 30px; background: var(--night); color: var(--paper); font: 22px/1.5 "Atkinson", sans-serif; z-index: 20; }
+      .boot-message[hidden] { display: none; }
+      .boot-message p { max-width: 650px; }
+      .boot-message code { font-size: 18px; }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+      @media print { .boot-message { display: none; } }
+    </style>
+  </head>
+  <body>
+    <div class="boot-message" id="boot-message" role="status">
+      <p>Carregando a apresentação…<br />Se esta mensagem permanecer, confira a pasta <code>docs/vendor/reveal/6.0.2/</code> ao lado do HTML.</p>
+    </div>
+    <noscript>Esta apresentação precisa de JavaScript para navegar pelos slides.</noscript>
+    <main class="reveal" aria-label="Apresentação da fase 2 do ate">
+      <div class="slides">
+        <section id="inicio" data-timing="30" data-background-color="#192432" aria-label="1. Domínio e interface primeiro">
+          <div class="slide-shell dark">
+            <header class="slide-header">
+              <div class="brand"><img class="brand-icon" src="../assets/images/fleur-de-lis-light.svg" alt="" /><span class="brand-name">ate</span></div>
+              <span>Desenvolvimento mobile · Fase 2</span>
+              <span class="time">0:30 · até 0:30</span>
+            </header>
+            <div class="hero-grid">
+              <div class="hero-copy">
+                <h1>ate</h1>
+                <h2>Domínio e<br />interface primeiro.</h2>
+                <p class="lede">Gestão de pedidos, estoque e eventos para artesãos.</p>
+              </div>
+              <div class="hero-stage" aria-label="Fazendo só passa a Feito com foto de conclusão">
+                <div class="hero-state">Fazendo</div>
+                <div class="hero-guard">
+                  <svg class="camera-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 9h6l2-4h6l2 4h6v18H5z" /><circle cx="16" cy="18" r="6" /></svg>
+                  <span>Foto obrigatória<br /><small class="muted">A regra que vamos seguir no código</small></span>
+                </div>
+                <div class="hero-state">Feito</div>
+              </div>
+            </div>
+            <div class="scope-strip"><span>Regras implementadas</span><span>Dados em memória</span><span>Hardware fake</span></div>
+            <footer class="slide-footer"><span class="source">Roteiro de 9:00 com demonstração · limite de 10:00</span><span>← → navegar · S notas · F tela cheia · Esc visão geral</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>30 segundos · acumulado 0:30</h3>
+            <p>“O ate organiza pedidos, estoque e eventos de um artesão. Nesta entrega, o núcleo de regras e a interface já podem ser demonstrados com dados em memória e gateways fake. Vou acompanhar uma regra concreta: para concluir um pedido em produção, a foto é obrigatória.”</p>
+            <p>O exemplo do professor foi adaptado ao domínio do ate. O fluxo comum exige foto; venda direta de obra em série é uma exceção modelada e testada.</p>
+            <p>O cronômetro do modo apresentador continua enquanto você alterna para editor e app. Zere-o imediatamente antes de começar.</p>
+          </aside>
+        </section>
+
+        <section id="arquitetura" data-timing="60" aria-label="2. Clean Architecture">
+          <div class="slide-shell">
+            <header class="slide-header"><span class="brand-name">ate</span><span>Clean Architecture no código</span><span class="time">1:00 · até 1:30</span></header>
+            <h2>As dependências apontam para o núcleo.</h2>
+            <div class="architecture" role="img" aria-label="Interface depende de Aplicação, que depende de Domínio. Infraestrutura implementa contratos da Aplicação. Main factories compõe e injeta as implementações.">
+              <div class="arch-node"><h3>Interface e estado</h3><p>Telas, Contexts e hooks</p><div class="path">src/app/<br />src/presentation/</div></div>
+              <div class="arch-arrow" aria-hidden="true">→</div>
+              <div class="arch-node"><h3>Aplicação</h3><p>Casos de uso e contratos</p><div class="path">src/core/application/</div></div>
+              <div class="arch-arrow" aria-hidden="true">→</div>
+              <div class="arch-node core"><h3>Domínio</h3><p>Entidades, VOs e invariantes</p><div class="path">src/core/domain/</div></div>
+              <div class="arch-node infra-node"><h3>Infraestrutura</h3><p>Repositórios e gateways fake</p><div class="path">src/infrastructure/</div></div>
+              <div class="arch-arrow" aria-hidden="true">→</div>
+              <div class="infra-contract">Implementa os contratos da <strong>Aplicação</strong>.<div class="path">IPedidoRepository · ICameraGateway · IAuthGateway · ISyncGateway</div></div>
+            </div>
+            <div class="composition"><strong>main/factories</strong> monta as implementações e injeta as dependências.</div>
+            <footer class="slide-footer"><span class="source">Dependências de código · núcleo sem React, Expo ou banco</span><span class="cue">Mostrar pastas + imports</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>60 segundos · acumulado 1:30</h3>
+            <p>“Clean Architecture aqui significa manter decisões de negócio no centro. As telas dependem dos casos de uso; eles trabalham com entidades e contratos. A infraestrutura implementa esses contratos. A factory faz a composição e conhece as implementações concretas.”</p>
+            <p>No editor: mostrar rapidamente src/core/domain e src/core/application. Abrir os imports de src/core/domain/entities/Pedido.ts e o construtor de src/core/application/usecases/ConcluirPedidoUseCase.ts. Os contratos do ate ficam em application, não em domain.</p>
+            <p>As setas são dependências, não a ordem de execução de uma operação. O domínio não importa Context API, SDK de banco nem APIs do dispositivo. Main/factories é o composition root, com imports das implementações concretas.</p>
+          </aside>
+        </section>
+
+        <section id="dominio" data-timing="55" aria-label="3. Regra de negócio no domínio">
+          <div class="slide-shell">
+            <header class="slide-header"><span class="brand-name">ate</span><span>Domínio puro em TypeScript</span><span class="time">0:55 · até 2:25</span></header>
+            <h2>Sem foto, o pedido continua Fazendo.</h2>
+            <div class="split grow">
+              <div class="rule-stack">
+                <div class="states"><span class="state todo">A Fazer</span><span class="state-arrow">→</span><span class="state doing">Fazendo</span><span class="state-arrow">→</span><span class="state done">Feito</span></div>
+                <p class="rule-copy"><strong>Pedido.concluir()</strong> exige FAZENDO e um caminho de foto preenchido.</p>
+                <p class="statement">A regra é protegida pela entidade, mesmo fora da tela.</p>
+                <div class="domain-types"><p><strong>Entidades</strong><br />Pedido · Obra · Cliente · Evento</p><p><strong>Value Object</strong><br />Coordenada valida latitude e longitude na criação.</p></div>
+              </div>
+              <div>
+                <div class="code-panel">
+                  <p class="code-caption">Pedido.ts · recorte de concluir()</p>
+                  <pre><code><span class="code-key">if</span> (!fotoPath || !fotoPath.trim()) {
+  <span class="code-key">throw new</span> PedidoInvalidoError(
+    <span class="code-string">'Foto de conclusão é obrigatória (regra rígida)'</span>
+  );
+}
+this._props.fotoConclusaoPath = fotoPath;
+this._props.status = <span class="code-string">'FEITO'</span>;
+this._props.statusSync = <span class="code-string">'PENDENTE'</span>;</code></pre>
+                  <p class="code-note">O método também valida o estado FAZENDO antes deste recorte.</p>
+                </div>
+                <p class="annotation" style="margin-top: 18px">Venda direta em série nasce Feito por um fluxo próprio, sem foto nova.</p>
+              </div>
+            </div>
+            <footer class="slide-footer"><span class="source">src/core/domain/entities/Pedido.ts · concluir(), linha 179</span><span class="cue">Abrir a regra</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>55 segundos · acumulado 2:25</h3>
+            <p>“O pedido só muda de Fazendo para Feito com foto. Isso é uma invariante da entidade: a tela não é a única barreira. O método rejeita uma transição inválida antes de mudar o estado. Obra também protege suas regras de estoque; Coordenada valida os valores no construtor.”</p>
+            <p>Abrir src/core/domain/entities/Pedido.ts, método concluir(), linha 179. Mostrar guarda de estado, guarda de foto e mudança para FEITO/PENDENTE. O slide é um recorte visual; os demais guards estão no arquivo.</p>
+            <p>Exceção: VendaDiretaUseCase valida obra SERIE e quantidade, e usa Pedido.criarVendaDireta(). Não afirmar que todo pedido Feito tem foto.</p>
+          </aside>
+        </section>
+
+        <section id="caso-de-uso" data-timing="70" aria-label="4. Caso de uso e fakes">
+          <div class="slide-shell">
+            <header class="slide-header"><span class="brand-name">ate</span><span>Aplicação e injeção de dependências</span><span class="time">1:10 · até 3:35</span></header>
+            <h2>O caso de uso coordena a operação.</h2>
+            <div class="split grow">
+              <ol class="sequence">
+                <li><div><strong>Localizar e validar referências</strong><span>Buscar pedido e obra vinculada.</span></div></li>
+                <li><div><strong>Executar a regra do domínio</strong><span>pedido.concluir(fotoPath); obra única recebe baixa.</span></div></li>
+                <li><div><strong>Salvar pelos contratos</strong><span>Repositórios injetados, sem SQL no caso de uso.</span></div></li>
+                <li><div><strong>Enfileirar a alteração</strong><span>ISyncGateway registra a operação; nesta fase, em memória.</span></div></li>
+              </ol>
+              <div class="adapters-code">
+                <div class="code-panel"><p class="code-caption">ConcluirPedidoUseCase · depende de interfaces</p><pre><code>constructor(
+  private readonly pedidos: IPedidoRepository,
+  private readonly obras: IObraRepository,
+  private readonly sync: ISyncGateway,
+) {}</code></pre></div>
+                <div class="code-panel"><p class="code-caption">InMemoryPedidoRepository · armazena por ID</p><pre><code>private readonly store =
+  <span class="code-key">new</span> Map&lt;string, Pedido&gt;();</code></pre></div>
+                <p class="annotation"><strong>makeFakeProviders()</strong> injeta os repositórios e gateways usados no app.</p>
+              </div>
+            </div>
+            <footer class="slide-footer"><span class="source">ConcluirPedidoUseCase.ts · main/factories/makeFakeProviders.ts</span><span class="cue">Mostrar execute() + factory</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>70 segundos · acumulado 3:35</h3>
+            <p>“O caso de uso localiza as entidades e coordena a operação. A entidade valida a conclusão; o caso de uso salva e enfileira as alterações. Ele depende de interfaces, então consigo executar esse fluxo sem SQLite ou Supabase. A factory injeta um repositório que realmente guarda objetos em um Map.”</p>
+            <p>Abrir src/core/application/usecases/ConcluirPedidoUseCase.ts: construtor nas linhas 7–11 e execute nas linhas 13–41. Depois mostrar apenas a composição concluirPedido em src/main/factories/makeFakeProviders.ts, linha 54.</p>
+            <p>Fake: implementação simplificada funcional, como Map e fila em array. Stub: resposta fixa. Mock/spy: substituição ou observação que permite verificar interações, como jest.fn() nos testes de tela. O caminho da câmera é simulado; não é uma fotografia real.</p>
+            <p>Não apresentar a fila fake como sincronização remota funcionando, nem o Map como persistência durável.</p>
+          </aside>
+        </section>
+
+        <section id="contexto" data-timing="60" aria-label="5. Context API e sessão">
+          <div class="slide-shell">
+            <header class="slide-header"><span class="brand-name">ate</span><span>Context API, hooks e rotas</span><span class="time">1:00 · até 4:35</span></header>
+            <h2>O estado global fica na interface.</h2>
+            <div class="split grow">
+              <div class="provider-tree">
+                <div class="provider-root">src/app/_layout.tsx → AppProviders</div>
+                <div class="provider-scope"><h3>ServicesContext</h3><p>Dependências montadas na factory</p>
+                  <div class="provider-scope"><h3>AuthProvider</h3><p>session · login · logout</p>
+                    <div class="provider-scope"><h3>DataProvider</h3><p>pedidos · obras · eventos · clientes · reload</p>
+                      <div class="provider-leaf">Telas com useAuth(), useData() e useServices()</div>
+                    </div>
+                  </div>
+                </div>
+                <p class="annotation">Providers adicionais: rede simulada e rascunho de pedido.</p>
+              </div>
+              <div class="context-copy">
+                <p><strong>AuthProvider</strong> carrega a sessão do gateway e chama os casos de uso de login/logout.</p>
+                <p><strong>useAuth</strong> compartilha a sessão sem prop drilling. As rotas usam esse estado para proteger o acesso.</p>
+                <p><strong>useServices</strong> entrega os serviços às telas, que executam os casos de uso.</p>
+                <div class="session-boundary"><p><strong>Nesta entrega:</strong> sessão fake em memória.</p><p class="muted"><strong>Próxima integração:</strong> persistência segura da sessão com SecureStore.</p></div>
+              </div>
+            </div>
+            <footer class="slide-footer"><span class="source">src/presentation/hooks/AppProviders.tsx · AuthProvider(), linha 116</span><span class="cue">Mostrar AuthProvider</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>60 segundos · acumulado 4:35</h3>
+            <p>“O AuthProvider fica na apresentação e disponibiliza a sessão sem passar o usuário por várias props. Ele carrega a sessão do gateway e chama os casos de uso. useAuth lê esse estado, e as rotas o usam para proteger o acesso. useServices disponibiliza os serviços que as telas executam.”</p>
+            <p>Abrir src/presentation/hooks/AppProviders.tsx nas linhas 116–136: getSession(), login.execute() e setSession(). Se necessário, mostrar src/app/_layout.tsx, linhas 37–49, com os guards. A navegação de módulos atual é Drawer, apesar do grupo de rotas se chamar (tabs).</p>
+            <p>Na implementação atual, os hooks acessam Contexts; nem todas as operações estão encapsuladas em hooks especializados. O estado de salvamento do Kanban é local à tela. Domínio e aplicação não importam Context API.</p>
+            <p>A sessão existe somente em FakeAuthGateway. SecureStore é próxima integração; não existe adaptador SessionStorageSecureStore nesta entrega. RouterGuards.test.tsx exercita login e logout com os providers reais e integrações fake.</p>
+          </aside>
+        </section>
+
+        <section id="testes" class="testing" data-timing="85" aria-label="6. TDD, testes e cobertura">
+          <div class="slide-shell">
+            <header class="slide-header"><span class="brand-name">ate</span><span>TDD e evidências de verificação</span><span class="time">1:25 · até 6:00</span></header>
+            <h2>Uma regra, testada em três níveis.</h2>
+            <div class="tdd-cycle" aria-label="Ciclo TDD: Red, Green, Refactor">
+              <div class="tdd-phase"><strong>Red</strong><span>Teste falha antes de implementar a regra.</span></div>
+              <div class="tdd-phase"><strong>Green</strong><span>Implementação mínima faz o teste passar.</span></div>
+              <div class="tdd-phase"><strong>Refactor</strong><span>Melhorar o código mantendo os testes verdes.</span></div>
+            </div>
+            <div class="testing-grid grow">
+              <div class="test-levels">
+                <div class="test-level"><strong>Domínio · entidade pura</strong><p>Rejeita foto nula/vazia e estado inválido.</p><div class="path">core/domain/__tests__/Pedido.test.ts</div></div>
+                <div class="test-level"><strong>Aplicação · repositórios fake</strong><p>Sem foto: Fazendo. Com foto: Feito e obra Entregue.</p><div class="path">core/application/__tests__/PedidoClose.test.ts</div></div>
+                <div class="test-level"><strong>Interface · RNTL + jest-expo</strong><p>Câmera cancelada: mantém pedido e fila vazia.</p><div class="path">presentation/__tests__/TelaKanban.test.tsx</div></div>
+                <p class="test-total">214 testes aprovados · 45 suítes</p>
+              </div>
+              <div class="coverage" aria-label="Cobertura: linhas 88,18%; instruções 85,42%; funções 85,74%; ramificações 77,14%">
+                <div class="coverage-row"><span>Linhas</span><strong>88,18%</strong><div class="coverage-track" aria-hidden="true"><div class="coverage-fill" style="width: 88.18%"></div></div></div>
+                <div class="coverage-row"><span>Instruções</span><strong>85,42%</strong><div class="coverage-track" aria-hidden="true"><div class="coverage-fill" style="width: 85.42%"></div></div></div>
+                <div class="coverage-row"><span>Funções</span><strong>85,74%</strong><div class="coverage-track" aria-hidden="true"><div class="coverage-fill" style="width: 85.74%"></div></div></div>
+                <div class="coverage-row branches"><span>Ramificações</span><strong>77,14%</strong><div class="coverage-track" aria-hidden="true"><div class="coverage-fill" style="width: 77.14%"></div></div></div>
+                <p class="coverage-goal">Meta de 80% atingida em linhas, instruções e funções. Ramificações ainda abaixo da meta.</p>
+              </div>
+            </div>
+            <footer class="slide-footer"><span class="source">04/10/2026 · Produção src/**/*.{ts,tsx}; inclui não importados; exclui testes, .d.ts e test-support.</span><span class="cue">Abrir teste sem foto</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>85 segundos · acumulado 6:00</h3>
+            <p>“No TDD, primeiro descrevemos o comportamento em um teste que falha, depois implementamos o mínimo e refatoramos com a suíte verde. A regra da foto pode ser acompanhada em três níveis: entidade pura, caso de uso com repositórios fake e tela com interação simulada.”</p>
+            <p>Abrir src/core/application/__tests__/PedidoClose.test.ts nas linhas 41–60. O teste sem foto verifica a rejeição e confirma que o pedido continua FAZENDO; o seguinte confirma a baixa da obra única. Mostrar rapidamente src/presentation/__tests__/TelaKanban.test.tsx, linhas 322–333: câmera fake cancelada, fireEvent.press, aviso, fila vazia e estado preservado.</p>
+            <p>A execução medida aprovou 214 testes em 45 suítes, em aproximadamente 32 segundos. As métricas são globais para os arquivos de produção: linhas 88,18%, instruções 85,42%, funções 85,74%, ramificações 77,14%. Há arquivos não importados incluídos, como DatePicker.web.tsx. Não afirmar 80% em todas as métricas.</p>
+            <p>O ciclo Red–Green–Refactor é explicado com o teste existente; não há reconstrução da ordem histórica de criação. Um teste que espera uma exceção de negócio e passa está Green, não Red.</p>
+            <p>Context/rotas: RouterGuards.test.tsx exercita AuthProvider, login e logout com renderRouter. Isso é integração em testes, não E2E nativo. E2E de dispositivo fica para uma etapa com os adaptadores reais.</p>
+            <p>Deixar o resultado da suíte já aberto no terminal. Rodar cobertura completa durante a fala consumiria tempo da demonstração.</p>
+          </aside>
+        </section>
+
+        <section id="demonstracao" class="demo" data-timing="150" data-background-color="#192432" aria-label="7. Demonstração no aplicativo">
+          <div class="slide-shell dark">
+            <header class="slide-header"><span class="brand-name">ate</span><span>Demonstração no aplicativo</span><span class="time">2:30 · até 8:30</span></header>
+            <h2>Da produção à conclusão.</h2>
+            <div class="split grow">
+              <ol class="sequence">
+                <li><div><strong>Entrar</strong><span>artesao@email.com / 123456</span></div></li>
+                <li><div><strong>Abrir Pedidos</strong><span>Águia em Fazendo; obra única vinculada.</span></div></li>
+                <li><div><strong>Concluir com foto</strong><span>A captura fake fornece o caminho da imagem.</span></div></li>
+                <li><div><strong>Conferir o Estoque</strong><span>Águia passa de Reservada para Entregue.</span></div></li>
+                <li><div><strong>Passar por Eventos</strong><span>Feira da Praca com coordenadas textuais.</span></div></li>
+              </ol>
+              <div class="demo-flow">
+                <div class="demo-status">Pedido em Fazendo<small>Escultura de Aguia personalizada</small></div>
+                <div class="hero-guard"><svg class="camera-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 9h6l2-4h6l2 4h6v18H5z" /><circle cx="16" cy="18" r="6" /></svg><span>FakeCameraGateway<small class="muted" style="display: block; font-size: 20px">/tmp/foto-fake.jpg</small></span></div>
+                <div class="demo-arrow" aria-hidden="true">↓</div>
+                <div class="demo-status">Pedido Feito<small>Obra única Entregue · operação enfileirada</small></div>
+                <p class="statement">Regra de negócio executada com captura simulada.</p>
+              </div>
+            </div>
+            <footer class="slide-footer"><span class="source">Fixtures: src/infrastructure/seed/fixtures.ts · reiniciar o app restaura os dados de demonstração.</span><span class="cue">Alternar para o app</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>150 segundos · acumulado 8:30</h3>
+            <p>0:00–0:20: alternar para o app; entrar com artesao@email.com / 123456, se a sessão ainda não estiver aberta.</p>
+            <p>0:20–0:55: em Pedidos, ir à etapa Fazendo e mostrar Escultura de Aguia personalizada. Explicar que a obra Aguia de Asas Abertas é única e está reservada.</p>
+            <p>0:55–1:35: tocar Concluir com foto e conferir o card em Feito. Dizer: “A câmera aqui é fake e retorna um caminho; a entidade e o caso de uso executam a regra real.” Não esperar que uma câmera nativa abra.</p>
+            <p>1:35–2:05: abrir o menu, selecionar Estoque e mostrar Aguia de Asas Abertas como Entregue. Isso comprova a atualização cruzada do caso de uso.</p>
+            <p>2:05–2:20: abrir o menu, selecionar Eventos e mostrar Feira da Praca com as coordenadas textuais. GPS e mapa visual estão simulados/previstos para a próxima etapa.</p>
+            <p>2:20–2:30: retornar aos slides. Se o tempo estiver apertado, encurtar Eventos e retornar ao fechamento.</p>
+            <p>Preparar o app com fixtures antes da prova. A câmera fake padrão é granted. Não há controle na interface para trocar o modo da câmera; o cancelamento foi comprovado nos testes, não nesta demo. Os dados e a sessão se perdem ao reiniciar.</p>
+          </aside>
+        </section>
+
+        <section id="sintese" data-timing="30" aria-label="8. Síntese e próximas integrações">
+          <div class="slide-shell">
+            <header class="slide-header"><span class="brand-name">ate</span><span>Síntese da entrega</span><span class="time">0:30 · até 9:00</span></header>
+            <h2>Uma base que já demonstra as regras.</h2>
+            <div class="closing-content">
+              <ul class="proof-list"><li>Domínio sem framework</li><li>Casos de uso com contratos</li><li>Telas exercitadas com fakes</li><li>214 testes aprovados</li></ul>
+              <div class="next-integrations"><h3>Próximas integrações</h3><p>Sessão segura<br /><span class="annotation">SecureStore</span></p><p>Persistência e sincronização<br /><span class="annotation">SQLite e Supabase</span></p><p>Hardware e mapa<br /><span class="annotation">Câmera, localização e visualização geográfica</span></p></div>
+            </div>
+            <div class="construction-order"><strong>Sequência de construção</strong><br />Domínio → Casos de uso → Estado e interface → Integrações</div>
+            <footer class="slide-footer"><span class="source">Fontes: implementação atual em src/ · requisitos do ate em docs/ate-fase2.md</span><span class="cue">9:00 · 1:00 de margem</span></footer>
+          </div>
+          <aside class="notes">
+            <h3>30 segundos · acumulado 9:00</h3>
+            <p>“Nesta fase, o ate já comprova regras de negócio em um núcleo independente, casos de uso com dependências injetadas e telas testadas com fakes. A regra de conclusão que vimos está protegida do domínio até a interface. O próximo passo é implementar os adaptadores reais de sessão, persistência, sincronização e hardware.”</p>
+            <p>Encerrar até 9:00. Usar o minuto restante como margem para transições ou uma pergunta curta.</p>
+            <p>Para aprofundar: Coordenada e testes puros; InMemoryPedidoRepository para Map; makeFakeProviders para composição; RouterGuards.test.tsx para Context e guards. As entidades e serviços do exemplo de estágio do professor não pertencem ao domínio do ate.</p>
+          </aside>
+        </section>
+      </div>
+    </main>
+    <script src="vendor/reveal/6.0.2/dist/reveal.js"></script>
+    <script src="vendor/reveal/6.0.2/dist/plugin/notes.js"></script>
+    <script>
+      if (typeof Reveal !== 'undefined' && typeof RevealNotes !== 'undefined') {
+        Reveal.initialize({
+          width: 1280,
+          height: 720,
+          margin: 0.025,
+          minScale: 0.1,
+          maxScale: 2,
+          view: 'slide',
+          scrollActivationWidth: null,
+          center: false,
+          hash: true,
+          controls: true,
+          controlsTutorial: false,
+          progress: true,
+          slideNumber: 'c/t',
+          transition: 'none',
+          backgroundTransition: 'none',
+          totalTime: 540,
+          autoSlide: 0,
+          plugins: [RevealNotes],
+        }).then(() => {
+          document.getElementById('boot-message').hidden = true;
+        });
+      }
+    </script>
+  </body>
+</html>
