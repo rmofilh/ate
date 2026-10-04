@@ -21,6 +21,8 @@ describe('TelaNovoPedido', () => {
 
     await fireEvent.changeText(screen.getByTestId('campo-descricao'), 'Onça de madeira');
     await fireEvent.changeText(screen.getByTestId('campo-data-entrega'), '2026-12-15');
+    await fireEvent.press(screen.getByTestId('selecionar-cliente-existente'));
+    await fireEvent.press(screen.getByTestId(`escolher-cliente-${seed.clientes[0].id}`));
     await fireEvent.press(screen.getByTestId('escolher-canal-WHATSAPP'));
     await fireEvent.press(screen.getByTestId('botao-salvar-pedido'));
 
@@ -62,9 +64,11 @@ describe('TelaNovoPedido', () => {
 
     await fireEvent.changeText(screen.getByTestId('campo-descricao'), 'Peca com obra');
     await fireEvent.changeText(screen.getByTestId('campo-data-entrega'), '2026-12-20');
+    await fireEvent.press(screen.getByTestId('selecionar-cliente-existente'));
     await fireEvent.press(screen.getByTestId(`escolher-cliente-${cliente.id}`));
     await fireEvent.press(screen.getByTestId('escolher-canal-PRESENCIAL'));
 
+    await fireEvent.press(screen.getByTestId('selecionar-obra-estoque'));
     expect(screen.queryByText(obraReservada.nome)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: obra.nome }));
     await fireEvent.press(screen.getByTestId('botao-salvar-pedido'));

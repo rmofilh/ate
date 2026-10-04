@@ -15,6 +15,12 @@ import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesi
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const styles = useStyles();
   const { pedidos, obras, eventos } = useData();
+  const openOrderCount = pedidos.filter((pedido) => pedido.status === 'A_FAZER' || pedido.status === 'FAZENDO').length;
+  const stats = [
+    { label: 'Em aberto', count: openOrderCount, testID: 'drawer-resumo-pedidos', description: 'pedidos em aberto' },
+    { label: 'Obras', count: obras.length, testID: 'drawer-resumo-obras', description: 'obras' },
+    { label: 'Eventos', count: eventos.length, testID: 'drawer-resumo-eventos', description: 'eventos' },
+  ];
   const { isOnline } = useNetwork();
   const navigation = useAppNavigation();
   function shortcut(action: () => void) {
@@ -26,7 +32,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
       <BrandMark size={56} />
       <View style={styles.brandCopy}>
         <Text style={styles.wordmark}>ate</Text>
-        <Text style={styles.muted}>Seu ateliê, em harmonia.</Text>
+        <Text style={styles.muted}>Sua oficina, em harmonia.</Text>
       </View>
     </View>
     <OfflineBanner isOnline={isOnline} />
@@ -34,8 +40,8 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
     <DrawerItemList {...props} />
     <View style={styles.summary}>
       <View style={styles.numbers}>
-        {[['Pedidos', pedidos.length], ['Obras', obras.length], ['Eventos', eventos.length]].map(([label, count]) =>
-          <View key={label} style={styles.stat}>
+        {stats.map(({ label, count, testID, description }) =>
+          <View key={label} testID={testID} accessibilityLabel={`${count} ${description}`} style={styles.stat}>
             <Text style={styles.number}>{count}</Text><Text style={styles.muted}>{label}</Text>
           </View>)}
       </View>
@@ -43,6 +49,8 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
     <Text style={styles.section}>CRIAR</Text>
     <ActionButton label="drawer-novo-pedido" title="Novo pedido" icon="plus" appearance="quiet"
       onPress={() => shortcut(navigation.novoPedido)} style={styles.shortcut} />
+    <ActionButton label="drawer-novo-cliente" title="Novo cliente" icon="person" appearance="quiet"
+      onPress={() => shortcut(navigation.novoCliente)} style={styles.shortcut} />
     <ActionButton label="drawer-nova-obra" title="Nova obra" icon="stock" appearance="quiet"
       onPress={() => shortcut(navigation.novaObra)} style={styles.shortcut} />
     <ActionButton label="drawer-novo-evento" title="Novo evento" icon="calendar" appearance="quiet"

@@ -16,9 +16,10 @@ export function KanbanOverview({ groups, onSelect }: {
   return <View testID="kanban-visao-geral" style={styles.board}>
     {kanbanStages.map((stage) => {
       const meta = stagePresentation[stage];
-      return <View key={stage} testID={`resumo-${meta.testID}`} style={[styles.column, { backgroundColor: colors[meta.surface] }]}>
+      return <View key={stage} testID={`resumo-${meta.testID}`} style={[styles.column, { backgroundColor: colors[meta.surface], borderColor: colors[meta.color] }]}>
         <ActionButton label={`abrir-resumo-${stage}`} title={`Abrir etapa ${meta.title}`}
           displayTitle={meta.title} onPress={() => onSelect(stage)} appearance="quiet" style={styles.header}
+          tone={meta.color}
           textStyle={[styles.title, { color: colors[meta.color] }]} />
         <Text style={[styles.count, { color: colors[meta.color] }]}>{groups[stage].length} {groups[stage].length === 1 ? 'pedido' : 'pedidos'}</Text>
         <FlatList data={groups[stage]} keyExtractor={(pedido) => pedido.id} style={styles.list}
@@ -34,7 +35,7 @@ export function KanbanOverview({ groups, onSelect }: {
 
 const useStyles = createThemedStyles((colors) => ({
   board: { flex: 1, flexDirection: 'row', gap: spacing.x2, minHeight: 0 },
-  column: { flex: 1, minWidth: 0, borderRadius: borderRadius.control, padding: spacing.x1, gap: spacing.x2 },
+  column: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: borderRadius.control, padding: spacing.x1, gap: spacing.x2 },
   header: { paddingHorizontal: spacing.x1, backgroundColor: 'transparent' },
   title: { ...textStyles.label, fontSize: fontSizes.caption },
   count: { ...textStyles.body, fontSize: fontSizes.caption, textAlign: 'center' },

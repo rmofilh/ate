@@ -31,7 +31,7 @@ export default function TelaNovaObra({
   const navigation = useAppNavigation();
   const submitting = useRef(false);
   const [nome, setNome] = useState('');
-  const [tipoTexto, setTipoTexto] = useState('UNICA');
+  const [tipoTexto, setTipoTexto] = useState<TipoObra>('UNICA');
   const [quantidadeTexto, setQuantidadeTexto] = useState('1');
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,7 +96,7 @@ export default function TelaNovaObra({
       </View>
       <View style={uiStyles.field}>
       <Text style={uiStyles.label}>Tipo da obra</Text>
-      <View style={uiStyles.choicesRow}>
+      <View testID="campo-tipo-obra" accessibilityLabel="Tipo da obra" style={uiStyles.choicesRow}>
         <ActionButton label="tipo-unica" title="Peça única" icon="stock" selected={tipoNormalizado === 'UNICA'}
           appearance={tipoNormalizado === 'UNICA' ? 'primary' : 'secondary'} disabled={loading}
           onPress={() => setTipoTexto('UNICA')} />
@@ -104,14 +104,6 @@ export default function TelaNovaObra({
           appearance={tipoNormalizado === 'SERIE' ? 'primary' : 'secondary'} disabled={loading}
           onPress={() => setTipoTexto('SERIE')} />
       </View>
-      <Text style={uiStyles.muted}>Código do tipo: UNICA ou SERIE</Text>
-      <TextInput
-        accessibilityLabel="Tipo da obra"
-        testID="campo-tipo-obra"
-        value={tipoTexto}
-        onChangeText={setTipoTexto}
-        autoCapitalize="characters"
-      />
       </View>
       {tipoNormalizado === 'SERIE' ? (
         <View style={uiStyles.field}>

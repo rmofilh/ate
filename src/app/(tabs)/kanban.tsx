@@ -11,6 +11,7 @@ import { ScreenHeader } from '@/presentation/components/ScreenHeader';
 import { layout, spacing } from '@/constants/theme';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
+import { sortPedidosByDelivery } from '@/presentation/utils/sortPedidosByDelivery';
 import {
   useAppNavigation,
   useData,
@@ -37,7 +38,7 @@ export default function TelaKanban({
 }: TelaKanbanProps) {
   const uiStyles = useUIStyles();
   const styles = useStyles();
-  const { pedidos, clientes, reload } = useData();
+  const { pedidos, clientes, obras, reload } = useData();
   const { isOnline } = useNetwork();
   const services = useServices();
   const busyIds = useRef(new Set<string>());
@@ -45,6 +46,7 @@ export default function TelaKanban({
   const [aviso, setAviso] = useState<string | null>(null);
   const [alvoCancel, setAlvoCancel] = useState<string | null>(null);
   const [erroCancel, setErroCancel] = useState<string | null>(null);
+  const [collapsedDoneIds, setCollapsedDoneIds] = useState<ReadonlySet<string>>(() => new Set());
   const { width } = useWindowDimensions();
   const isTablet = width >= layout.tabletBreakpoint;
 
@@ -123,13 +125,35 @@ export default function TelaKanban({
 
   const pedidosPorStatus = useMemo(() => {
     const grupos: Record<StatusColuna, Pedido[]> = { A_FAZER: [], FAZENDO: [], FEITO: [] };
-    for (const pedido of pedidos) grupos[pedido.status].push(pedido);
+    for (const pedido of sortPedidosByDelivery(pedidos)) grupos[pedido.status].push(pedido);
     return grupos;
   }, [pedidos]);
+
+  const allDoneCollapsed = pedidosPorStatus.FEITO.length > 0 && pedidosPorStatus.FEITO.every((pedido) => collapsedDoneIds.has(pedido.id));
+  const toggleDone = useCallback((id: string) => {
+    setCollapsedDoneIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  function toggleAllDone() {
+    setCollapsedDoneIds((previous) => {
+      const next = new Set(previous);
+      for (const pedido of pedidosPorStatus.FEITO) {
+        if (allDoneCollapsed) next.delete(pedido.id);
+        else next.add(pedido.id);
+      }
+      return next;
+    });
+  }
 
   const renderItem = useCallback(
     ({ item: pedido }: { item: Pedido }) => {
       const cliente = clientes.find((candidate) => candidate.id === pedido.clienteId);
+      const obra = obras.find((candidate) => candidate.id === pedido.obraId);
       const clienteBalcao = cliente?.nome === 'Cliente Avulso' && cliente.contato === '';
       return (
         <MemoPedidoCard
@@ -137,6 +161,10 @@ export default function TelaKanban({
           loading={loadingId === pedido.id}
           compact={!isTablet}
           clienteNome={cliente?.nome}
+          obraNome={obra?.nome}
+          obraTipo={obra?.tipo}
+          collapsed={collapsedDoneIds.has(pedido.id)}
+          onToggleCollapsed={pedido.status === 'FEITO' ? () => toggleDone(pedido.id) : undefined}
           onIniciar={() => void iniciar(pedido.id)}
           onConcluir={() => void concluir(pedido.id)}
           onCancelar={() => setAlvoCancel(pedido.id)}
@@ -150,7 +178,7 @@ export default function TelaKanban({
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [clientes, loadingId, isTablet],
+    [clientes, obras, loadingId, isTablet, collapsedDoneIds, toggleDone],
   );
 
   return (
@@ -168,7 +196,8 @@ export default function TelaKanban({
             {erroCancel}
           </Text>
         ) : null}
-        <KanbanBoard groups={pedidosPorStatus} renderItem={renderItem} />
+        <KanbanBoard groups={pedidosPorStatus} renderItem={renderItem} allDoneCollapsed={allDoneCollapsed}
+          onToggleDone={toggleAllDone} doneLoading={pedidosPorStatus.FEITO.some((pedido) => loadingId === pedido.id)} />
       </View>
       {alvoCancel ? (
         <ConfirmationLayer onDismiss={() => setAlvoCancel(null)}>

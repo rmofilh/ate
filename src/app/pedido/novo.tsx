@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { Keyboard, Text, View } from 'react-native';
 
 import type { Cliente } from '@/core/domain/entities/Cliente';
 import type { Obra } from '@/core/domain/entities/Obra';
@@ -7,6 +7,7 @@ import { CANAIS_ORIGEM, type CanalOrigem } from '@/core/domain/enums/CanalOrigem
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { DateField } from '@/presentation/components/DateField';
 import { FormScreen } from '@/presentation/components/FormScreen';
+import { SelectionSheet, type SelectionOption } from '@/presentation/components/SelectionSheet';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/presentation/hooks/AppProviders';
 import { parseCalendarDate } from '@/presentation/utils/date';
 import { channelLabels } from '@/presentation/utils/labels';
+import { isAvulsoClient } from '@/presentation/utils/selection';
 
 interface NovoPedidoInput {
   descricao: string;
@@ -46,15 +48,24 @@ export default function TelaNovoPedido({
   const pedidoDraft = usePedidoDraft();
   const clientes = clientesRecebidos ?? data.clientes;
   const obras = obrasRecebidas ?? data.obras;
-  const obrasDisponiveis = obras.filter(
+  const obrasDisponiveis = useMemo(() => obras.filter(
     (obra) => obra.statusObra === 'DISPONIVEL' && obra.quantidade > 0,
-  );
+  ), [obras]);
+  const clientOptions = useMemo<SelectionOption[]>(() => clientes.map((cliente) => ({
+    id: cliente.id, title: cliente.nome, detail: isAvulsoClient(cliente) ? 'Sem cadastro individual · atendimento avulso' : cliente.contato,
+    icon: isAvulsoClient(cliente) ? 'sale' : 'person', badge: isAvulsoClient(cliente) ? 'AVULSO' : undefined,
+  })), [clientes]);
+  const pinnedClients = useMemo(() => clientOptions.filter((option) => option.badge === 'AVULSO'), [clientOptions]);
+  const workOptions = useMemo<SelectionOption[]>(() => obrasDisponiveis.map((obra) => ({
+    id: obra.id, title: obra.nome, icon: obra.tipo === 'SERIE' ? 'series' : 'stock',
+    detail: `${obra.tipo === 'SERIE' ? 'Em série' : 'Peça única'} · ${obra.quantidade} ${obra.quantidade === 1 ? 'unidade disponível' : 'unidades disponíveis'}`,
+  })), [obrasDisponiveis]);
   const submitting = useRef(false);
   const [descricao, setDescricao] = useState('');
   const [clienteId, setClienteId] = useState(
     clientes.some((cliente) => cliente.id === pedidoDraft.clienteId)
       ? pedidoDraft.clienteId ?? ''
-      : clientes[0]?.id ?? '',
+      : '',
   );
   const [obraId, setObraId] = useState<string | null>(null);
   const [canalOrigem, setCanalOrigem] = useState<CanalOrigem>('OUTROS');
@@ -62,6 +73,20 @@ export default function TelaNovoPedido({
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [clienteDraftAnterior, setClienteDraftAnterior] = useState(pedidoDraft.clienteId);
+  const [picker, setPicker] = useState<'clientes' | 'obras' | null>(null);
+  const selectedClient = clientes.find((cliente) => cliente.id === clienteId);
+  const selectedWork = obras.find((obra) => obra.id === obraId);
+
+  function openPicker(kind: 'clientes' | 'obras') {
+    Keyboard.dismiss();
+    setPicker(kind);
+  }
+
+  function newClient() {
+    Keyboard.dismiss();
+    setPicker(null);
+    navigation.novoCliente();
+  }
 
   if (
     clienteDraftAnterior !== pedidoDraft.clienteId &&
@@ -118,10 +143,12 @@ export default function TelaNovoPedido({
   }
 
   return (
+    <>
     <FormScreen testID="scroll-novo-pedido">
-      <View style={uiStyles.formColumn}>
+      <View style={uiStyles.formColumn} accessibilityElementsHidden={picker !== null}
+        importantForAccessibility={picker !== null ? 'no-hide-descendants' : 'auto'} aria-hidden={picker !== null}>
       <Text accessibilityRole="header" style={uiStyles.title}>Novo Pedido</Text>
-      <Text style={uiStyles.muted}>Organize a próxima criação do seu ateliê.</Text>
+      <Text style={uiStyles.muted}>Organize a próxima criação da sua oficina.</Text>
       <View style={uiStyles.field}>
       <Text style={uiStyles.label}>Descrição da peça</Text>
       <TextInput
@@ -142,34 +169,15 @@ export default function TelaNovoPedido({
       />
       </View>
       <View style={uiStyles.field}>
-      <Text style={uiStyles.label}>
-        Cliente: {clientes.find((cliente) => cliente.id === clienteId)?.nome ?? 'escolha'}
-      </Text>
-      <View style={uiStyles.choices}>
-      {clientes.map((cliente) => (
-        <ActionButton
-          key={cliente.id}
-          label={`escolher-cliente-${cliente.id}`}
-          title={cliente.id === clienteId ? `Selecionado: ${cliente.nome}` : cliente.nome}
-          onPress={() => setClienteId(cliente.id)}
-          disabled={loading}
-          appearance={cliente.id === clienteId ? 'primary' : 'secondary'}
-          selected={cliente.id === clienteId}
-          icon={cliente.id === clienteId ? 'check' : 'person'}
-          displayTitle={cliente.nome}
-          style={uiStyles.choice}
-          textStyle={uiStyles.choiceText}
-        />
-      ))}
-      </View>
-      <ActionButton
-        label="novo-cliente"
-        title="Cadastrar novo cliente"
-        onPress={navigation.novoCliente}
-        disabled={loading}
-        appearance="quiet"
-        icon="plus"
-      />
+      <Text style={uiStyles.label}>Cliente</Text>
+      {selectedClient ? <View testID="cliente-selecionado" style={uiStyles.field}>
+        <Text style={uiStyles.label}>{selectedClient.nome}</Text>
+        <Text testID="detalhe-cliente-selecionado" style={uiStyles.muted}>
+          {isAvulsoClient(selectedClient) ? 'Atendimento avulso · sem cadastro individual' : selectedClient.contato}
+        </Text>
+      </View> : <Text testID="cliente-sem-selecao" style={uiStyles.muted}>Nenhum cliente selecionado.</Text>}
+      <ActionButton label="selecionar-cliente-existente" title="Selecionar Cliente" icon="search"
+        appearance="secondary" disabled={loading} onPress={() => openPicker('clientes')} />
       </View>
       <View style={uiStyles.field}>
       <Text style={uiStyles.label}>Canal de origem</Text>
@@ -190,24 +198,23 @@ export default function TelaNovoPedido({
       </View>
       </View>
       <View style={uiStyles.field}>
-      <Text style={uiStyles.label}>Obras: {obrasDisponiveis.length} disponíveis (obra opcional)</Text>
-      <View style={uiStyles.choices}>
-      {obrasDisponiveis.map((obra) => (
-        <ActionButton
-          key={obra.id}
-          label={`escolher-obra-${obra.id}`}
-          title={obra.id === obraId ? `Selecionada: ${obra.nome}` : obra.nome}
-          onPress={() => setObraId(obra.id)}
-          disabled={loading}
-          appearance={obra.id === obraId ? 'primary' : 'secondary'}
-          selected={obra.id === obraId}
-          displayTitle={obra.nome}
-          icon={obra.id === obraId ? 'check' : 'stock'}
-          style={uiStyles.choice}
-          textStyle={uiStyles.choiceText}
-        />
-      ))}
-      </View>
+      <Text style={uiStyles.label}>Obra do estoque — opcional</Text>
+      {selectedWork ? <>
+        <ActionButton label="obra-selecionada" title={`Selecionada: ${selectedWork.nome}`} displayTitle={selectedWork.nome}
+          icon="check" appearance="secondary" selected disabled={loading} onPress={() => setObraId(null)}
+          style={uiStyles.choice} textStyle={uiStyles.choiceText} />
+        <Text testID="detalhe-obra-selecionada" style={uiStyles.muted}>
+          {selectedWork.tipo === 'SERIE' ? `Em série · ${selectedWork.quantidade} disponíveis · 1 unidade neste pedido.` : 'Peça única · 1 unidade neste pedido.'}
+        </Text>
+        {selectedWork.statusObra !== 'DISPONIVEL' || selectedWork.quantidade <= 0
+          ? <Text style={uiStyles.error}>A obra escolhida não está mais disponível. Remova a seleção ou escolha outra peça.</Text>
+          : null}
+        <ActionButton label="remover-selecao-obra" title="Remover seleção de obra" icon="close"
+          appearance="quiet" disabled={loading} onPress={() => setObraId(null)} />
+      </> : <Text testID="obra-sem-selecao" style={uiStyles.muted}>Sem obra vinculada. Você pode registrar uma criação sem associar uma peça do estoque.</Text>}
+      <ActionButton label="selecionar-obra-estoque" title={selectedWork ? 'Trocar obra do estoque' : 'Selecionar obra do estoque'}
+        icon="stock" appearance="secondary" disabled={loading || obrasDisponiveis.length === 0} onPress={() => openPicker('obras')} />
+      <Text style={uiStyles.muted}>{obrasDisponiveis.length} {obrasDisponiveis.length === 1 ? 'obra disponível' : 'obras disponíveis'}.</Text>
       </View>
       {erro ? (
         <Text testID="erro-pedido" accessibilityLiveRegion="polite" style={uiStyles.error}>
@@ -225,5 +232,14 @@ export default function TelaNovoPedido({
       />
       </View>
     </FormScreen>
+    {picker === 'clientes' ? <SelectionSheet title="Selecionar cliente" searchLabel="Buscar por nome ou contato"
+      emptyMessage="Nenhum cliente cadastrado." options={clientOptions} pinnedOptions={pinnedClients} selectedId={clienteId || null}
+      testIDPrefix="escolher-cliente" createTestID="novo-cliente" onDismiss={() => setPicker(null)} onCreate={newClient}
+      onSelect={(id) => { setClienteId(id); setPicker(null); }} /> : null}
+    {picker === 'obras' ? <SelectionSheet title="Selecionar obra do estoque" searchLabel="Buscar obra pelo nome"
+      emptyMessage="Nenhuma obra disponível." options={workOptions} selectedId={obraId}
+      testIDPrefix="escolher-obra" selectedPrefix="Selecionada" onDismiss={() => setPicker(null)}
+      onSelect={(id) => { setObraId((current) => current === id ? null : id); setPicker(null); }} /> : null}
+    </>
   );
 }

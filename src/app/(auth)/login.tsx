@@ -39,7 +39,7 @@ export default function TelaLogin() {
         <BrandMark size={72} />
         <View style={styles.brandCopy}>
           <Text style={styles.wordmark}>ate</Text>
-          <Text style={styles.muted}>Seu ateliê, em harmonia.</Text>
+          <Text style={styles.muted}>Sua oficina, em harmonia.</Text>
         </View>
       </View>
       <View style={styles.form}>

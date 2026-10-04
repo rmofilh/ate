@@ -1,9 +1,10 @@
 import React from 'react';
-import { Pressable, Text } from 'react-native';
+import { Platform, Pressable, Text } from 'react-native';
 import type { PressableProps, StyleProp, TextStyle } from 'react-native';
 
 import { borderRadius, borderWidths, layout, spacing, textStyles } from '@/constants/theme';
 import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesignTheme';
+import { getControlTone, type ControlTone } from '@/presentation/styles/controlTone';
 import { AppIcon, type IconName } from './AppIcon';
 
 type ButtonAppearance = 'primary' | 'secondary' | 'quiet' | 'danger';
@@ -23,6 +24,7 @@ export function ActionButton({
   busy = false,
   expanded,
   accessibilityLabel,
+  tone,
 }: {
   label: string;
   title: string;
@@ -38,18 +40,25 @@ export function ActionButton({
   busy?: boolean;
   expanded?: boolean;
   accessibilityLabel?: string;
+  tone?: ControlTone;
 }) {
   const styles = useStyles();
   const { colors } = useDesignTheme();
   const kind = appearance ?? 'secondary';
-  const tint = disabled ? colors.textSecondary : kind === 'primary' ? colors.onPrimary
-    : kind === 'danger' ? colors.error : kind === 'quiet' ? colors.link : colors.text;
+  const context = tone && kind !== 'danger' ? getControlTone(colors, tone) : null;
+  const tint = kind === 'danger' ? colors.error : disabled ? colors.textSecondary
+    : kind === 'primary' ? context?.onStrong ?? colors.onPrimary
+    : context?.foreground ?? (kind === 'quiet' ? colors.link : colors.text);
   const [focused, setFocused] = React.useState(false);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled, selected, busy, expanded }}
+      aria-disabled={disabled}
+      aria-busy={busy}
+      aria-expanded={expanded}
+      {...(Platform.OS === 'web' && selected !== undefined ? { 'aria-pressed': selected } : {})}
       testID={label}
       onPress={onPress}
       disabled={disabled}
@@ -58,10 +67,21 @@ export function ActionButton({
       style={(state) => [
         styles.button,
         styles[kind],
-        state.pressed && (kind === 'primary' ? styles.primaryPressed : styles.pressed),
+        context && (kind === 'primary'
+          ? { backgroundColor: context.foreground, borderColor: context.foreground }
+          : { borderColor: context.foreground }),
+        state.pressed && (kind === 'danger' || (context && kind === 'primary') ? styles.tonePressed
+          : context ? { backgroundColor: context.surface }
+          : kind === 'primary' ? styles.primaryPressed : styles.pressed),
         focused && styles.focused,
-        (selected || expanded) && kind !== 'primary' && styles.selected,
+        focused && (kind === 'danger' || context) && {
+          outlineColor: kind === 'danger' ? colors.error : context!.foreground,
+          borderColor: kind === 'danger' ? colors.error : context!.foreground,
+        },
+        (selected || expanded) && kind !== 'primary' && kind !== 'danger' && (context
+          ? { backgroundColor: context.surface, borderColor: context.foreground } : styles.selected),
         disabled && styles.disabled,
+        disabled && kind === 'danger' && styles.disabledDanger,
         typeof style === 'function' ? style(state) : style,
       ]}
     >
@@ -104,12 +124,14 @@ const useStyles = createThemedStyles((colors) => ({
     backgroundColor: colors.surfaceSecondary,
   },
   primaryPressed: { backgroundColor: colors.primaryPressed },
+  tonePressed: { opacity: 0.92 },
   focused: { outlineColor: colors.focus, outlineWidth: 2, outlineOffset: 2, borderColor: colors.focus },
   selected: { backgroundColor: colors.selection, borderColor: colors.focus },
   disabled: {
     backgroundColor: colors.surfaceSecondary,
     borderColor: colors.border,
   },
+  disabledDanger: { backgroundColor: colors.errorSurface, borderColor: colors.error, opacity: 0.65 },
   text: {
     ...textStyles.label,
     color: colors.text,

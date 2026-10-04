@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { SectionList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/presentation/components/ActionButton';
@@ -9,7 +9,7 @@ import { StyledTextInput as TextInput } from '@/presentation/components/StyledTe
 import { ObraCard } from '@/presentation/components/ObraCard';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
 import { ScreenHeader } from '@/presentation/components/ScreenHeader';
-import { borderRadius, borderWidths, layout, spacing } from '@/constants/theme';
+import { borderRadius, borderWidths, layout, spacing, textStyles } from '@/constants/theme';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 import {
@@ -40,6 +40,10 @@ export default function TelaEstoque({
   const uiStyles = useUIStyles();
   const styles = useStyles();
   const { obras, reload } = useData();
+  const sections = useMemo(() => [
+    { key: 'SERIE', title: 'Obras em série', testID: 'secao-estoque-serie', data: obras.filter((obra) => obra.tipo === 'SERIE') },
+    { key: 'UNICA', title: 'Peças únicas', testID: 'secao-estoque-unica', data: obras.filter((obra) => obra.tipo === 'UNICA') },
+  ].filter((section) => section.data.length > 0), [obras]);
   const { isOnline } = useNetwork();
   const services = useServices();
   const navigation = useAppNavigation();
@@ -186,12 +190,17 @@ export default function TelaEstoque({
 
   return (
     <SafeAreaView style={uiStyles.screen} edges={['top', 'bottom', 'left', 'right']}>
-    <FlatList testID="scroll-estoque" data={obras} keyExtractor={(obra) => obra.id}
+    <SectionList testID="scroll-estoque" sections={sections} keyExtractor={(obra) => obra.id}
+      stickySectionHeadersEnabled={false}
       contentContainerStyle={uiStyles.scrollContent}
       ListHeaderComponent={<View style={uiStyles.listColumn}>
       <OfflineBanner isOnline={isOnline} />
       <ScreenHeader title="Estoque de Obras" action={{ testID: 'nova-obra', title: 'Nova Obra', displayTitle: 'Nova', onPress: navigation.novaObra }} />
       <Text style={uiStyles.muted}>Suas criações, prontas para o próximo encontro.</Text>
+      </View>}
+      renderSectionHeader={({ section }) => <View style={[uiStyles.listColumn, styles.sectionHeader]} testID={section.testID}>
+        <Text accessibilityRole="header" style={styles.sectionTitle}>{section.title}</Text>
+        <Text style={uiStyles.muted}>{section.data.length} {section.data.length === 1 ? 'obra' : 'obras'}</Text>
       </View>}
       ListEmptyComponent={<Text style={uiStyles.empty}>Nenhuma obra — toque em Nova Obra</Text>}
       renderItem={({ item: obra }) => <View style={uiStyles.listColumn}>
@@ -305,6 +314,9 @@ export default function TelaEstoque({
 }
 
 const useStyles = createThemedStyles((colors) => ({
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.x2,
+    paddingTop: spacing.x2, paddingBottom: spacing.x2, borderBottomWidth: 1, borderBottomColor: colors.border },
+  sectionTitle: { ...textStyles.label, color: colors.text, flex: 1 },
   panel: {
     width: '100%',
     maxWidth: layout.formMaxWidth,

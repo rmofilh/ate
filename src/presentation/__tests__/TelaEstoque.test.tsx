@@ -172,7 +172,7 @@ describe('TelaEstoque', () => {
     await render(<TelaNovaObra onSalvar={onSalvar} onConcluido={onConcluido} />);
 
     await fireEvent.changeText(screen.getByTestId('campo-nome-obra'), 'Passaro pequeno');
-    await fireEvent.changeText(screen.getByTestId('campo-tipo-obra'), 'SERIE');
+    await fireEvent.press(screen.getByTestId('tipo-serie'));
     await fireEvent.changeText(screen.getByTestId('campo-qtd-obra'), '3');
     await fireEvent.press(screen.getByTestId('botao-salvar-obra'));
 
@@ -191,7 +191,7 @@ describe('TelaEstoque', () => {
     await render(<TelaNovaObra onSalvar={onSalvar} />);
 
     await fireEvent.changeText(screen.getByTestId('campo-nome-obra'), 'Passaro pequeno');
-    await fireEvent.changeText(screen.getByTestId('campo-tipo-obra'), 'SERIE');
+    await fireEvent.press(screen.getByTestId('tipo-serie'));
     await fireEvent.changeText(screen.getByTestId('campo-qtd-obra'), '0');
     await fireEvent.press(screen.getByTestId('botao-salvar-obra'));
 

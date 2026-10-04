@@ -133,6 +133,7 @@ describe('ações de navegação', () => {
       </NavigationContext.Provider>,
     );
 
+    await fireEvent.press(screen.getByTestId('selecionar-cliente-existente'));
     await fireEvent.press(screen.getByTestId('novo-cliente'));
 
     expect(navigation.novoCliente).toHaveBeenCalledTimes(1);
@@ -162,13 +163,14 @@ describe('ações de navegação', () => {
       </AppProviders>,
     );
 
+    await fireEvent.press(screen.getByTestId('selecionar-cliente-existente'));
     await fireEvent.press(screen.getByTestId('novo-cliente'));
     await fireEvent.changeText(screen.getByTestId('campo-nome'), 'Maria Souza');
     await fireEvent.changeText(screen.getByTestId('campo-contato'), '(11) 98888-7777');
     await fireEvent.press(screen.getByTestId('botao-salvar-cliente'));
 
     expect(
-      await screen.findByRole('button', { name: 'Selecionado: Maria Souza' }),
+      await screen.findByText('Maria Souza'),
     ).toBeTruthy();
   });
 });
