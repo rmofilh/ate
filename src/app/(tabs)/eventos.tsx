@@ -6,6 +6,7 @@ import { ScreenHeader } from '@/presentation/components/ScreenHeader';
 import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
 import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
 import { EventoCard } from '@/presentation/components/EventoCard';
+import { ErroDadosBanner } from '@/presentation/components/ErroDadosBanner';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
@@ -60,6 +61,7 @@ export default function TelaEventos({ onNovo, onRemover }: TelaEventosProps = {}
       contentContainerStyle={uiStyles.scrollContent}
       ListHeaderComponent={<View style={uiStyles.listColumn}>
       <OfflineBanner isOnline={isOnline} />
+      <ErroDadosBanner />
       <ScreenHeader title="Eventos" action={{ testID: 'novo-evento', title: 'Novo Evento', onPress: () => {
           if (onNovo) onNovo();
           else navigation.novoEvento();

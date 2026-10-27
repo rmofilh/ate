@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
 import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
+import { ErroDadosBanner } from '@/presentation/components/ErroDadosBanner';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
 import { PedidoCard } from '@/presentation/components/PedidoCard';
 import { KanbanBoard } from '@/presentation/components/KanbanBoard';
@@ -185,6 +186,7 @@ export default function TelaKanban({
     <SafeAreaView style={uiStyles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <View testID="scroll-kanban" style={styles.screen}>
         <OfflineBanner isOnline={isOnline} />
+        <ErroDadosBanner />
         <ScreenHeader title="Meus Pedidos" action={{ testID: 'novo-pedido', title: 'Novo Pedido', onPress: navigation.novoPedido }} />
         {aviso ? (
           <Text testID="aviso-foto-obrigatoria" accessibilityLiveRegion="polite" style={uiStyles.notice}>

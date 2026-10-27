@@ -6,7 +6,7 @@ import type { Cliente } from '../../core/domain/entities/Cliente';
 import type { Evento } from '../../core/domain/entities/Evento';
 import type { Obra } from '../../core/domain/entities/Obra';
 import type { Pedido } from '../../core/domain/entities/Pedido';
-import type { FakeProviderBag } from '../../main/factories/makeFakeProviders';
+import type { ProviderBag } from '../../main/factories/ProviderBag';
 
 export interface AuthCtx {
   session: AuthSession | null;
@@ -19,6 +19,8 @@ export interface DataCtx {
   obras: Obra[];
   eventos: Evento[];
   clientes: Cliente[];
+  /** Falha da última leitura dos dados locais (null quando ok). */
+  erro?: string | null;
   reload(): Promise<void>;
 }
 
@@ -58,6 +60,7 @@ export const DataContext = createContext<DataCtx>({
   obras: [],
   eventos: [],
   clientes: [],
+  erro: null,
   reload: async () => {},
 });
 export const NetworkContext = createContext<NetCtx>({
@@ -80,7 +83,7 @@ export const PedidoDraftContext = createContext<PedidoDraftCtx>({
   selecionarCliente: () => {},
   limpar: () => {},
 });
-export const ServicesContext = createContext<FakeProviderBag | null>(null);
+export const ServicesContext = createContext<ProviderBag | null>(null);
 
 export function useAuth(): AuthCtx {
   return useContext(AuthContext);
@@ -94,7 +97,7 @@ export function useNetwork(): NetCtx {
   return useContext(NetworkContext);
 }
 
-export function useServices(): FakeProviderBag | null {
+export function useServices(): ProviderBag | null {
   return useContext(ServicesContext);
 }
 
@@ -116,20 +119,25 @@ export function usePedidoDraft(): PedidoDraftCtx {
 export function AuthProvider({
   providers,
   children,
-}: React.PropsWithChildren<{ providers: FakeProviderBag }>) {
+}: React.PropsWithChildren<{ providers: ProviderBag }>) {
   const [session, setSession] = useState<AuthSession | null>(null);
 
   useEffect(() => {
-    void providers.gateways.auth.getSession().then(setSession);
+    void providers.gateways.auth.getSession().then((restaurada) => {
+      providers.registrarSessao?.(restaurada);
+      setSession(restaurada);
+    });
   }, [providers]);
 
   async function login(email: string, password: string): Promise<void> {
     const nextSession = await providers.useCases.login.execute({ email, password });
+    providers.registrarSessao?.(nextSession);
     setSession(nextSession);
   }
 
   async function logout(): Promise<void> {
     await providers.useCases.logout.execute();
+    providers.registrarSessao?.(null);
     setSession(null);
   }
 
@@ -139,19 +147,58 @@ export function AuthProvider({
 export function DataProvider({
   providers,
   children,
-}: React.PropsWithChildren<{ providers: FakeProviderBag }>) {
+}: React.PropsWithChildren<{ providers: ProviderBag }>) {
+  const { session } = useAuth();
   const [data, setData] = useState(() => ({
-    pedidos: providers.pedidos,
-    obras: providers.obras,
-    eventos: providers.eventos,
-    clientes: providers.clientes,
+    pedidos: providers.pedidos ?? [],
+    obras: providers.obras ?? [],
+    eventos: providers.eventos ?? [],
+    clientes: providers.clientes ?? [],
   }));
+  const [erro, setErro] = useState<string | null>(null);
+  const [sessaoVista, setSessaoVista] = useState(session);
 
-  async function reload(): Promise<void> {
-    setData(await providers.loadData());
+  // Zera os dados só na saída (sessão → null), nunca na montagem sem sessão.
+  if (sessaoVista !== session) {
+    setSessaoVista(session);
+    if (sessaoVista && !session) {
+      setData({ pedidos: [], obras: [], eventos: [], clientes: [] });
+      setErro(null);
+    }
   }
 
-  return <DataContext.Provider value={{ ...data, reload }}>{children}</DataContext.Provider>;
+  async function reload(): Promise<void> {
+    try {
+      setData(await providers.loadData());
+      setErro(null);
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Erro ao ler o banco local');
+      throw error;
+    }
+  }
+
+  // Recarrega a cada nova sessão; a falha fica em `erro` e aparece na área logada.
+  useEffect(() => {
+    if (!session) return;
+    let ativo = true;
+    providers.loadData().then(
+      (carregados) => {
+        if (!ativo) return;
+        setData(carregados);
+        setErro(null);
+      },
+      (error: unknown) => {
+        if (ativo) setErro(error instanceof Error ? error.message : 'Erro ao ler o banco local');
+      },
+    );
+    return () => {
+      ativo = false;
+    };
+  }, [providers, session]);
+
+  return (
+    <DataContext.Provider value={{ ...data, erro, reload }}>{children}</DataContext.Provider>
+  );
 }
 
 export function NetworkProvider({ children }: React.PropsWithChildren) {
@@ -183,7 +230,7 @@ export function PedidoDraftProvider({ children }: React.PropsWithChildren) {
 export function AppProviders({
   providers,
   children,
-}: React.PropsWithChildren<{ providers: FakeProviderBag }>) {
+}: React.PropsWithChildren<{ providers: ProviderBag }>) {
   return (
     <ServicesContext.Provider value={providers}>
       <AuthProvider providers={providers}>

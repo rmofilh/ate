@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
 import { ConfirmationLayer } from '@/presentation/components/ConfirmationLayer';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
 import { ObraCard } from '@/presentation/components/ObraCard';
+import { ErroDadosBanner } from '@/presentation/components/ErroDadosBanner';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
 import { ScreenHeader } from '@/presentation/components/ScreenHeader';
 import { borderRadius, borderWidths, layout, spacing, textStyles } from '@/constants/theme';
@@ -195,6 +196,7 @@ export default function TelaEstoque({
       contentContainerStyle={uiStyles.scrollContent}
       ListHeaderComponent={<View style={uiStyles.listColumn}>
       <OfflineBanner isOnline={isOnline} />
+      <ErroDadosBanner />
       <ScreenHeader title="Estoque de Obras" action={{ testID: 'nova-obra', title: 'Nova Obra', displayTitle: 'Nova', onPress: navigation.novaObra }} />
       <Text style={uiStyles.muted}>Suas criações, prontas para o próximo encontro.</Text>
       </View>}
