@@ -64,3 +64,41 @@ Aprovado: login demo com abas vazias; criação de cliente, obra única, obra em
 - Supabase, RLS e Auth real; os dados de desenvolvimento pertencem ao usuário falso `a1111111-…` e o banco deve ser zerado antes do Plano 4 (Plano 3).
 - Envio da fila, pull por cursor e UI reativa via `addDatabaseChangeListener` (Plano 4).
 - GPS real e mapa; reabilitar o botão das telas de evento (Plano 5).
+
+## Plano 2 — Câmera real e pipeline de imagens
+
+Concluído em 27/10/2026. A foto de conclusão do pedido (RF05, UC05/UC06, RNF11) e a foto opcional de catálogo da obra (RF09, UC12) agora vêm da câmera de verdade, comprimidas e guardadas no aparelho, com uma linha em `fotos` pronta para o upload do Plano 4.
+
+### Arquitetura entregue
+
+- `infrastructure/fileSystem/ArmazenamentoDeFotos.ts`: reduz o maior lado para 1600 px, comprime em JPEG 0,7 (`expo-image-manipulator`, API `manipulate`/`renderAsync`/`saveAsync`), move para `<documentos>/fotos/<uuid>.jpg` (`expo-file-system`, API `File`/`Directory`/`Paths`), calcula o SHA-256 (`expo-crypto`) e grava a linha em `fotos` (`PENDENTE_UPLOAD`). Devolve o caminho relativo. Na abertura do app, remove fotos órfãs com mais de 24 h.
+- `infrastructure/device/camera/ExpoCameraGateway.ts`: implementa `ICameraGateway` (contrato inalterado) por meio de uma ponte registrada pela UI. Cancelar → `null`; permissão negada → erro com instrução; segunda captura simultânea → erro.
+- `presentation/components/camera/CameraModal.tsx` e `CameraHost.tsx`: permissão em três estados (com "Abrir configurações" quando não dá mais para pedir), câmera montada só com o modal aberto, captura habilitada só após `onCameraReady`, revisão com Refazer e Usar foto.
+- `presentation/utils/fotos.ts`: `resolverUriDaFoto` resolve o caminho relativo no momento de exibir. Miniatura da foto de conclusão nos pedidos Feitos.
+- Nova obra: botão opcional "Adicionar foto de catálogo" (fecha a divergência RF09 sem UI da fase 2).
+
+### Decisões e divergências
+
+| # | Decisão | Motivo |
+|---|---|---|
+| 1 | Sem galeria (D2): as duas fotos só pela câmera | Simplicidade; a foto de conclusão precisa ser tirada na hora (RNF11) |
+| 2 | Caminho relativo `fotos/<uuid>.jpg` no banco | O caminho absoluto muda entre builds e reinstalações |
+| 3 | A ponte UI → gateway é tipo de infraestrutura, não porta nova em `core` | Contratos de `core` inalterados |
+| 4 | Foto de catálogo só na criação da obra | Não existe tela de edição de obra; trocar foto exigiria método novo no domínio |
+| 5 | Limpeza de órfãs também apaga arquivos soltos em `fotos/` sem linha | App morto entre mover o arquivo e gravar a linha |
+| 6 | Texto de permissão próprio só no APK | No Expo Go aparece o texto do Expo Go |
+
+### Testes
+
+Dublês em memória de `expo-file-system`, `expo-image-manipulator` e `expo-camera` registrados no `jest.setup.js`; `expo-crypto.digest` com SHA-256 real do Node. Cobertos: parâmetros de compressão (paisagem, retrato, imagem pequena), caminho e hash gravados, falhas no meio sem linha nem arquivo solto, limpeza de órfãs (idade, referência por pedido/obra/tombstone, `ENVIADA`, arquivo solto), resolvedor de caminho, gateway (cancelar, negar, ocupado, desregistrar), modal (três estados de permissão, configurações e volta, câmera pronta, captura/refazer/usar, erro de montagem, voltar do Android), host (desmontagem no meio), composição e foto de catálogo.
+
+Baseline ao fim do plano: 374 testes, `typecheck` limpo, `lint` com 0 erros (11 warnings herdados), `db:check` ok e bundle Android exportado.
+
+### Smoke test no aparelho (Expo Go, 27/10/2026)
+
+Aprovado, os 8 itens: conclusão de pedido com permissão, captura, Refazer e Usar foto, com miniatura no card Feito; fotos na faixa de centenas de KB (não MB); miniatura mantida após fechar e reabrir o app; Cancelar e voltar do Android não concluem o pedido; permissão revogada mostra a explicação com "Abrir configurações", Voltar mostra a instrução e, ao permitir nas configurações e voltar, a câmera aparece sem fechar o modal; conclusão com foto em modo avião; foto de catálogo na nova obra (inclusive Remover foto) com miniatura no Estoque; toque duplo abre uma única câmera.
+
+### Pendências para os próximos planos
+
+- Upload das fotos `PENDENTE_UPLOAD` antes do registro (storage-first) no Plano 4.
+- Texto de permissão em português visível só no APK (Plano 6).
