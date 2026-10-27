@@ -96,7 +96,7 @@ Baseline ao fim do plano: 374 testes, `typecheck` limpo, `lint` com 0 erros (11 
 
 ### Smoke test no aparelho (Expo Go, 27/10/2026)
 
-Aprovado, os 8 itens: conclusão de pedido com permissão, captura, Refazer e Usar foto, com miniatura no card Feito; fotos na faixa de centenas de KB (não MB); miniatura mantida após fechar e reabrir o app; Cancelar e voltar do Android não concluem o pedido; permissão revogada mostra a explicação com "Abrir configurações", Voltar mostra a instrução e, ao permitir nas configurações e voltar, a câmera aparece sem fechar o modal; conclusão com foto em modo avião; foto de catálogo na nova obra (inclusive Remover foto) com miniatura no Estoque; toque duplo abre uma única câmera.
+Aprovado, os 8 itens: conclusão de pedido com permissão, captura, Refazer e Usar foto, com miniatura no card Feito; foto de conclusão com 106 KB no log (centenas de KB, não MB); miniatura mantida após fechar e reabrir o app; Cancelar e voltar do Android não concluem o pedido; permissão revogada mostra a explicação com "Abrir configurações", Voltar mostra a instrução e, ao permitir nas configurações e voltar, a câmera aparece sem fechar o modal; conclusão com foto em modo avião; foto de catálogo na nova obra (inclusive Remover foto) com miniatura no Estoque; toque duplo abre uma única câmera.
 
 ### Pendências para os próximos planos
 
