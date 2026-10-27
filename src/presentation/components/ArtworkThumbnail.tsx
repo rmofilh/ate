@@ -4,16 +4,18 @@ import { View } from 'react-native';
 
 import { borderRadius, iconSizes, spacing } from '@/constants/theme';
 import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesignTheme';
+import { resolverUriDaFoto } from '@/presentation/utils/fotos';
 import { AppIcon } from './AppIcon';
 
-export function ArtworkThumbnail({ photoPath }: { photoPath: string | null }) {
+export function ArtworkThumbnail({ photoPath, testID }: { photoPath: string | null; testID?: string }) {
   const styles = useStyles();
   const { colors } = useDesignTheme();
-  const [failedPath, setFailedPath] = useState<string | null>(null);
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+  const uri = resolverUriDaFoto(photoPath);
   return <View style={styles.frame} accessible={false}>
     <AppIcon name="stock" color={colors.textSecondary} size={iconSizes.feature} />
-    {photoPath && photoPath !== failedPath ? <Image key={photoPath} source={{ uri: photoPath }} style={styles.image} contentFit="cover"
-      accessible={false} onError={() => setFailedPath(photoPath)} /> : null}
+    {uri && uri !== failedUri ? <Image key={uri} testID={testID} source={{ uri }} style={styles.image} contentFit="cover"
+      accessible={false} onError={() => setFailedUri(uri)} /> : null}
   </View>;
 }
 

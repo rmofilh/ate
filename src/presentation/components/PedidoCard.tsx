@@ -11,6 +11,7 @@ import { stagePresentation } from '@/presentation/utils/kanban';
 import { getControlTone } from '@/presentation/styles/controlTone';
 import { ActionButton } from './ActionButton';
 import { AppIcon } from './AppIcon';
+import { ArtworkThumbnail } from './ArtworkThumbnail';
 import { IconButton } from './IconButton';
 
 export function PedidoCard({ pedido, onIniciar, onConcluir, onCancelar, onEditarPedido,
@@ -65,6 +66,11 @@ export function PedidoCard({ pedido, onIniciar, onConcluir, onCancelar, onEditar
       <Text style={[styles.tag, { color: context.foreground, backgroundColor: context.surface }]}>{channelLabels[pedido.canalOrigem]}</Text>
       {pedido.vendaDireta ? <Text style={[styles.tag, { color: context.foreground, backgroundColor: context.surface }]}>Venda direta</Text> : null}
     </View>
+    {pedido.status === 'FEITO' && pedido.fotoConclusaoPath ? (
+      <View accessibilityLabel="Foto de conclusão" style={styles.photo}>
+        <ArtworkThumbnail photoPath={pedido.fotoConclusaoPath} testID={`foto-conclusao-${pedido.id}`} />
+      </View>
+    ) : null}
     {pedido.status === 'A_FAZER' ? <ActionButton label={`mover-${pedido.id}-fazendo`}
       title={loading ? 'Salvando...' : 'Começar a fazer'} displayTitle={loading ? undefined : 'Iniciar'}
       accessibilityLabel={loading ? 'Salvando...' : 'Iniciar produção'}
@@ -87,6 +93,7 @@ export function PedidoCard({ pedido, onIniciar, onConcluir, onCancelar, onEditar
 }
 
 const useStyles = createThemedStyles((colors) => ({
+  photo: { alignSelf: 'flex-start' },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: borderRadius.card, padding: spacing.x4, gap: spacing.x3 },
   compact: { padding: spacing.x3 },
