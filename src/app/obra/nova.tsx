@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import type { TipoObra } from '@/core/domain/enums/TipoObra';
 import { ActionButton } from '@/presentation/components/ActionButton';
+import { ArtworkThumbnail } from '@/presentation/components/ArtworkThumbnail';
 import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
@@ -16,14 +17,17 @@ interface NovaObraInput {
   nome: string;
   tipo: TipoObra;
   quantidade: number;
+  fotoPath: string | null;
 }
 
 export default function TelaNovaObra({
   onSalvar,
   onConcluido,
+  onCapturarFoto,
 }: {
   onSalvar?(args: NovaObraInput): Promise<void>;
   onConcluido?(): void;
+  onCapturarFoto?(): Promise<string | null>;
 } = {}) {
   const uiStyles = useUIStyles();
   const { reload } = useData();
@@ -35,10 +39,29 @@ export default function TelaNovaObra({
   const [quantidadeTexto, setQuantidadeTexto] = useState('1');
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fotoPath, setFotoPath] = useState<string | null>(null);
+  const [capturando, setCapturando] = useState(false);
   const tipoNormalizado = tipoTexto.trim().toUpperCase();
 
+  async function adicionarFoto() {
+    if (capturando || loading) return;
+    setCapturando(true);
+    setErro(null);
+    try {
+      const caminho = onCapturarFoto
+        ? await onCapturarFoto()
+        : await services?.gateways.camera.capture();
+      if (caminho === undefined) throw new Error('Câmera indisponível');
+      if (caminho) setFotoPath(caminho);
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Não foi possível tirar a foto');
+    } finally {
+      setCapturando(false);
+    }
+  }
+
   async function salvar() {
-    if (submitting.current) return;
+    if (submitting.current || capturando) return;
 
     const nomeLimpo = nome.trim();
     if (!nomeLimpo || (tipoNormalizado !== 'UNICA' && tipoNormalizado !== 'SERIE')) {
@@ -56,6 +79,7 @@ export default function TelaNovaObra({
       nome: nomeLimpo,
       tipo: tipoNormalizado,
       quantidade,
+      fotoPath,
     };
     submitting.current = true;
     setLoading(true);
@@ -117,6 +141,28 @@ export default function TelaNovaObra({
           />
         </View>
       ) : null}
+      <View style={uiStyles.field}>
+        <Text style={uiStyles.label}>Foto de catálogo (opcional)</Text>
+        {fotoPath ? <ArtworkThumbnail photoPath={fotoPath} testID="miniatura-foto-catalogo" /> : null}
+        <ActionButton
+          label="botao-foto-catalogo"
+          title={capturando ? 'Abrindo câmera...' : fotoPath ? 'Tirar outra foto' : 'Adicionar foto de catálogo'}
+          icon="camera"
+          appearance="secondary"
+          disabled={loading || capturando}
+          busy={capturando}
+          onPress={() => void adicionarFoto()}
+        />
+        {fotoPath ? (
+          <ActionButton
+            label="botao-remover-foto-catalogo"
+            title="Remover foto"
+            appearance="quiet"
+            disabled={loading || capturando}
+            onPress={() => setFotoPath(null)}
+          />
+        ) : null}
+      </View>
       {erro ? (
         <Text testID="erro-obra" accessibilityLiveRegion="polite" style={uiStyles.error}>
           {erro}
@@ -126,7 +172,7 @@ export default function TelaNovaObra({
         label="botao-salvar-obra"
         title={loading ? 'Salvando...' : 'Salvar Obra'}
         onPress={() => void salvar()}
-        disabled={loading}
+        disabled={loading || capturando}
         appearance="primary"
         icon="check"
         busy={loading}

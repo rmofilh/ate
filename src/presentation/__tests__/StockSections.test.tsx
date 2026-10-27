@@ -49,7 +49,7 @@ describe('tipo da obra pelo seletor', () => {
     expect(screen.queryByTestId('campo-qtd-obra')).toBeNull();
     expect(screen.getByTestId('tipo-unica').props.accessibilityState.selected).toBe(true);
     await fireEvent.press(screen.getByTestId('botao-salvar-obra'));
-    expect(save).toHaveBeenCalledWith({ nome: 'Nova peça', tipo: 'UNICA', quantidade: 1 });
+    expect(save).toHaveBeenCalledWith({ nome: 'Nova peça', tipo: 'UNICA', quantidade: 1, fotoPath: null });
   });
 
   it('trocar de tipo não perde a quantidade preenchida para série', async () => {
@@ -62,6 +62,6 @@ describe('tipo da obra pelo seletor', () => {
     await fireEvent.press(screen.getByTestId('tipo-serie'));
     expect(screen.getByTestId('campo-qtd-obra').props.value).toBe('5');
     await fireEvent.press(screen.getByTestId('botao-salvar-obra'));
-    expect(save).toHaveBeenCalledWith({ nome: 'Série de teste', tipo: 'SERIE', quantidade: 5 });
+    expect(save).toHaveBeenCalledWith({ nome: 'Série de teste', tipo: 'SERIE', quantidade: 5, fotoPath: null });
   });
 });

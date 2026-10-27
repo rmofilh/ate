@@ -181,6 +181,7 @@ describe('TelaEstoque', () => {
         nome: 'Passaro pequeno',
         tipo: 'SERIE',
         quantidade: 3,
+        fotoPath: null,
       }),
     );
     expect(onConcluido).toHaveBeenCalledTimes(1);
