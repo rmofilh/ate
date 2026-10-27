@@ -23,3 +23,4 @@ jest.mock('expo-file-system', () => jest.requireActual('./src/test-support/mocks
 jest.mock('expo-image-manipulator', () =>
   jest.requireActual('./src/test-support/mocks/expoImageManipulator'),
 );
+jest.mock('expo-camera', () => jest.requireActual('./src/test-support/mocks/expoCamera'));

@@ -1388,10 +1388,10 @@ import { AppState, Linking } from 'react-native';
 import { cameraDeTeste, permissoes } from '../../test-support/mocks/expoCamera';
 import { CameraModal } from '../components/camera/CameraModal';
 
-function montar() {
+async function montar() {
   const onResultado = jest.fn();
-  const resultado = render(<CameraModal visivel onResultado={onResultado} />);
-  return { onResultado, resultado };
+  await render(<CameraModal visivel onResultado={onResultado} />);
+  return { onResultado };
 }
 
 describe('CameraModal', () => {
@@ -1415,7 +1415,7 @@ describe('CameraModal', () => {
 
   it('enquanto a permissão carrega, mostra espera e permite cancelar', async () => {
     cameraDeTeste.permissao = null;
-    const { onResultado } = montar();
+    const { onResultado } = await montar();
     await screen.findByTestId('camera-carregando');
 
     await fireEvent.press(screen.getByTestId('botao-cancelar-camera'));
@@ -1424,7 +1424,7 @@ describe('CameraModal', () => {
 
   it('permissão indeterminada: explica e pede; concedida abre a câmera', async () => {
     cameraDeTeste.permissao = permissoes.indeterminada;
-    montar();
+    await montar();
     await screen.findByTestId('camera-sem-permissao');
 
     await fireEvent.press(screen.getByTestId('botao-permitir-camera'));
@@ -1435,14 +1435,14 @@ describe('CameraModal', () => {
 
   it('voltar sem ter decidido a permissão é cancelamento', async () => {
     cameraDeTeste.permissao = permissoes.indeterminada;
-    const { onResultado } = montar();
+    const { onResultado } = await montar();
     await fireEvent.press(await screen.findByTestId('botao-voltar-camera'));
     expect(onResultado).toHaveBeenCalledWith({ tipo: 'cancelado' });
   });
 
   it('voltar com a permissão negada devolve negado', async () => {
     cameraDeTeste.permissao = permissoes.negada;
-    const { onResultado } = montar();
+    const { onResultado } = await montar();
     await fireEvent.press(await screen.findByTestId('botao-voltar-camera'));
     expect(onResultado).toHaveBeenCalledWith({ tipo: 'negado' });
   });
@@ -1450,7 +1450,7 @@ describe('CameraModal', () => {
   it('negada para sempre: oferece abrir configurações e relê a permissão na volta', async () => {
     cameraDeTeste.permissao = permissoes.negadaParaSempre;
     const abrir = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
-    montar();
+    await montar();
     expect(screen.queryByTestId('botao-permitir-camera')).toBeNull();
 
     await fireEvent.press(await screen.findByTestId('botao-abrir-configuracoes'));
@@ -1465,7 +1465,7 @@ describe('CameraModal', () => {
 
   it('botão de captura só habilita depois de onCameraReady', async () => {
     cameraDeTeste.prontaAoMontar = false;
-    montar();
+    await montar();
     const botao = await screen.findByTestId('botao-capturar');
     expect(botao.props.accessibilityState.disabled).toBe(true);
 
@@ -1475,7 +1475,7 @@ describe('CameraModal', () => {
   });
 
   it('captura → revisão → refazer → captura → usar devolve a foto com dimensões', async () => {
-    const { onResultado } = montar();
+    const { onResultado } = await montar();
     await fireEvent.press(await screen.findByTestId('botao-capturar'));
     await screen.findByTestId('camera-preview');
     expect(cameraDeTeste.takePictureAsync).toHaveBeenCalledWith({ quality: 1 });
@@ -1498,7 +1498,7 @@ describe('CameraModal', () => {
 
   it('falha ao tirar a foto mostra o erro e continua na câmera', async () => {
     cameraDeTeste.takePictureAsync.mockRejectedValueOnce(new Error('sensor ocupado'));
-    montar();
+    await montar();
     await fireEvent.press(await screen.findByTestId('botao-capturar'));
 
     await waitFor(() => expect(screen.getByTestId('camera-erro')).toHaveTextContent(/sensor ocupado/));
@@ -1507,7 +1507,7 @@ describe('CameraModal', () => {
 
   it('erro ao montar a câmera aparece e cancelar continua funcionando', async () => {
     cameraDeTeste.erroAoMontar = 'Câmera em uso por outro app';
-    const { onResultado } = montar();
+    const { onResultado } = await montar();
 
     await waitFor(() => expect(screen.getByTestId('camera-erro')).toHaveTextContent(/outro app/));
     expect(screen.getByTestId('botao-capturar').props.accessibilityState.disabled).toBe(true);
@@ -1517,7 +1517,7 @@ describe('CameraModal', () => {
   });
 
   it('botão voltar do Android cancela', async () => {
-    const { onResultado } = montar();
+    const { onResultado } = await montar();
     await screen.findByTestId('camera-view');
 
     // RNTL 14 não tem mais UNSAFE_getByType: o Modal recebe testID e o evento é disparado nele.
