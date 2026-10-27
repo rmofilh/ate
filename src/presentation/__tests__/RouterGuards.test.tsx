@@ -34,6 +34,19 @@ import { Evento } from '../../core/domain/entities/Evento';
 import { Coordenada } from '../../core/domain/value-objects/Coordenada';
 import { gerarIdTeste } from '../../test-support/ids';
 
+// O layout raiz abre o expo-sqlite nativo; no Jest usa o SQLite em memória com as mesmas migrations.
+jest.mock('../../main/database/openAppDatabase', () => ({
+  openAppDatabase: () => {
+    const { bancoDeTeste } = jest.requireActual<{ bancoDeTeste(): unknown }>(
+      '../../test-support/bancoDeTeste',
+    );
+    return { sqlite: null, db: bancoDeTeste() };
+  },
+}));
+jest.mock('drizzle-orm/expo-sqlite/migrator', () => ({
+  useMigrations: () => ({ success: true, error: undefined }),
+}));
+
 const routes = {
   _layout: RootLayout, index: Index,
   '(auth)/_layout': AuthLayout, '(auth)/login': Login,

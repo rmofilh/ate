@@ -1,12 +1,19 @@
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { useState } from 'react';
 
 import { textStyles } from '@/constants/theme';
-import { makeFakeProviders } from '@/main/factories/makeFakeProviders';
+import { ExecutorDeTransacao } from '@/infrastructure/database/sqlite/ExecutorDeTransacao';
+import { openAppDatabase } from '@/main/database/openAppDatabase';
+import { makeSqliteProviders } from '@/main/factories/makeSqliteProviders';
 import { FontLoader } from '@/presentation/components/FontLoader';
+import { TelaCarregando } from '@/presentation/components/TelaCarregando';
+import { TelaErroBanco } from '@/presentation/components/TelaErroBanco';
 import { AppProviders, NavigationContext, RouteParamsContext, useAuth } from '@/presentation/hooks/AppProviders';
 import { useDesignTheme } from '@/presentation/hooks/useDesignTheme';
+
+import migrations from '../../drizzle/migrations';
 
 function RootNavigator() {
   const { session } = useAuth();
@@ -54,10 +61,20 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [providers] = useState(makeFakeProviders);
+  const [conexao] = useState(openAppDatabase);
+  const { success, error } = useMigrations(conexao.db, migrations);
+  const [providers] = useState(() =>
+    makeSqliteProviders(conexao.db, new ExecutorDeTransacao(conexao.db)));
+
   return (
     <FontLoader>
-      <AppProviders providers={providers}><RootNavigator /></AppProviders>
+      {error ? (
+        <TelaErroBanco mensagem={error.message} />
+      ) : !success ? (
+        <TelaCarregando />
+      ) : (
+        <AppProviders providers={providers}><RootNavigator /></AppProviders>
+      )}
     </FontLoader>
   );
 }
