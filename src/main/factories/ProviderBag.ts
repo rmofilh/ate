@@ -94,6 +94,10 @@ export interface ProviderBag {
   loadData(): Promise<DadosCarregados>;
   /** Informa a sessão ativa (ou null no logout). Ausente na bag fake. */
   registrarSessao?(sessao: AuthSession | null): void;
+  /** Ponte para a UI abrir a câmera real (ausente na bag fake, que usa FakeCameraGateway). */
+  ponteDaCamera?: PonteDaCamera;
+  /** Manutenção na abertura do app (ex.: limpar fotos órfãs). Falha não impede o uso. */
+  aoIniciar?(): Promise<void>;
   /** Dados iniciais opcionais (só a bag fake com fixtures). */
   pedidos?: Pedido[];
   obras?: Obra[];

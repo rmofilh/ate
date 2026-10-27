@@ -7,6 +7,7 @@ import type { Evento } from '../../core/domain/entities/Evento';
 import type { Obra } from '../../core/domain/entities/Obra';
 import type { Pedido } from '../../core/domain/entities/Pedido';
 import type { ProviderBag } from '../../main/factories/ProviderBag';
+import { CameraHost } from '../components/camera/CameraHost';
 
 export interface AuthCtx {
   session: AuthSession | null;
@@ -231,12 +232,22 @@ export function AppProviders({
   providers,
   children,
 }: React.PropsWithChildren<{ providers: ProviderBag }>) {
+  // Manutenção na abertura (ex.: fotos órfãs). Falha só é registrada: o app segue utilizável.
+  useEffect(() => {
+    providers.aoIniciar?.().catch((erro: unknown) => {
+      console.warn('Falha na manutenção inicial', erro);
+    });
+  }, [providers]);
+
   return (
     <ServicesContext.Provider value={providers}>
       <AuthProvider providers={providers}>
         <DataProvider providers={providers}>
           <NetworkProvider>
-            <PedidoDraftProvider>{children}</PedidoDraftProvider>
+            <PedidoDraftProvider>
+              {children}
+              <CameraHost ponte={providers.ponteDaCamera} />
+            </PedidoDraftProvider>
           </NetworkProvider>
         </DataProvider>
       </AuthProvider>

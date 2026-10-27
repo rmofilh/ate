@@ -1,7 +1,9 @@
 import { ExecutorDeTransacao } from '../../../infrastructure/database/sqlite/ExecutorDeTransacao';
 import type { DrizzleAppDb } from '../../../infrastructure/database/sqlite/DrizzleDb';
-import { clientes, filaSync, pedidos } from '../../../infrastructure/database/sqlite/schema';
+import { clientes, filaSync, fotos, pedidos } from '../../../infrastructure/database/sqlite/schema';
+import { ExpoCameraGateway } from '../../../infrastructure/device/camera/ExpoCameraGateway';
 import { bancoDeTeste } from '../../../test-support/bancoDeTeste';
+import { fsDeTeste } from '../../../test-support/mocks/expoFileSystem';
 import { makeSqliteProviders, type SqliteProviderBag } from '../makeSqliteProviders';
 import { SessaoNaoDisponivelError } from '../SessaoNaoDisponivelError';
 
@@ -119,5 +121,26 @@ describe('makeSqliteProviders (SQLite real)', () => {
     expect(Object.prototype.hasOwnProperty.call(bag.useCases.consultarPedidos, 'execute')).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(bag.useCases.login, 'execute')).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(bag.useCases.cadastrarPedido, 'execute')).toBe(true);
+  });
+
+  it('usa a câmera real e expõe a mesma instância como ponte para a UI', () => {
+    expect(bag.gateways.camera).toBeInstanceOf(ExpoCameraGateway);
+    expect(bag.ponteDaCamera).toBe(bag.gateways.camera);
+  });
+
+  it('aoIniciar remove fotos órfãs antigas', async () => {
+    fsDeTeste.limpar();
+    await db.insert(fotos).values({
+      id: 'f1',
+      caminhoLocal: 'fotos/f1.jpg',
+      hash: 'h',
+      criadoEmLocal: '2020-01-01T00:00:00.000Z',
+    });
+    fsDeTeste.escrever('file:///docs/fotos/f1.jpg', 'x', 0);
+
+    await bag.aoIniciar();
+
+    expect(await db.select().from(fotos)).toEqual([]);
+    expect(fsDeTeste.existe('file:///docs/fotos/f1.jpg')).toBe(false);
   });
 });

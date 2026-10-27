@@ -28,18 +28,19 @@ import { SQLiteClienteRepository } from '../../infrastructure/database/sqlite/SQ
 import { SQLiteEventoRepository } from '../../infrastructure/database/sqlite/SQLiteEventoRepository';
 import { SQLiteObraRepository } from '../../infrastructure/database/sqlite/SQLiteObraRepository';
 import { SQLitePedidoRepository } from '../../infrastructure/database/sqlite/SQLitePedidoRepository';
+import { ExpoCameraGateway } from '../../infrastructure/device/camera/ExpoCameraGateway';
 import { FakeAuthGateway } from '../../infrastructure/device/FakeAuthGateway';
-import { FakeCameraGateway } from '../../infrastructure/device/FakeCameraGateway';
 import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
 import { UuidIdGenerator } from '../../infrastructure/device/UuidIdGenerator';
+import { ArmazenamentoDeFotos } from '../../infrastructure/fileSystem/ArmazenamentoDeFotos';
 import { OutboxSyncGateway } from '../../infrastructure/sync/OutboxSyncGateway';
 import type { CasosDeUso, DadosCarregados, ProviderBag } from './ProviderBag';
 import { SessaoNaoDisponivelError } from './SessaoNaoDisponivelError';
 
 /**
  * Composition root do runtime: SQLite + fila outbox. Casos de uso que escrevem rodam em
- * transação (registro e fila juntos). Auth (Plano 3), câmera (Plano 2) e GPS (Plano 5)
- * ainda são fakes.
+ * transação (registro e fila juntos). Câmera e fotos são reais (Plano 2); auth (Plano 3)
+ * e GPS (Plano 5) ainda são fakes.
  */
 export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransacao) {
   const ids = new UuidIdGenerator();
@@ -48,7 +49,13 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
   const obras = new SQLiteObraRepository(db);
   const eventos = new SQLiteEventoRepository(db);
   const auth = new FakeAuthGateway();
-  const camera = new FakeCameraGateway();
+  const armazenamentoDeFotos = new ArmazenamentoDeFotos(
+    db,
+    ids,
+    undefined,
+    __DEV__ ? (mensagem) => console.log(mensagem) : undefined,
+  );
+  const camera = new ExpoCameraGateway(armazenamentoDeFotos);
   const location = new FakeLocationGateway();
   const sync = new OutboxSyncGateway(db, ids);
   const tx = <U extends { execute(...args: never[]): Promise<unknown> }>(casoDeUso: U) =>
@@ -83,6 +90,10 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
     gateways: { auth, camera, location, sync },
     repositories: { clientes, pedidos, obras, eventos },
     useCases,
+    ponteDaCamera: camera,
+    async aoIniciar(): Promise<void> {
+      await armazenamentoDeFotos.limparOrfas();
+    },
     get usuarioId(): string {
       if (!sessao) throw new SessaoNaoDisponivelError();
       return sessao.userId;
