@@ -1,5 +1,12 @@
-import type { StatusSync } from '../enums/StatusSync';
+import { STATUS_SYNC, type StatusSync } from '../enums/StatusSync';
 import { EventoInvalidoError } from '../errors/DomainErrors';
+import {
+  copiarData,
+  copiarDataOuNula,
+  isDataValida,
+  isDataValidaOuNula,
+  pertenceA,
+} from '../validation/estrutura';
 import { isUuidV4 } from '../validation/uuid';
 import { Coordenada } from '../value-objects/Coordenada';
 
@@ -57,6 +64,40 @@ export class Evento {
       criadoEmLocal: new Date(),
       deletedAt: null,
     });
+  }
+
+  /** Reconstrói um evento persistido. Valida só a estrutura, sem regras de criação. */
+  static reidratar(props: EventoProps): Evento {
+    Evento.validarEstrutura(props);
+    return new Evento({
+      ...props,
+      localizacao: new Coordenada(props.localizacao.latitude, props.localizacao.longitude),
+      criadoEmLocal: copiarData(props.criadoEmLocal),
+      deletedAt: copiarDataOuNula(props.deletedAt),
+    });
+  }
+
+  private static validarEstrutura(props: EventoProps): void {
+    if (!isUuidV4(props.id)) throw new EventoInvalidoError('id deve ser UUID v4');
+    if (!isUuidV4(props.usuarioId)) throw new EventoInvalidoError('usuarioId deve ser UUID v4');
+    if (
+      typeof props.nome !== 'string' ||
+      typeof props.endereco !== 'string' ||
+      typeof props.observacoes !== 'string'
+    ) {
+      throw new EventoInvalidoError('nome, endereco e observacoes devem ser texto');
+    }
+    if (!isDataValida(props.data)) throw new EventoInvalidoError('Data do evento inválida');
+    if (!(props.localizacao instanceof Coordenada)) {
+      throw new EventoInvalidoError('Localização inválida');
+    }
+    if (!pertenceA(props.statusSync, STATUS_SYNC)) {
+      throw new EventoInvalidoError('statusSync inválido');
+    }
+    if (!isDataValida(props.criadoEmLocal)) {
+      throw new EventoInvalidoError('criadoEmLocal inválida');
+    }
+    if (!isDataValidaOuNula(props.deletedAt)) throw new EventoInvalidoError('deletedAt inválida');
   }
 
   get id(): string {

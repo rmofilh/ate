@@ -1,7 +1,15 @@
-import type { CanalOrigem } from '../enums/CanalOrigem';
-import type { StatusPedido } from '../enums/StatusPedido';
-import type { StatusSync } from '../enums/StatusSync';
+import { CANAIS_ORIGEM, type CanalOrigem } from '../enums/CanalOrigem';
+import { STATUS_PEDIDO, type StatusPedido } from '../enums/StatusPedido';
+import { STATUS_SYNC, type StatusSync } from '../enums/StatusSync';
 import { PedidoInvalidoError } from '../errors/DomainErrors';
+import {
+  copiarData,
+  copiarDataOuNula,
+  isDataValida,
+  isDataValidaOuNula,
+  isInteiroNaoNegativo,
+  pertenceA,
+} from '../validation/estrutura';
 import { isUuidV4 } from '../validation/uuid';
 
 export interface PedidoProps {
@@ -109,6 +117,50 @@ export class Pedido {
       criadoEmLocal: new Date(),
       deletedAt: null,
     });
+  }
+
+  /** Reconstrói um pedido persistido. Valida só a estrutura, sem regras de criação. */
+  static reidratar(props: PedidoProps): Pedido {
+    Pedido.validarEstrutura(props);
+    return new Pedido({
+      ...props,
+      dataEntrega: copiarData(props.dataEntrega),
+      criadoEmLocal: copiarData(props.criadoEmLocal),
+      deletedAt: copiarDataOuNula(props.deletedAt),
+    });
+  }
+
+  private static validarEstrutura(props: PedidoProps): void {
+    if (!isUuidV4(props.id)) throw new PedidoInvalidoError('id deve ser UUID v4');
+    if (!isUuidV4(props.usuarioId)) throw new PedidoInvalidoError('usuarioId deve ser UUID v4');
+    if (!isUuidV4(props.clienteId)) throw new PedidoInvalidoError('clienteId deve ser UUID v4');
+    if (props.obraId !== null && !isUuidV4(props.obraId)) {
+      throw new PedidoInvalidoError('obraId deve ser UUID v4');
+    }
+    if (typeof props.descricao !== 'string') {
+      throw new PedidoInvalidoError('descricao deve ser texto');
+    }
+    if (!pertenceA(props.canalOrigem, CANAIS_ORIGEM)) {
+      throw new PedidoInvalidoError('canalOrigem inválido');
+    }
+    if (!isDataValida(props.dataEntrega)) throw new PedidoInvalidoError('dataEntrega inválida');
+    if (!pertenceA(props.status, STATUS_PEDIDO)) throw new PedidoInvalidoError('status inválido');
+    if (props.fotoConclusaoPath !== null && typeof props.fotoConclusaoPath !== 'string') {
+      throw new PedidoInvalidoError('fotoConclusaoPath inválido');
+    }
+    if (typeof props.vendaDireta !== 'boolean') {
+      throw new PedidoInvalidoError('vendaDireta deve ser booleano');
+    }
+    if (!isInteiroNaoNegativo(props.quantidadeObra)) {
+      throw new PedidoInvalidoError('quantidadeObra deve ser inteiro >= 0');
+    }
+    if (!pertenceA(props.statusSync, STATUS_SYNC)) {
+      throw new PedidoInvalidoError('statusSync inválido');
+    }
+    if (!isDataValida(props.criadoEmLocal)) {
+      throw new PedidoInvalidoError('criadoEmLocal inválida');
+    }
+    if (!isDataValidaOuNula(props.deletedAt)) throw new PedidoInvalidoError('deletedAt inválida');
   }
 
   get id(): string {

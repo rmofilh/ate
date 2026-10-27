@@ -1,5 +1,12 @@
-import type { StatusSync } from '../enums/StatusSync';
+import { STATUS_SYNC, type StatusSync } from '../enums/StatusSync';
 import { ClienteInvalidoError } from '../errors/DomainErrors';
+import {
+  copiarData,
+  copiarDataOuNula,
+  isDataValida,
+  isDataValidaOuNula,
+  pertenceA,
+} from '../validation/estrutura';
 import { isUuidV4 } from '../validation/uuid';
 
 export interface ClienteProps {
@@ -51,6 +58,31 @@ export class Cliente {
       criadoEmLocal: new Date(),
       deletedAt: null,
     });
+  }
+
+  /** Reconstrói um cliente persistido. Valida só a estrutura, sem regras de criação. */
+  static reidratar(props: ClienteProps): Cliente {
+    Cliente.validarEstrutura(props);
+    return new Cliente({
+      ...props,
+      criadoEmLocal: copiarData(props.criadoEmLocal),
+      deletedAt: copiarDataOuNula(props.deletedAt),
+    });
+  }
+
+  private static validarEstrutura(props: ClienteProps): void {
+    if (!isUuidV4(props.id)) throw new ClienteInvalidoError('id deve ser UUID v4');
+    if (!isUuidV4(props.usuarioId)) throw new ClienteInvalidoError('usuarioId deve ser UUID v4');
+    if (typeof props.nome !== 'string' || typeof props.contato !== 'string') {
+      throw new ClienteInvalidoError('nome e contato devem ser texto');
+    }
+    if (!pertenceA(props.statusSync, STATUS_SYNC)) {
+      throw new ClienteInvalidoError('statusSync inválido');
+    }
+    if (!isDataValida(props.criadoEmLocal)) {
+      throw new ClienteInvalidoError('criadoEmLocal inválida');
+    }
+    if (!isDataValidaOuNula(props.deletedAt)) throw new ClienteInvalidoError('deletedAt inválida');
   }
 
   get id(): string {

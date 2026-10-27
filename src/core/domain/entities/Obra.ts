@@ -1,7 +1,15 @@
-import type { StatusObra } from '../enums/StatusObra';
-import type { StatusSync } from '../enums/StatusSync';
-import type { TipoObra } from '../enums/TipoObra';
+import { STATUS_OBRA, type StatusObra } from '../enums/StatusObra';
+import { STATUS_SYNC, type StatusSync } from '../enums/StatusSync';
+import { TIPO_OBRA, type TipoObra } from '../enums/TipoObra';
 import { ObraInvalidaError } from '../errors/DomainErrors';
+import {
+  copiarData,
+  copiarDataOuNula,
+  isDataValida,
+  isDataValidaOuNula,
+  isInteiroNaoNegativo,
+  pertenceA,
+} from '../validation/estrutura';
 import { isUuidV4 } from '../validation/uuid';
 
 export interface ObraProps {
@@ -72,6 +80,35 @@ export class Obra {
       criadoEmLocal: new Date(),
       deletedAt: null,
     });
+  }
+
+  /** Reconstrói uma obra persistida. Valida só a estrutura, sem regras de criação. */
+  static reidratar(props: ObraProps): Obra {
+    Obra.validarEstrutura(props);
+    return new Obra({
+      ...props,
+      criadoEmLocal: copiarData(props.criadoEmLocal),
+      deletedAt: copiarDataOuNula(props.deletedAt),
+    });
+  }
+
+  private static validarEstrutura(props: ObraProps): void {
+    if (!isUuidV4(props.id)) throw new ObraInvalidaError('id deve ser UUID v4');
+    if (!isUuidV4(props.usuarioId)) throw new ObraInvalidaError('usuarioId deve ser UUID v4');
+    if (typeof props.nome !== 'string') throw new ObraInvalidaError('nome deve ser texto');
+    if (!pertenceA(props.tipo, TIPO_OBRA)) throw new ObraInvalidaError('tipo inválido');
+    if (!isInteiroNaoNegativo(props.quantidade)) {
+      throw new ObraInvalidaError('quantidade deve ser inteiro >= 0');
+    }
+    if (!pertenceA(props.statusObra, STATUS_OBRA)) {
+      throw new ObraInvalidaError('statusObra inválido');
+    }
+    if (props.fotoPath !== null && typeof props.fotoPath !== 'string') {
+      throw new ObraInvalidaError('fotoPath inválido');
+    }
+    if (!pertenceA(props.statusSync, STATUS_SYNC)) throw new ObraInvalidaError('statusSync inválido');
+    if (!isDataValida(props.criadoEmLocal)) throw new ObraInvalidaError('criadoEmLocal inválida');
+    if (!isDataValidaOuNula(props.deletedAt)) throw new ObraInvalidaError('deletedAt inválida');
   }
 
   get id(): string {
