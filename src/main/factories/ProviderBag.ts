@@ -30,6 +30,17 @@ import type { Cliente } from '../../core/domain/entities/Cliente';
 import type { Evento } from '../../core/domain/entities/Evento';
 import type { Obra } from '../../core/domain/entities/Obra';
 import type { Pedido } from '../../core/domain/entities/Pedido';
+import type {
+  AbridorDaCamera,
+  ResultadoDaCamera,
+} from '../../infrastructure/device/camera/ExpoCameraGateway';
+
+export type { AbridorDaCamera, ResultadoDaCamera };
+
+/** Ponte pela qual a UI (CameraHost) ensina o gateway real a abrir a câmera. */
+export interface PonteDaCamera {
+  registrarAbridor(abridor: AbridorDaCamera): () => void;
+}
 
 export interface DadosCarregados {
   pedidos: Pedido[];
