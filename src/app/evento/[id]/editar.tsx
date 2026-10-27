@@ -26,7 +26,6 @@ interface EditarEventoInput {
 
 interface TelaEditarEventoProps {
   evento?: Evento;
-  onGps?(): Promise<{ latitude: number; longitude: number }>;
   onSalvar?(args: EditarEventoInput): Promise<void>;
   onConcluido?(): void;
 }
@@ -38,7 +37,6 @@ export default function TelaEditarEvento(props: TelaEditarEventoProps = {}) {
 
 function FormularioEditarEvento({
   evento: eventoRecebido,
-  onGps,
   onSalvar,
   onConcluido,
 }: TelaEditarEventoProps = {}) {
@@ -48,7 +46,6 @@ function FormularioEditarEvento({
   const navigation = useAppNavigation();
   const { id } = useRouteParams();
   const evento = eventoRecebido ?? eventos.find((item) => item.id === id);
-  const gpsBusy = useRef(false);
   const submitting = useRef(false);
   const [nome, setNome] = useState(evento?.nome ?? '');
   const [dataTexto, setDataTexto] = useState(evento?.data.toISOString().slice(0, 10) ?? '');
@@ -58,31 +55,7 @@ function FormularioEditarEvento({
   const [longitudeTexto, setLongitudeTexto] = useState('');
   const [ponto, setPonto] = useState<{ latitude: number; longitude: number } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [gpsLoading, setGpsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  async function atualizarGps() {
-    if (gpsBusy.current) return;
-
-    gpsBusy.current = true;
-    setGpsLoading(true);
-    setErro(null);
-    try {
-      const coordenada = onGps
-        ? await onGps()
-        : await services?.gateways.location.getCurrent();
-      if (!coordenada) throw new Error('Serviço de localização indisponível');
-      setPonto({ latitude: coordenada.latitude, longitude: coordenada.longitude });
-    } catch (error) {
-      const motivo = error instanceof Error ? error.message : 'Permissão de localização negada';
-      setErro(
-        `${motivo}. Habilite a localização nas configurações do dispositivo ou mantenha o pin atual.`,
-      );
-    } finally {
-      gpsBusy.current = false;
-      setGpsLoading(false);
-    }
-  }
 
   function usarLocalizacaoManual() {
     if (!latitudeTexto.trim() || !longitudeTexto.trim()) {
@@ -192,15 +165,17 @@ function FormularioEditarEvento({
       </Text>
       <ActionButton
         label="botao-usar-gps"
-        title={gpsLoading ? 'Atualizando localização...' : 'Atualizar localização'}
-        onPress={() => void atualizarGps()}
-        disabled={gpsLoading || loading}
+        title="Atualizar localização"
+        onPress={() => {}}
+        disabled
         appearance="secondary"
         icon="location"
-        busy={gpsLoading}
       />
+      <Text testID="aviso-gps" style={uiStyles.muted}>
+        Localização automática chega em breve. Informe as coordenadas manualmente.
+      </Text>
       <View style={uiStyles.field}>
-      <Text style={uiStyles.body}>Ou informe as novas coordenadas</Text>
+      <Text style={uiStyles.body}>Informe as novas coordenadas</Text>
       <TextInput
         accessibilityLabel="Latitude"
         placeholder="Latitude"
@@ -222,7 +197,7 @@ function FormularioEditarEvento({
         label="usar-localizacao-manual"
         title="Usar localização informada"
         onPress={usarLocalizacaoManual}
-        disabled={gpsLoading || loading}
+        disabled={loading}
         appearance="secondary"
       />
       {ponto ? (
@@ -239,7 +214,7 @@ function FormularioEditarEvento({
         label="botao-salvar-evento"
         title={loading ? 'Salvando...' : 'Salvar Evento'}
         onPress={() => void salvar()}
-        disabled={loading || gpsLoading}
+        disabled={loading}
         appearance="primary"
         icon="check"
         busy={loading}

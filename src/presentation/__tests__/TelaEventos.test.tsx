@@ -60,12 +60,11 @@ describe('TelaEventos', () => {
     expect(screen.getByText('Nenhum evento — toque em Novo Evento')).toBeTruthy();
   });
 
-  it('Novo Evento usa GPS e salva todos os campos', async () => {
+  it('Novo Evento salva todos os campos com coordenadas manuais', async () => {
     const onSalvar = jest.fn(async () => {});
     const onConcluido = jest.fn();
     await render(
       <TelaNovoEvento
-        onGps={async () => ({ latitude: -23.5, longitude: -46.6 })}
         onSalvar={onSalvar}
         onConcluido={onConcluido}
       />,
@@ -75,7 +74,9 @@ describe('TelaEventos', () => {
     await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-10');
     await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Central, 10');
     await fireEvent.changeText(screen.getByTestId('campo-obs-evento'), 'Levar estoque');
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
+    await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '-23.5');
+    await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '-46.6');
+    await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
 
     await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
 
@@ -95,22 +96,16 @@ describe('TelaEventos', () => {
     expect(onConcluido).toHaveBeenCalledTimes(1);
   });
 
-  it('Novo Evento orienta quando a permissão de localização é negada (RNF12)', async () => {
+  it('Novo Evento mantém o GPS desabilitado com aviso e aceita coordenadas manuais', async () => {
     const onSalvar = jest.fn(async () => {});
-    await render(
-      <TelaNovoEvento
-        onGps={async () => {
-          throw new Error('Permissão negada');
-        }}
-        onSalvar={onSalvar}
-      />,
-    );
+    await render(<TelaNovoEvento onSalvar={onSalvar} />);
 
+    expect(screen.getByTestId('botao-usar-gps').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByTestId('aviso-gps')).toHaveTextContent(
+      'Localização automática chega em breve. Informe as coordenadas manualmente.',
+    );
     await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-
-    await waitFor(() =>
-      expect(screen.getByTestId('erro-evento').props.children).toMatch(/configurações/),
-    );
+    expect(screen.queryByTestId('ponto-selecionado')).toBeNull();
 
     await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira Manual');
     await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-11');
@@ -136,7 +131,6 @@ describe('TelaEventos', () => {
     const onSalvar = jest.fn(async () => {});
     await render(
       <TelaNovoEvento
-        onGps={async () => ({ latitude: 0, longitude: 0 })}
         onSalvar={onSalvar}
       />,
     );
@@ -162,11 +156,9 @@ describe('TelaEventos', () => {
   });
 });
 
-it('GPS fake negado permite usar coordenadas manuais zero', async () => {
+it('Novo Evento aceita coordenadas manuais zero', async () => {
   const onSalvar = jest.fn(async () => {});
-  await render(<TelaNovoEvento onGps={async () => { throw new Error('Permissão negada'); }} onSalvar={onSalvar} />);
-  await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-  expect(screen.getByTestId('erro-evento')).toHaveTextContent(/configurações/i);
+  await render(<TelaNovoEvento onSalvar={onSalvar} />);
   await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira Equador');
   await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-11');
   await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Um');

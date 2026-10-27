@@ -58,7 +58,7 @@ describe('rotas dinâmicas de edição', () => {
         <DataContext.Provider
           value={{ ...seed, eventos: [...seed.eventos, alvo], reload: async () => {} }}
         >
-          <TelaEditarEvento onGps={async () => ({ latitude: 0, longitude: 0 })} onSalvar={async () => {}} />
+          <TelaEditarEvento onSalvar={async () => {}} />
         </DataContext.Provider>
       </RouteParamsContext.Provider>,
     );

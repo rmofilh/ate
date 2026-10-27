@@ -23,13 +23,11 @@ interface NovoEventoInput {
 }
 
 interface TelaNovoEventoProps {
-  onGps?(): Promise<{ latitude: number; longitude: number }>;
   onSalvar?(args: NovoEventoInput): Promise<void>;
   onConcluido?(): void;
 }
 
 export default function TelaNovoEvento({
-  onGps,
   onSalvar,
   onConcluido,
 }: TelaNovoEventoProps = {}) {
@@ -37,7 +35,6 @@ export default function TelaNovoEvento({
   const { reload } = useData();
   const services = useServices();
   const navigation = useAppNavigation();
-  const gpsBusy = useRef(false);
   const submitting = useRef(false);
   const [nome, setNome] = useState('');
   const [dataTexto, setDataTexto] = useState('');
@@ -47,31 +44,7 @@ export default function TelaNovoEvento({
   const [longitudeTexto, setLongitudeTexto] = useState('');
   const [ponto, setPonto] = useState<{ latitude: number; longitude: number } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [gpsLoading, setGpsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  async function usarGps() {
-    if (gpsBusy.current) return;
-
-    gpsBusy.current = true;
-    setGpsLoading(true);
-    setErro(null);
-    try {
-      const coordenada = onGps
-        ? await onGps()
-        : await services?.gateways.location.getCurrent();
-      if (!coordenada) throw new Error('Serviço de localização indisponível');
-      setPonto({ latitude: coordenada.latitude, longitude: coordenada.longitude });
-    } catch (error) {
-      const motivo = error instanceof Error ? error.message : 'Permissão de localização negada';
-      setErro(
-        `${motivo}. Habilite a localização nas configurações do dispositivo ou posicione o pin manualmente.`,
-      );
-    } finally {
-      gpsBusy.current = false;
-      setGpsLoading(false);
-    }
-  }
 
   function usarLocalizacaoManual() {
     if (!latitudeTexto.trim() || !longitudeTexto.trim()) {
@@ -175,15 +148,17 @@ export default function TelaNovoEvento({
       </View>
       <ActionButton
         label="botao-usar-gps"
-        title={gpsLoading ? 'Buscando localização...' : 'Usar minha localização'}
-        onPress={() => void usarGps()}
-        disabled={gpsLoading || loading}
+        title="Usar minha localização"
+        onPress={() => {}}
+        disabled
         appearance="secondary"
         icon="location"
-        busy={gpsLoading}
       />
+      <Text testID="aviso-gps" style={uiStyles.muted}>
+        Localização automática chega em breve. Informe as coordenadas manualmente.
+      </Text>
       <View style={uiStyles.field}>
-      <Text style={uiStyles.body}>Ou informe as coordenadas manualmente</Text>
+      <Text style={uiStyles.body}>Informe as coordenadas</Text>
       <TextInput
         accessibilityLabel="Latitude"
         placeholder="Latitude"
@@ -205,7 +180,7 @@ export default function TelaNovoEvento({
         label="usar-localizacao-manual"
         title="Usar localização informada"
         onPress={usarLocalizacaoManual}
-        disabled={gpsLoading || loading}
+        disabled={loading}
         appearance="secondary"
       />
       {ponto ? (
@@ -222,7 +197,7 @@ export default function TelaNovoEvento({
         label="botao-salvar-evento"
         title={loading ? 'Salvando...' : 'Salvar Evento'}
         onPress={() => void salvar()}
-        disabled={loading || gpsLoading}
+        disabled={loading}
         appearance="primary"
         icon="check"
         busy={loading}

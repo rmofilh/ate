@@ -10,7 +10,6 @@ describe('TelaEditarEvento', () => {
     await render(
       <TelaEditarEvento
         evento={seed.eventos[0]}
-        onGps={async () => ({ latitude: 0, longitude: 0 })}
         onSalvar={async () => {}}
       />,
     );
@@ -19,17 +18,21 @@ describe('TelaEditarEvento', () => {
     expect(screen.getByTestId('pin-atual')).toBeTruthy();
   });
 
-  it('botão GPS atualiza o ponto exibido', async () => {
+  it('GPS fica desabilitado com aviso e coordenadas manuais atualizam o ponto', async () => {
     const seed = seedFixtures();
     await render(
       <TelaEditarEvento
         evento={seed.eventos[0]}
-        onGps={async () => ({ latitude: 1, longitude: 2 })}
         onSalvar={async () => {}}
       />,
     );
 
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
+    expect(screen.getByTestId('botao-usar-gps').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByTestId('aviso-gps')).toHaveTextContent(/manualmente/);
+
+    await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '1');
+    await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '2');
+    await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
 
     await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
   });
@@ -41,7 +44,6 @@ describe('TelaEditarEvento', () => {
     await render(
       <TelaEditarEvento
         evento={seed.eventos[0]}
-        onGps={async () => ({ latitude: 0, longitude: 0 })}
         onSalvar={onSalvar}
         onConcluido={onConcluido}
       />,
@@ -64,7 +66,6 @@ describe('TelaEditarEvento', () => {
     await render(
       <TelaEditarEvento
         evento={seed.eventos[0]}
-        onGps={async () => ({ latitude: 0, longitude: 0 })}
         onSalvar={onSalvar}
       />,
     );
