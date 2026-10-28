@@ -3,7 +3,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 
 import TelaEditarEvento from '../../app/evento/[id]/editar';
 import { Coordenada } from '../../core/domain/value-objects/Coordenada';
-import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
 
 describe('TelaEditarEvento', () => {
@@ -38,14 +37,19 @@ describe('TelaEditarEvento', () => {
     await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
   });
 
-  it('Atualizar localização pelo GPS troca o pin e salva o novo ponto', async () => {
+  it('Localizar no mapa busca o endereço atual, troca o pin e salva o novo ponto', async () => {
     const seed = seedFixtures();
+    const evento = seed.eventos[0];
     const onSalvar = jest.fn(async () => {});
-    const onGps = jest.fn(() => new FakeLocationGateway(new Coordenada(-22.9, -43.2)).getCurrent());
-    await render(<TelaEditarEvento evento={seed.eventos[0]} onSalvar={onSalvar} onGps={onGps} />);
+    const onBuscarEndereco = jest.fn(async () => new Coordenada(-22.9, -43.2));
+    await render(<TelaEditarEvento evento={evento} onSalvar={onSalvar} onBuscarEndereco={onBuscarEndereco} />);
 
-    expect(onGps).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
+    expect(screen.queryByTestId('botao-usar-gps')).toBeNull();
+    expect(onBuscarEndereco).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+
+    expect(onBuscarEndereco).toHaveBeenCalledWith(evento.endereco);
+    await fireEvent.press(await screen.findByTestId('botao-confirmar-local'));
 
     await waitFor(() =>
       expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-22.9, -43.2/),
@@ -61,17 +65,37 @@ describe('TelaEditarEvento', () => {
     );
   });
 
-  it('GPS negado na edição mantém o pin atual e salva sem trocar a coordenada', async () => {
+  it('endereço não encontrado na edição abre o mapa no pin atual do evento', async () => {
+    const seed = seedFixtures();
+    const evento = seed.eventos[0];
+    await render(
+      <TelaEditarEvento evento={evento} onSalvar={async () => {}} onBuscarEndereco={async () => null} />,
+    );
+
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+
+    expect(await screen.findByTestId('mapa')).toBeTruthy();
+    expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent(
+      `Pin: ${evento.localizacao.latitude}, ${evento.localizacao.longitude}`,
+    );
+    expect(screen.getByTestId('aviso-seletor')).toHaveTextContent(/não encontrado/i);
+  });
+
+  it('cancelar o mapa na edição mantém a coordenada do evento ao salvar', async () => {
     const seed = seedFixtures();
     const evento = seed.eventos[0];
     const onSalvar = jest.fn(async () => {});
-    const onGps = () => new FakeLocationGateway(undefined, 'NEGADA_PERMANENTE').getCurrent();
-    await render(<TelaEditarEvento evento={evento} onSalvar={onSalvar} onGps={onGps} />);
+    await render(
+      <TelaEditarEvento
+        evento={evento}
+        onSalvar={onSalvar}
+        onBuscarEndereco={async () => new Coordenada(1, 1)}
+      />,
+    );
 
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-
-    await waitFor(() => expect(screen.getByTestId('erro-gps')).toHaveTextContent(/configurações/i));
-    expect(screen.getByTestId('botao-abrir-configuracoes')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+    await fireEvent.press(await screen.findByTestId('botao-cancelar-local'));
+    await waitFor(() => expect(screen.queryByTestId('mapa')).toBeNull());
     expect(screen.queryByTestId('ponto-selecionado')).toBeNull();
 
     await fireEvent.press(screen.getByTestId('botao-salvar-evento'));

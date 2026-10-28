@@ -32,6 +32,14 @@ interface Posicao {
   timestamp: number;
 }
 
+interface ResultadoDaBusca {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
+const BUSCA_PADRAO: ResultadoDaBusca[] = [{ latitude: -23.5614, longitude: -46.6558 }];
+
 const POSICAO_PADRAO: Posicao = {
   coords: { latitude: -23.5617, longitude: -46.6559, accuracy: 12 },
   timestamp: 0,
@@ -41,6 +49,10 @@ export const localizacaoDeTeste = {
   servicosLigados: true,
   respostaAoPedir: permissoesDeLocalizacao.concedida,
   proximaPosicao: POSICAO_PADRAO,
+  resultadosDaBusca: BUSCA_PADRAO,
+  geocodeAsync: jest.fn(
+    async (_endereco: string): Promise<ResultadoDaBusca[]> => localizacaoDeTeste.resultadosDaBusca,
+  ),
   hasServicesEnabledAsync: jest.fn(async (): Promise<boolean> => localizacaoDeTeste.servicosLigados),
   requestForegroundPermissionsAsync: jest.fn(
     async (): Promise<Permissao> => localizacaoDeTeste.respostaAoPedir,
@@ -52,6 +64,11 @@ export const localizacaoDeTeste = {
     localizacaoDeTeste.servicosLigados = true;
     localizacaoDeTeste.respostaAoPedir = permissoesDeLocalizacao.concedida;
     localizacaoDeTeste.proximaPosicao = POSICAO_PADRAO;
+    localizacaoDeTeste.resultadosDaBusca = BUSCA_PADRAO;
+    localizacaoDeTeste.geocodeAsync.mockReset();
+    localizacaoDeTeste.geocodeAsync.mockImplementation(
+      async (): Promise<ResultadoDaBusca[]> => localizacaoDeTeste.resultadosDaBusca,
+    );
     localizacaoDeTeste.hasServicesEnabledAsync.mockReset();
     localizacaoDeTeste.hasServicesEnabledAsync.mockImplementation(
       async (): Promise<boolean> => localizacaoDeTeste.servicosLigados,
@@ -72,3 +89,4 @@ export const requestForegroundPermissionsAsync = () =>
   localizacaoDeTeste.requestForegroundPermissionsAsync();
 export const getCurrentPositionAsync = (opcoes?: unknown) =>
   localizacaoDeTeste.getCurrentPositionAsync(opcoes);
+export const geocodeAsync = (endereco: string) => localizacaoDeTeste.geocodeAsync(endereco);

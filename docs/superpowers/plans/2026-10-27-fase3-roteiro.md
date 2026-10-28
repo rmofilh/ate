@@ -30,7 +30,7 @@ O professor pediu uma apresentação nova sobre **câmera e geolocalização sal
 | Adaptadores Expo | `expo-camera`, `expo-image-manipulator`, `expo-file-system` | `expo-location` não instalado |
 | Persistência local | `fotos` + caminho relativo; `eventos.latitude/longitude` com `CHECK` | Falta um teste de ponta a ponta "GPS → caso de uso → SQLite" |
 
-Decisão: **o Plano 5 passa a ser o próximo**, dividido em **5A (GPS + persistência, obrigatório para a apresentação)** e **5B (mapa, depois)**. O Plano 3 fica adiado sem alteração de conteúdo; as dependências permitem isso, porque o Plano 5 só depende do Plano 1 e o Plano 3 também. A numeração dos planos não muda, só a ordem de execução.
+Decisão: **o Plano 5 passa a ser o próximo**, dividido em **5A (local do evento por busca, mapa e GPS, com persistência; obrigatório para a apresentação)** e **5B (mapa de eventos com pins, depois)**. O Plano 3 fica adiado sem alteração de conteúdo; as dependências permitem isso, porque o Plano 5 só depende do Plano 1 e o Plano 3 também. A numeração dos planos não muda, só a ordem de execução.
 
 Ordem de execução:
 
@@ -38,8 +38,8 @@ Ordem de execução:
 |---|---|---|
 | 1 | Plano 1 — SQLite + Drizzle | Concluído (27/10) |
 | 2 | Plano 2 — Câmera + imagens | Concluído (27/10) |
-| 3 | **Plano 5A — GPS real e persistência da coordenada** | Implementado (27/10); falta o smoke test no aparelho |
-| 4 | Plano 5B — Mapa de eventos | Depois do 5A; pode ficar para depois do Plano 4 se faltar tempo |
+| 3 | **Plano 5A — Local do evento: busca, mapa e GPS** | Implementado (27/10); falta o smoke test no aparelho |
+| 4 | Plano 5B — Mapa de eventos com pins | Depois do 5A; pode ficar para depois do Plano 4 se faltar tempo |
 | 5 | Plano 3 — Supabase + Auth | Adiado; corrigir os pontos da revisão antes de executar |
 | 6 | Plano 4 — Sincronização | Sem mudança |
 | 7 | Plano 6 — Fechamento + build | Sem mudança |
@@ -86,7 +86,7 @@ Sobre a ordem das imagens: o material sugere "o registro sobe primeiro, o arquiv
 
 ## 4. Decisões pendentes (responder antes do plano correspondente)
 
-D7 a D10 aprovadas em 27/10/2026 (✅).
+D6 a D12 aprovadas em 27/10/2026 (✅). D8 revisada no mesmo dia: a tela chama a busca e o seletor de mapa; o GPS é chamado dentro do seletor.
 
 | # | Pergunta | Recomendação | Plano |
 |---|---|---|---|
@@ -95,10 +95,12 @@ D7 a D10 aprovadas em 27/10/2026 (✅).
 | D3 | Bucket privado guardando o **caminho** do objeto (e URL assinada para exibir), em vez de URL pública | Sim (fotos de clientes; LGPD). Diverge de "URLs públicas" no UC16, registrar | 3 |
 | D4 | Se outro e-mail logar no aparelho, o que fazer com os dados locais? | Bloquear com aviso e oferecer "apagar dados locais e entrar" (usuário único, Decisão #1) | 3 |
 | D5 | Sync como caso de uso em `application` com portas novas | Sim (o material lista `SincronizarFilaUseCase` na camada de aplicação; regras de ordem e retentativa ficam testáveis com fakes) | 4 |
-| D6 | Biblioteca do mapa | `react-native-maps` (roda no Expo Go; `expo-maps` é alpha e não está no Expo Go) | 5B |
+| D6 ✅ | Biblioteca do mapa | **Revista em 27/10:** Leaflet + OpenStreetMap numa `react-native-webview`. O `react-native-maps` ficou em branco no Expo Go para Android porque a chave do Google embutida no Expo Go (SDKs 55 a 57) está vencida (expo/expo#49323). Leaflet roda no Expo Go e no APK sem chave. Usado no seletor do 5A e no mapa do 5B | 5A, 5B |
 | D7 ✅ | Erro tipado de localização em `core/application` (`LocalizacaoIndisponivelError` com motivo `NEGADA`, `NEGADA_PERMANENTE`, `SERVICO_DESLIGADO`, `TIMEOUT`) | Sim. O contrato `ILocationGateway` não muda; o domínio define a linguagem do erro e o adaptador Expo traduz para ela. A tela decide entre "Abrir configurações", "Ligue a localização" e "Tente de novo" sem importar nada de `expo-location`. É aditivo, mas é código novo em `core` (princípio 2) | 5A |
 | D8 ✅ | Quem chama o GPS: a tela (pré-visualiza a coordenada e o usuário confirma) ou o caso de uso (`usarGps: true`, já existente) | A tela, via `services.gateways.location.getCurrent()`, mostrando a coordenada antes de salvar; o caso de uso recebe `localizacao` pronta. O artesão confere o ponto antes de gravar e o fluxo fica igual ao manual. O caminho `usarGps` do caso de uso continua coberto pelos testes existentes | 5A |
 | D9 ✅ | Associar coordenada à foto (geotag da foto de conclusão) | Não. Câmera e GPS ficam em fluxos separados (pedido e evento), como na fase 2; geotag seria escopo novo sem RF | — |
+| D11 ✅ | Porta nova `IGeocodingGateway.buscar(endereco): Promise<Coordenada \| null>` para a busca de endereço | Sim. Busca é capacidade externa como o GPS; geocoder nativo do `expo-location` (grátis, sem chave), não Google Places (chave e faturamento) | 5A |
+| D12 ✅ | Motivo `BUSCA_INDISPONIVEL` em `LocalizacaoIndisponivelError` | Sim. Falha ou demora do geocoder (normalmente sem internet); o mapa abre mesmo assim | 5A |
 | D10 ✅ | Commits de TDD visíveis no 5A (teste vermelho e implementação em commits separados) | Sim, só no 5A: custo baixo e deixa o ciclo vermelho → verde rastreável no histórico | 5A |
 
 ---
@@ -243,55 +245,37 @@ Dividido em duas partes, alinhadas às aulas de 03/11 (infraestrutura e seguran�
 
 Dividido em duas partes (§1.1). O **5A** é o próximo plano a executar e fecha a parte de geolocalização exigida na apresentação; o **5B** (mapa) vem depois.
 
-### 5A — GPS real e persistência da coordenada
+### 5A — Local do evento: busca de endereço, mapa e GPS
 
-**Objetivo.** RF12/UC13/UC14: a coordenada do evento vem do GPS do aparelho, de forma pontual, e é gravada no SQLite junto com o evento, na mesma transação da fila. O fluxo manual continua como alternativa.
+> **Revisado em 27/10/2026.** A primeira versão usava o GPS do aparelho como fluxo principal. Como o evento é cadastrado antes da feira, longe do local, o fluxo principal passou a ser busca de endereço + mapa, e o GPS virou atalho dentro do mapa. Registro completo em `docs/ate-fase3.md` (seção do Plano 5A).
 
-**Pré-requisitos.** Material de geolocalização (aula de 13/10) e a doc do `expo-location` do SDK 57 (`https://docs.expo.dev/versions/v57.0.0/sdk/location/`), conferindo nomes de API, opções de precisão e se há timeout nativo. Não escrever de memória.
+**Objetivo.** RF12/UC13/UC14: o local do evento é escolhido num mapa, a partir do endereço digitado, com ajuste do pin e atalho "Minha localização" (GPS). A coordenada é gravada no SQLite junto com o evento, na mesma transação da fila. As coordenadas manuais continuam como alternativa.
 
 **Decisões.**
-- `expo-location` instalado com `npx expo install expo-location` (roda no Expo Go).
-- Permissão **só no toque** em "Usar minha localização" (RNF12), com `requestForegroundPermissionsAsync`; nunca na abertura do app nem da tela. Só primeiro plano: nada de background.
-- Antes de pedir a posição, checar se o serviço de localização está ligado (`hasServicesEnabledAsync`), para não confundir "GPS desligado" com "permissão negada".
-- `getCurrentPositionAsync` com precisão `Balanced` (equilíbrio bateria × precisão; feira é ao ar livre). Timeout próprio de ~10 s com `Promise.race` se a API não oferecer um. Opcional, se a doc confirmar: usar `getLastKnownPositionAsync` como resposta rápida quando for recente.
-- Contrato `ILocationGateway.getCurrent(): Promise<Coordenada>` **inalterado**. O adaptador converte `coords` em `Coordenada` (que valida faixa) e traduz falhas para `LocalizacaoIndisponivelError` (D7). Isso é o argumento central "a infraestrutura se adequa ao domínio".
-- A tela chama o gateway e mostra a coordenada antes de salvar (D8); depois de preenchida pelo GPS, a coordenada continua editável no modo manual.
-- Erros na tela: `NEGADA` → instrução e fluxo manual; `NEGADA_PERMANENTE` → instrução e botão "Abrir configurações" (`Linking.openSettings()`); `SERVICO_DESLIGADO` → "Ligue a localização"; `TIMEOUT` → "Tente de novo ou informe manualmente". Em todos, o fluxo manual segue disponível.
-- O ponto do evento é imutável e de um sentido só (material); o SQLite já guarda `latitude`/`longitude` com `CHECK` de faixa (Plano 1). **Sem migration nova.**
-- Botão protegido contra toque duplo (como a câmera no Plano 2) e com indicador de carregando durante a leitura.
-- `app.json`: plugin `expo-location` com `locationWhenInUsePermission` em português e permissões de background desligadas. No Expo Go aparece o texto do Expo Go; o texto próprio vale no APK (Plano 6).
+- Fluxo: endereço → "Localizar no mapa" → geocoder nativo (`expo-location` `geocodeAsync`, grátis, sem chave) → seletor com o pin no resultado → tocar/arrastar → confirmar. Sem endereço, sem resultado ou com falha, o seletor abre mesmo assim no ponto atual, com aviso.
+- Seletor com Leaflet + OpenStreetMap numa WebView (D6), montado só com o modal aberto; "Minha localização" usa `ExpoLocationGateway` (permissão só no toque, RNF12; serviço ligado; `Balanced`; limite de 10 s).
+- Contratos: `ILocationGateway` inalterado; porta nova `IGeocodingGateway` (D11). Falhas traduzidas para `LocalizacaoIndisponivelError` (D7), com o motivo `BUSCA_INDISPONIVEL` para o geocoder (D12). No Android o geocoder exige permissão de localização.
+- A tela chama a busca e o seletor; o seletor chama o GPS (D8 revisada). O caso de uso recebe a `Coordenada` pronta.
+- Sem migration: `eventos.latitude/longitude` com `CHECK` desde o Plano 1.
+- `app.json`: plugin `expo-location` com texto em português e background desligado. O mapa não precisa de plugin nem de chave.
 
-**Componentes.**
-- `core/application/errors/LocalizacaoIndisponivelError.ts` (D7; criar a pasta se não existir, coberta pelo teste de arquitetura).
-- `infrastructure/device/location/ExpoLocationGateway.ts` implementando `ILocationGateway`.
-- `FakeLocationGateway` passa a lançar `LocalizacaoIndisponivelError` nos modos de falha (e perde a mensagem que cita "pin no mapa", que só existe no 5B), continuando só nos testes.
-- `makeSqliteProviders`: troca o `FakeLocationGateway` pelo `ExpoLocationGateway`.
-- `evento/novo.tsx` e `evento/[id]/editar.tsx`: reabilitam "Usar minha localização" (desfaz a Tarefa 9 do Plano 1) e removem o aviso "Localização automática chega em breve".
-- Se as duas telas repetirem a mesma lógica de estado do GPS, extrair um hook em `presentation/hooks/` (ex.: `useLocalizacaoAtual`).
-- `docs/ate-fase3.md`: seção do Plano 5A (decisões, divergências e smoke test), como nos Planos 1 e 2.
+**Componentes.** `IGeocodingGateway`, `LocalizacaoIndisponivelError`, `ExpoLocationGateway`, `ExpoGeocodingGateway`, `limiteDeTempo`, `SeletorDeLocal`, `useLocalizarNoMapa`, `useLocalizacaoAtual`, telas `evento/novo` e `evento/[id]/editar`, composição com `gateways.geocodificador`.
 
-**Testes (TDD, D10: teste vermelho antes da implementação em cada tarefa).**
-- `ExpoLocationGateway` com `jest.mock('expo-location')`: concedida devolve `Coordenada` com os valores de `coords`; não pede posição sem permissão; negada → `NEGADA`; negada com `canAskAgain = false` → `NEGADA_PERMANENTE`; serviço desligado → `SERVICO_DESLIGADO`; demora acima do limite → `TIMEOUT` (timers falsos do Jest); coordenada fora da faixa vinda do SDK → erro de domínio, sem gravar lixo; precisão `Balanced` passada à API.
-- `LocalizacaoIndisponivelError`: teste simples de motivo e mensagem; teste de arquitetura continua verde.
-- Telas com RNTL e `FakeLocationGateway`: GPS preenche e mostra a coordenada; cada motivo de erro mostra a mensagem certa e mantém o manual; "Abrir configurações" chama `Linking.openSettings`; toque duplo faz uma única leitura; nenhuma chamada ao gateway ao montar a tela (RNF12).
-- **Integração de ponta a ponta com `bancoDeTeste()`**: `CadastrarEventoUseCase` decorado com `transacional`, gateway fake devolvendo uma coordenada, evento relido do `SQLiteEventoRepository` com a mesma latitude/longitude e uma entrada `CRIAR` em `fila_sync`; editar a coordenada atualiza a linha e enfileira `ATUALIZAR`. É a evidência de "dados de geolocalização salvos no banco local".
-- Composição: `makeSqliteProviders` entrega `ExpoLocationGateway` no runtime; nenhum `Fake*Gateway` de localização fora dos testes.
+**Testes (TDD, D10).** Adaptadores com `expo-location` dublado; seletor e telas com RNTL e `react-native-webview` dublado; ponta a ponta com `bancoDeTeste()` (SDK dublado → adaptador → caso de uso transacional → SQLite e `fila_sync`).
 
-**Aceite (Expo Go, aparelho real).** Criar evento com "Usar minha localização" e ver a coordenada antes de salvar; fechar e reabrir o app e o evento manter a coordenada; negar a permissão mostra a instrução e o manual funciona; negar de vez oferece "Abrir configurações"; GPS desligado mostra o aviso próprio; criar evento com GPS em **modo avião** (o GPS não precisa de rede; pode demorar mais e cair no timeout, que precisa ser tratado); editar evento com GPS. `npm test`, `typecheck`, `lint` e `db:check` verdes.
+**Aceite (Expo Go, aparelho real).** Endereço real abre o mapa no lugar certo; ajustar e confirmar grava a coordenada, que sobrevive a fechar e reabrir o app; endereço inexistente permite posicionar o pin à mão; "Minha localização" funciona no mapa; negar a permissão mostra a instrução; em modo avião a busca avisa e GPS, pin e manual funcionam; editar abre no pin atual. `npm test`, `typecheck`, `lint` e `db:check` verdes.
 
 ### 5B — Mapa de eventos
 
 **Objetivo.** RF13/UC15: mapa com um pin por evento ativo. Não é exigido na apresentação de câmera e geolocalização; pode ir para depois do Plano 4 se o calendário apertar.
 
 **Decisões.**
-- `react-native-maps` (D6). Pins dos eventos não removidos; toque no pin abre o evento. Sem rede: a lista funciona e o mapa mostra um aviso, porque tiles exigem conexão (RF13).
+- Reaproveitar o `MapaLeaflet` do 5A (D6), estendido para vários pins. Pins dos eventos não removidos; toque no pin abre o evento. Sem rede: a lista funciona e o mapa mostra um aviso, porque tiles exigem conexão (RF13).
 - Opcional: preencher o endereço com `reverseGeocodeAsync` quando houver rede.
-- Opcional: escolher o ponto tocando no mapa (o "posicionar o pin" citado na fase 2), como terceira forma de informar a coordenada.
-- **Atenção para o Plano 6:** no Android, fora do Expo Go, o `react-native-maps` exige chave do Google Maps (`android.config.googleMaps.apiKey`). Sem ela o mapa fica em branco no APK. Prever a chave ou um provedor alternativo antes do build.
 
 **Componentes.** Tela/aba de mapa em `app/` com componente em `presentation/components`.
 
-**Testes.** Mapa renderiza um pin por evento ativo e nenhum para evento removido (mock de `react-native-maps`); toque no pin navega para o evento; aviso sem rede.
+**Testes.** Mapa renderiza um pin por evento ativo e nenhum para evento removido (dublê de `react-native-webview`); toque no pin navega para o evento; aviso sem rede.
 
 **Aceite.** Mapa mostra os pins; toque abre o evento; offline a lista funciona e o mapa avisa.
 
@@ -309,7 +293,7 @@ Dividido em duas partes (§1.1). O **5A** é o próximo plano a executar e fecha
 - `expo-dev-client` para testar o que o Expo Go não cobre (textos de permissão próprios, mapa com chave).
 - `expo-updates` com `runtimeVersion` por política, para publicar correções sem novo APK.
 - Variáveis `EXPO_PUBLIC_*` configuradas no EAS (`eas env`), não no repositório.
-- `app.json`: `android.package`, ícone, splash, plugins com textos de permissão, chave do Google Maps.
+- `app.json`: `android.package`, ícone, splash e plugins com textos de permissão.
 - Instalar o APK no celular e repetir o smoke test completo dos Planos 1 a 5.
 
 **Documentação.**
@@ -330,8 +314,9 @@ Dividido em duas partes (§1.1). O **5A** é o próximo plano a executar e fecha
 | Polyfill de URL no Hermes | 3 | Spike no início do 3B |
 | Pedido parado esperando a própria foto | 4 | Storage-first consciente; falha visível e reenvio |
 | Linhas com o mesmo `updated_at` na fronteira do lote | 4 | Cursor composto `(updated_at, id)` |
-| Mapa em branco no APK Android | 5B e 6 | Chave do Google Maps antes do build |
+| Blocos do OpenStreetMap bloqueados ou limitados (política de uso) | 5A, 5B e 6 | Página com Referer e user agent identificados e atribuição visível; uso leve. Se necessário, trocar a URL dos blocos por um provedor com chave |
 | Dados de desenvolvimento com usuário falso | 3 e 4 | Zerar o banco antes do Plano 4; regra D4 |
 | GPS lento ou sem sinal (ambiente fechado, modo avião) | 5A | Timeout próprio, motivo `TIMEOUT` e fluxo manual sempre disponível |
+| Geocoder nativo impreciso ou sem resultado | 5A | Pin ajustável no mapa; sem resultado, o mapa abre para posicionar à mão |
 | Plano 3 desatualizado depois do 5A (linhas, contagem de testes) | 3 | Rebasear o plano junto com as correções da revisão antes de executar |
 | Plano 3 e Plano 4 comprimidos até 17/11 | 3 e 4 | 5B pode sair do caminho crítico; apresentação de 17/11 com 1 a 5A e o que houver do 3/4 |

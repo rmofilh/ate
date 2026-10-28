@@ -30,6 +30,7 @@ import { SQLiteObraRepository } from '../../infrastructure/database/sqlite/SQLit
 import { SQLitePedidoRepository } from '../../infrastructure/database/sqlite/SQLitePedidoRepository';
 import { ExpoCameraGateway } from '../../infrastructure/device/camera/ExpoCameraGateway';
 import { FakeAuthGateway } from '../../infrastructure/device/FakeAuthGateway';
+import { ExpoGeocodingGateway } from '../../infrastructure/device/location/ExpoGeocodingGateway';
 import { ExpoLocationGateway } from '../../infrastructure/device/location/ExpoLocationGateway';
 import { UuidIdGenerator } from '../../infrastructure/device/UuidIdGenerator';
 import { ArmazenamentoDeFotos } from '../../infrastructure/fileSystem/ArmazenamentoDeFotos';
@@ -39,8 +40,8 @@ import { SessaoNaoDisponivelError } from './SessaoNaoDisponivelError';
 
 /**
  * Composition root do runtime: SQLite + fila outbox. Casos de uso que escrevem rodam em
- * transação (registro e fila juntos). Câmera e fotos (Plano 2) e GPS (Plano 5A) são reais;
- * auth (Plano 3) ainda é fake.
+ * transação (registro e fila juntos). Câmera e fotos (Plano 2), GPS e busca de endereço
+ * (Plano 5A) são reais; auth (Plano 3) ainda é fake.
  */
 export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransacao) {
   const ids = new UuidIdGenerator();
@@ -57,6 +58,7 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
   );
   const camera = new ExpoCameraGateway(armazenamentoDeFotos);
   const location = new ExpoLocationGateway();
+  const geocodificador = new ExpoGeocodingGateway();
   const sync = new OutboxSyncGateway(db, ids);
   const tx = <U extends { execute(...args: never[]): Promise<unknown> }>(casoDeUso: U) =>
     transacional(casoDeUso, executor);
@@ -87,7 +89,7 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
   let sessao: AuthSession | null = null;
 
   const bag = {
-    gateways: { auth, camera, location, sync },
+    gateways: { auth, camera, location, geocodificador, sync },
     repositories: { clientes, pedidos, obras, eventos },
     useCases,
     ponteDaCamera: camera,

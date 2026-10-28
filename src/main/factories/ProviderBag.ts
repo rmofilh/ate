@@ -1,5 +1,6 @@
 import type { AuthSession, IAuthGateway } from '../../core/application/gateways/IAuthGateway';
 import type { ICameraGateway } from '../../core/application/gateways/ICameraGateway';
+import type { IGeocodingGateway } from '../../core/application/gateways/IGeocodingGateway';
 import type { ILocationGateway } from '../../core/application/gateways/ILocationGateway';
 import type { ISyncGateway } from '../../core/application/gateways/ISyncGateway';
 import type { IClienteRepository } from '../../core/application/repositories/IClienteRepository';
@@ -81,6 +82,7 @@ export interface ProviderBag {
     auth: IAuthGateway;
     camera: ICameraGateway;
     location: ILocationGateway;
+    geocodificador: IGeocodingGateway;
     sync: ISyncGateway;
   };
   repositories: {

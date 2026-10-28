@@ -1,15 +1,19 @@
 import React from 'react';
-import { Linking } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import TelaEventos from '../../app/(tabs)/eventos';
 import TelaNovoEvento from '../../app/evento/novo';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
-import type { MotivoLocalizacaoIndisponivel } from '../../core/application/errors/LocalizacaoIndisponivelError';
 import { Coordenada } from '../../core/domain/value-objects/Coordenada';
+import { FakeGeocodingGateway } from '../../infrastructure/device/FakeGeocodingGateway';
 import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
+import { mensagemDaPagina } from '../../test-support/mocks/reactNativeWebview';
 import type { ProviderBag } from '../../main/factories/ProviderBag';
 import { DataContext, NetworkContext, ServicesContext } from '../hooks/AppProviders';
+
+const pinNoMapa = (latitude: number, longitude: number) =>
+  fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'pin', latitude, longitude }));
+const textoDoPin = () => screen.getByTestId('coordenada-do-pin');
 
 describe('TelaEventos', () => {
   it('lista eventos e pins das fixtures mesmo offline', async () => {
@@ -101,118 +105,167 @@ describe('TelaEventos', () => {
     expect(onConcluido).toHaveBeenCalledTimes(1);
   });
 
-  it('Novo Evento preenche a coordenada pelo GPS, mostra antes de salvar e grava esse ponto', async () => {
+  it('Novo Evento: endereço → Localizar no mapa → pin no endereço → confirmar → salva esse ponto', async () => {
     const onSalvar = jest.fn(async () => {});
-    const onGps = jest.fn(() => new FakeLocationGateway(new Coordenada(-23.4, -46.5)).getCurrent());
-    await render(<TelaNovoEvento onSalvar={onSalvar} onGps={onGps} />);
+    const onBuscarEndereco = jest.fn(async () => new Coordenada(-23.5614, -46.6558));
+    await render(<TelaNovoEvento onSalvar={onSalvar} onBuscarEndereco={onBuscarEndereco} />);
 
+    expect(screen.queryByTestId('botao-usar-gps')).toBeNull();
     expect(screen.queryByTestId('aviso-gps')).toBeNull();
-    expect(onGps).not.toHaveBeenCalled();
+    expect(onBuscarEndereco).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('mapa')).toBeNull();
 
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-
-    await waitFor(() =>
-      expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-23.4, -46.5/),
-    );
-    expect(screen.getByTestId('campo-latitude-manual').props.value).toBe('-23.4');
-    expect(screen.getByTestId('campo-longitude-manual').props.value).toBe('-46.5');
-
-    await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira GPS');
+    await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira da Vila');
     await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-11');
-    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua GPS');
-    await fireEvent.press(screen.getByTestId('botao-salvar-evento'));
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Praça Benedito Calixto');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
 
+    expect(onBuscarEndereco).toHaveBeenCalledWith('Praça Benedito Calixto');
+    expect(await screen.findByTestId('mapa')).toBeTruthy();
+    expect(textoDoPin()).toHaveTextContent('Pin: -23.5614, -46.6558');
+
+    await pinNoMapa(-23.5611, -46.6822);
+    await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
+
+    await waitFor(() => expect(screen.queryByTestId('mapa')).toBeNull());
+    expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-23.5611, -46.6822/);
+    expect(screen.getByTestId('campo-latitude-manual').props.value).toBe('-23.5611');
+    expect(screen.getByTestId('campo-longitude-manual').props.value).toBe('-46.6822');
+
+    await fireEvent.press(screen.getByTestId('botao-salvar-evento'));
     await waitFor(() =>
       expect(onSalvar).toHaveBeenCalledWith(
         expect.objectContaining({
-          localizacao: expect.objectContaining({ latitude: -23.4, longitude: -46.5 }),
+          localizacao: expect.objectContaining({ latitude: -23.5611, longitude: -46.6822 }),
         }),
       ),
     );
   });
 
-  it.each<[MotivoLocalizacaoIndisponivel, RegExp, boolean]>([
-    ['NEGADA', /permissão de localização negada/i, false],
-    ['NEGADA_PERMANENTE', /configurações/i, true],
-    ['SERVICO_DESLIGADO', /ligue a localização/i, false],
-    ['TIMEOUT', /não respondeu a tempo/i, false],
-  ])(
-    'Novo Evento com GPS %s mostra a instrução e mantém o fluxo manual',
-    async (motivo, mensagem, ofereceConfiguracoes) => {
-      const onSalvar = jest.fn(async () => {});
-      const onGps = () => new FakeLocationGateway(undefined, motivo).getCurrent();
-      await render(<TelaNovoEvento onSalvar={onSalvar} onGps={onGps} />);
+  it('Novo Evento: endereço não encontrado abre o mapa sem pin e com aviso', async () => {
+    const onBuscarEndereco = jest.fn(async () => null);
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={onBuscarEndereco} />);
 
-      await fireEvent.press(screen.getByTestId('botao-usar-gps'));
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua que não existe');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
 
-      await waitFor(() => expect(screen.getByTestId('erro-gps')).toHaveTextContent(mensagem));
-      expect(screen.queryByTestId('ponto-selecionado')).toBeNull();
-      expect(screen.queryByTestId('botao-abrir-configuracoes') !== null).toBe(ofereceConfiguracoes);
+    expect(await screen.findByTestId('aviso-seletor')).toHaveTextContent(/endereço não encontrado/i);
+    expect(textoDoPin()).toHaveTextContent('Nenhum ponto escolhido');
 
-      await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '-23.4');
-      await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '-46.5');
-      await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
+    await pinNoMapa(-23.4, -46.5);
+    await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
 
-      await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
-      expect(screen.queryByTestId('erro-gps')).toBeNull();
-    },
-  );
-
-  it('Novo Evento com GPS bloqueado abre as configurações do aparelho', async () => {
-    const abrir = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
-    const onGps = () => new FakeLocationGateway(undefined, 'NEGADA_PERMANENTE').getCurrent();
-    await render(<TelaNovoEvento onSalvar={async () => {}} onGps={onGps} />);
-
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-    await fireEvent.press(await screen.findByTestId('botao-abrir-configuracoes'));
-
-    expect(abrir).toHaveBeenCalledTimes(1);
-    abrir.mockRestore();
+    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-23.4, -46.5/));
   });
 
-  it('Novo Evento com falha desconhecida do GPS mostra mensagem genérica', async () => {
-    const onGps = jest.fn(async (): Promise<Coordenada> => {
+  it('Novo Evento: busca indisponível (sem internet) abre o mapa com a mensagem', async () => {
+    const onBuscarEndereco = () => new FakeGeocodingGateway(null, 'BUSCA_INDISPONIVEL').buscar('x');
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={onBuscarEndereco} />);
+
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Augusta');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+
+    expect(await screen.findByTestId('aviso-seletor')).toHaveTextContent(/não foi possível buscar o endereço/i);
+    expect(screen.getByTestId('mapa')).toBeTruthy();
+  });
+
+  it('Novo Evento: falha desconhecida da busca abre o mapa com mensagem genérica', async () => {
+    const onBuscarEndereco = jest.fn(async (): Promise<Coordenada | null> => {
       throw new Error('falha nativa');
     });
-    await render(<TelaNovoEvento onSalvar={async () => {}} onGps={onGps} />);
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={onBuscarEndereco} />);
 
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Augusta');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('erro-gps')).toHaveTextContent(
-        /não foi possível obter a localização/i,
-      ),
-    );
+    expect(await screen.findByTestId('aviso-seletor')).toHaveTextContent(/posicione o pin/i);
   });
 
-  it('Novo Evento com toque duplo no GPS faz uma única leitura', async () => {
-    let responder: (c: Coordenada) => void = () => {};
-    const onGps = jest.fn(() => new Promise<Coordenada>((resolve) => (responder = resolve)));
-    await render(<TelaNovoEvento onSalvar={async () => {}} onGps={onGps} />);
+  it('Novo Evento: sem endereço abre o mapa direto, sem buscar', async () => {
+    const onBuscarEndereco = jest.fn(async () => new Coordenada(1, 1));
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={onBuscarEndereco} />);
 
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
-    expect(screen.getByTestId('botao-usar-gps')).toHaveTextContent('Buscando localização...');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+
+    expect(await screen.findByTestId('mapa')).toBeTruthy();
+    expect(onBuscarEndereco).not.toHaveBeenCalled();
+    expect(textoDoPin()).toHaveTextContent('Nenhum ponto escolhido');
+  });
+
+  it('Novo Evento: cancelar o mapa não altera o ponto', async () => {
+    const onBuscarEndereco = jest.fn(async () => new Coordenada(5, 5));
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={onBuscarEndereco} />);
+
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua A');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+    await fireEvent.press(await screen.findByTestId('botao-cancelar-local'));
+
+    await waitFor(() => expect(screen.queryByTestId('mapa')).toBeNull());
+    expect(screen.queryByTestId('ponto-selecionado')).toBeNull();
+  });
+
+  it('Novo Evento: reabrir o mapa sem endereço começa no ponto já escolhido', async () => {
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={async () => null} />);
+
+    await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '-23.4');
+    await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '-46.5');
+    await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+
+    expect(await screen.findByTestId('mapa')).toBeTruthy();
+    expect(textoDoPin()).toHaveTextContent('Pin: -23.4, -46.5');
+  });
+
+  it('Novo Evento: "Minha localização" dentro do mapa usa o GPS e confirma o ponto', async () => {
+    const onGps = jest.fn(() => new FakeLocationGateway(new Coordenada(-22.9, -43.2)).getCurrent());
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={async () => null} onGps={onGps} />);
+
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+    await fireEvent.press(await screen.findByTestId('botao-minha-localizacao'));
+    await waitFor(() => expect(textoDoPin()).toHaveTextContent('Pin: -22.9, -43.2'));
+    await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
+
+    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-22.9, -43.2/));
+    expect(onGps).toHaveBeenCalledTimes(1);
+  });
+
+  it('Novo Evento: toque duplo em Localizar no mapa faz uma única busca', async () => {
+    let responder: (c: Coordenada | null) => void = () => {};
+    const onBuscarEndereco = jest.fn(() => new Promise<Coordenada | null>((resolve) => (responder = resolve)));
+    await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={onBuscarEndereco} />);
+
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua A');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+    expect(screen.getByTestId('botao-localizar-mapa')).toHaveTextContent('Buscando endereço...');
 
     await act(async () => responder(new Coordenada(1, 2)));
 
-    expect(onGps).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
+    expect(onBuscarEndereco).toHaveBeenCalledTimes(1);
   });
 
-  it('Novo Evento usa o gateway de localização dos serviços quando não recebe onGps', async () => {
-    const getCurrent = jest.fn(async () => new Coordenada(3, 4));
-    const services = { gateways: { location: { getCurrent } } } as unknown as ProviderBag;
+  it('Novo Evento usa a busca e o GPS dos serviços quando não recebe as props', async () => {
+    const buscar = jest.fn(async () => new Coordenada(3, 4));
+    const getCurrent = jest.fn(async () => new Coordenada(5, 6));
+    const services = {
+      gateways: { location: { getCurrent }, geocodificador: { buscar } },
+    } as unknown as ProviderBag;
     await render(
       <ServicesContext.Provider value={services}>
         <TelaNovoEvento onSalvar={async () => {}} />
       </ServicesContext.Provider>,
     );
 
-    expect(getCurrent).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByTestId('botao-usar-gps'));
+    await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua B');
+    await fireEvent.press(screen.getByTestId('botao-localizar-mapa'));
+    expect(await screen.findByTestId('mapa')).toBeTruthy();
+    expect(textoDoPin()).toHaveTextContent('Pin: 3, 4');
+    expect(buscar).toHaveBeenCalledWith('Rua B');
 
-    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/3, 4/));
+    await fireEvent.press(screen.getByTestId('botao-minha-localizacao'));
+    await waitFor(() =>
+      expect(textoDoPin()).toHaveTextContent('Pin: 5, 6'),
+    );
     expect(getCurrent).toHaveBeenCalledTimes(1);
   });
 

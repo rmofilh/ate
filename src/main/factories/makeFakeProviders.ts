@@ -24,6 +24,7 @@ import { InMemoryObraRepository } from '../../infrastructure/database/memory/InM
 import { InMemoryPedidoRepository } from '../../infrastructure/database/memory/InMemoryPedidoRepository';
 import { FakeAuthGateway } from '../../infrastructure/device/FakeAuthGateway';
 import { FakeCameraGateway } from '../../infrastructure/device/FakeCameraGateway';
+import { FakeGeocodingGateway } from '../../infrastructure/device/FakeGeocodingGateway';
 import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
 import { FakeSyncGateway } from '../../infrastructure/device/FakeSyncGateway';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
@@ -39,6 +40,7 @@ export function makeFakeProviders() {
   const auth = new FakeAuthGateway();
   const camera = new FakeCameraGateway();
   const location = new FakeLocationGateway();
+  const geocodificador = new FakeGeocodingGateway();
   const sync = new FakeSyncGateway();
 
   for (const cliente of seed.clientes) void clientes.save(cliente);
@@ -71,7 +73,7 @@ export function makeFakeProviders() {
 
   return {
     ...seed,
-    gateways: { auth, camera, location, sync },
+    gateways: { auth, camera, location, geocodificador, sync },
     repositories: { clientes, pedidos, obras, eventos },
     useCases,
     async loadData() {

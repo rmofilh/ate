@@ -21,8 +21,9 @@ const DADOS_DO_EVENTO = {
 };
 
 /**
- * Ponta a ponta da geolocalização: SDK (expo-location dublado) → ExpoLocationGateway →
- * caso de uso transacional → SQLite real em memória, com a entrada na fila outbox.
+ * Ponta a ponta da geolocalização: SDK (expo-location dublado) → ExpoLocationGateway ou
+ * ExpoGeocodingGateway → caso de uso transacional → SQLite real em memória, com a entrada
+ * na fila outbox.
  */
 describe('geolocalização salva no banco local', () => {
   let db: DrizzleAppDb;
@@ -53,6 +54,33 @@ describe('geolocalização salva no banco local', () => {
     expect(linha.longitude).toBe(-46.6559);
     expect(linha.statusSync).toBe('PENDENTE');
     expect(await fila()).toEqual([`CRIAR Evento ${evento.id}`]);
+  });
+
+  it('coordenada da busca de endereço (geocoder) é gravada no SQLite e enfileirada', async () => {
+    localizacaoDeTeste.resultadosDaBusca = [{ latitude: -23.5611, longitude: -46.6822 }];
+
+    const ponto = await bag.gateways.geocodificador.buscar(DADOS_DO_EVENTO.endereco);
+    expect(ponto).not.toBeNull();
+    const evento = await bag.useCases.cadastrarEvento.execute({
+      ...DADOS_DO_EVENTO,
+      localizacao: ponto ?? undefined,
+    });
+
+    const linha = await linhaDoEvento(evento.id);
+    expect([linha.latitude, linha.longitude]).toEqual([-23.5611, -46.6822]);
+    expect(await fila()).toEqual([`CRIAR Evento ${evento.id}`]);
+  });
+
+  it('endereço não encontrado não grava nada sozinho: o evento exige um ponto', async () => {
+    localizacaoDeTeste.resultadosDaBusca = [];
+
+    const ponto = await bag.gateways.geocodificador.buscar('lugar inexistente');
+
+    expect(ponto).toBeNull();
+    await expect(
+      bag.useCases.cadastrarEvento.execute({ ...DADOS_DO_EVENTO, localizacao: ponto ?? undefined }),
+    ).rejects.toThrow(/obrigatoria/i);
+    expect(await db.select().from(eventos)).toEqual([]);
   });
 
   it('caso de uso com usarGps também grava a coordenada do aparelho', async () => {

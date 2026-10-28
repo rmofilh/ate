@@ -25,3 +25,4 @@ jest.mock('expo-image-manipulator', () =>
 );
 jest.mock('expo-camera', () => jest.requireActual('./src/test-support/mocks/expoCamera'));
 jest.mock('expo-location', () => jest.requireActual('./src/test-support/mocks/expoLocation'));
+jest.mock('react-native-webview', () => jest.requireActual('./src/test-support/mocks/reactNativeWebview'));

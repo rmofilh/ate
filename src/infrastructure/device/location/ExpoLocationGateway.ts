@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import { LocalizacaoIndisponivelError } from '../../../core/application/errors/LocalizacaoIndisponivelError';
 import type { ILocationGateway } from '../../../core/application/gateways/ILocationGateway';
 import { Coordenada } from '../../../core/domain/value-objects/Coordenada';
+import { comLimiteDeTempo } from './limiteDeTempo';
 
 /** O expo-location não tem timeout próprio; sem limite, um GPS sem sinal prende a tela. */
 export const TEMPO_LIMITE_GPS_MS = 10_000;
@@ -29,18 +30,12 @@ export class ExpoLocationGateway implements ILocationGateway {
   }
 
   private async lerPosicao(): Promise<Location.LocationObject> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const limite = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new LocalizacaoIndisponivelError('TIMEOUT')),
-        this.tempoLimiteMs,
-      );
-    });
     try {
-      return await Promise.race([
+      return await comLimiteDeTempo(
         Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-        limite,
-      ]);
+        this.tempoLimiteMs,
+        () => new LocalizacaoIndisponivelError('TIMEOUT'),
+      );
     } catch (erro) {
       if (erro instanceof LocalizacaoIndisponivelError) throw erro;
       // O serviço pode ser desligado durante a leitura; o SDK não documenta códigos de erro.
@@ -48,8 +43,6 @@ export class ExpoLocationGateway implements ILocationGateway {
         throw new LocalizacaoIndisponivelError('SERVICO_DESLIGADO');
       }
       throw erro;
-    } finally {
-      clearTimeout(timer);
     }
   }
 }
