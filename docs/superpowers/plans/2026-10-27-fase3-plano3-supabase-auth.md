@@ -1,5 +1,7 @@
 # Plano 3 — Supabase: schema remoto, RLS, bucket e Auth real (Implementation Plan)
 
+> **ADIADO (27/10/2026).** Não executar ainda. O Plano 5A (GPS) vem antes, por causa da apresentação de Câmera e Geolocalização (roteiro, §1.1). Antes de executar: aplicar a revisão `2026-10-27-fase3-plano3-revisao.md` e rebasear números de linha e contagens de teste sobre a `main` depois do 5A.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Criar a parte remota do ate no Supabase (tabelas, RLS, bucket privado de fotos, versionados em SQL) e trocar o `FakeAuthGateway` do runtime por login real com sessão persistida de forma segura, que funciona offline e protege os dados locais quando outra conta entra no aparelho.

@@ -1,4 +1,5 @@
 import { Coordenada } from '../../domain/value-objects/Coordenada';
+import { LocalizacaoIndisponivelError } from '../errors/LocalizacaoIndisponivelError';
 import { InMemoryEventoRepository } from '../../../infrastructure/database/memory/InMemoryEventoRepository';
 import { FakeLocationGateway } from '../../../infrastructure/device/FakeLocationGateway';
 import { FakeSyncGateway } from '../../../infrastructure/device/FakeSyncGateway';
@@ -47,21 +48,25 @@ describe('Evento use cases', () => {
     expect(evento.localizacao.latitude).toBe(1);
   });
 
-  it('cadastrar com GPS negado orienta posicionamento manual', async () => {
+  it('cadastrar com GPS negado lança LocalizacaoIndisponivelError e não grava nada', async () => {
     const repo = new InMemoryEventoRepository();
     const sync = new FakeSyncGateway();
-    const gps = new FakeLocationGateway(new Coordenada(0, 0), true);
+    const gps = new FakeLocationGateway(new Coordenada(0, 0), 'NEGADA');
     const useCase = new CadastrarEventoUseCase(repo, sync, gps, idsTeste);
 
-    await expect(
-      useCase.execute({
-        usuarioId: USUARIO_ID,
-        nome: 'Feira GPS',
-        data: new Date('2026-10-12'),
-        endereco: 'x',
-        usarGps: true,
-      }),
-    ).rejects.toThrow(/pin manual/i);
+    const tentativa = useCase.execute({
+      usuarioId: USUARIO_ID,
+      nome: 'Feira GPS',
+      data: new Date('2026-10-12'),
+      endereco: 'x',
+      usarGps: true,
+    });
+
+    await expect(tentativa).rejects.toBeInstanceOf(LocalizacaoIndisponivelError);
+    await expect(tentativa).rejects.toMatchObject({ motivo: 'NEGADA' });
+    await expect(tentativa).rejects.toThrow(/manualmente/i);
+    expect(await repo.findByUsuario(USUARIO_ID)).toHaveLength(0);
+    expect(sync.queue).toHaveLength(0);
   });
 
   it('editar atualiza evento e enfileira EDITAR', async () => {

@@ -30,7 +30,7 @@ import { SQLiteObraRepository } from '../../infrastructure/database/sqlite/SQLit
 import { SQLitePedidoRepository } from '../../infrastructure/database/sqlite/SQLitePedidoRepository';
 import { ExpoCameraGateway } from '../../infrastructure/device/camera/ExpoCameraGateway';
 import { FakeAuthGateway } from '../../infrastructure/device/FakeAuthGateway';
-import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
+import { ExpoLocationGateway } from '../../infrastructure/device/location/ExpoLocationGateway';
 import { UuidIdGenerator } from '../../infrastructure/device/UuidIdGenerator';
 import { ArmazenamentoDeFotos } from '../../infrastructure/fileSystem/ArmazenamentoDeFotos';
 import { OutboxSyncGateway } from '../../infrastructure/sync/OutboxSyncGateway';
@@ -39,8 +39,8 @@ import { SessaoNaoDisponivelError } from './SessaoNaoDisponivelError';
 
 /**
  * Composition root do runtime: SQLite + fila outbox. Casos de uso que escrevem rodam em
- * transação (registro e fila juntos). Câmera e fotos são reais (Plano 2); auth (Plano 3)
- * e GPS (Plano 5) ainda são fakes.
+ * transação (registro e fila juntos). Câmera e fotos (Plano 2) e GPS (Plano 5A) são reais;
+ * auth (Plano 3) ainda é fake.
  */
 export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransacao) {
   const ids = new UuidIdGenerator();
@@ -56,7 +56,7 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
     __DEV__ ? (mensagem) => console.log(mensagem) : undefined,
   );
   const camera = new ExpoCameraGateway(armazenamentoDeFotos);
-  const location = new FakeLocationGateway();
+  const location = new ExpoLocationGateway();
   const sync = new OutboxSyncGateway(db, ids);
   const tx = <U extends { execute(...args: never[]): Promise<unknown> }>(casoDeUso: U) =>
     transacional(casoDeUso, executor);

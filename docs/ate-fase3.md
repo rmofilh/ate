@@ -102,3 +102,44 @@ Aprovado, os 8 itens: conclusão de pedido com permissão, captura, Refazer e Us
 
 - Upload das fotos `PENDENTE_UPLOAD` antes do registro (storage-first) no Plano 4.
 - Texto de permissão em português visível só no APK (Plano 6).
+
+## Plano 5A — GPS real e persistência da coordenada
+
+Executado em 27/10/2026, antes do Plano 3, para a apresentação de câmera e geolocalização (roteiro, §1.1). O `FakeLocationGateway` saiu do runtime: a coordenada do evento vem do GPS do aparelho (`expo-location`), é mostrada antes de salvar e é gravada no SQLite junto com a entrada da fila, na mesma transação. O fluxo manual continua disponível.
+
+### Arquitetura entregue
+
+- `core/application/errors/LocalizacaoIndisponivelError.ts` (D7): motivos `NEGADA`, `NEGADA_PERMANENTE`, `SERVICO_DESLIGADO` e `TIMEOUT`, com mensagem em português. É a linguagem de falha da aplicação; nenhum tipo do SDK chega ao `core`.
+- `infrastructure/device/location/ExpoLocationGateway.ts`: implementa `ILocationGateway` (contrato inalterado). Ordem: serviço ligado (`hasServicesEnabledAsync`) → permissão de primeiro plano no momento do uso (`requestForegroundPermissionsAsync`) → `getCurrentPositionAsync({ accuracy: Balanced })` com limite de 10 s → `new Coordenada(...)`, que valida a faixa. Falhas do SDK viram `LocalizacaoIndisponivelError`; uma falha desconhecida é propagada sem ser mascarada.
+- `presentation/hooks/useLocalizacaoAtual.ts`: leitura pontual compartilhada pelas telas de evento, com proteção contra toque duplo e tradução da falha em mensagem e ação ("Abrir configurações" só para `NEGADA_PERMANENTE`).
+- `evento/novo.tsx` e `evento/[id]/editar.tsx`: botão de GPS reabilitado (desfaz a divergência #11 do Plano 1); a coordenada lida preenche os campos manuais, que continuam editáveis (D8).
+- `makeSqliteProviders`: `ExpoLocationGateway` no runtime. O `FakeLocationGateway` fica só nos testes e passa a lançar o erro tipado.
+- `app.json`: plugin `expo-location` com `locationWhenInUsePermission` em português e background desligado.
+
+### Decisões e divergências
+
+| # | Decisão | Motivo |
+|---|---|---|
+| 1 | Erro tipado em `core/application/errors` (D7) | O domínio define os casos de falha; o adaptador se adapta a eles. A tela escolhe a ação sem importar `expo-location` |
+| 2 | A tela chama o GPS e mostra a coordenada antes de salvar (D8) | O artesão confere o ponto; o caso de uso recebe a `Coordenada` pronta. O caminho `usarGps` do caso de uso continua coberto |
+| 3 | GPS e foto em fluxos separados, sem geotag (D9) | Sem RF para isso; mantém o desenho da fase 2 |
+| 4 | Limite de 10 s com `Promise.race` | A doc do SDK 57 não oferece timeout em `getCurrentPositionAsync`; sem limite, GPS sem sinal prenderia a tela |
+| 5 | Serviço desligado verificado antes da permissão e de novo após falha do SDK | O SDK não documenta códigos de erro; evita confundir "GPS desligado" com "permissão negada" |
+| 6 | Sem `getLastKnownPositionAsync` | Ponto do evento deve ser o atual; última posição conhecida pode ser de outro lugar |
+| 7 | Sem migration | `eventos.latitude/longitude` com `CHECK` de faixa já existiam desde o Plano 1 |
+| 8 | Câmera continua com `Error` simples, sem tipo próprio | A permissão da câmera é tratada dentro do `CameraModal`; a tela nunca precisa distinguir motivos |
+
+### Testes
+
+Dublê em memória de `expo-location` (`test-support/mocks/expoLocation.ts`) registrado no `jest.setup.js`, como os do Plano 2. Cobertos: motivos e mensagens do erro; adaptador (concedida, precisão `Balanced`, serviço desligado sem pedir permissão, negada, negada para sempre, timeout com timers falsos, limite configurável, nenhum timer pendente após sucesso, coordenada inválida do SDK, serviço desligado durante a leitura, falha desconhecida propagada); caso de uso com GPS negado sem gravar nada; telas (GPS preenche e salva o ponto, cada motivo com sua instrução e o manual mantido, "Abrir configurações", falha genérica, toque duplo, leitura só no toque, gateway vindo dos serviços, edição troca o pin ou mantém o atual); composição; e ponta a ponta `GeolocalizacaoPersistencia.test.ts` (SDK dublado → `ExpoLocationGateway` → caso de uso transacional → SQLite real em memória e `fila_sync`, criação, `usarGps`, releitura, permissão negada sem escrita e edição com `EDITAR`).
+
+Baseline ao fim do plano: 407 testes, `typecheck` limpo, `lint` com 0 erros (11 warnings herdados), `db:check` ok e bundle Android exportado.
+
+### Smoke test no aparelho (Expo Go)
+
+Pendente. Roteiro: criar evento com "Usar minha localização" e ver a coordenada antes de salvar; fechar e reabrir o app com a coordenada mantida; negar a permissão (instrução e manual); negar de vez ("Abrir configurações"); GPS desligado (aviso próprio); criar evento em modo avião; editar evento com "Atualizar localização".
+
+### Pendências para os próximos planos
+
+- Mapa de eventos (Plano 5B).
+- Texto de permissão de localização em português visível só no APK (Plano 6).

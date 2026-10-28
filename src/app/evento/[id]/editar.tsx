@@ -7,6 +7,7 @@ import { ActionButton } from '@/presentation/components/ActionButton';
 import { DateField } from '@/presentation/components/DateField';
 import { FormScreen } from '@/presentation/components/FormScreen';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { useLocalizacaoAtual } from '@/presentation/hooks/useLocalizacaoAtual';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
@@ -26,6 +27,7 @@ interface EditarEventoInput {
 
 interface TelaEditarEventoProps {
   evento?: Evento;
+  onGps?(): Promise<Coordenada>;
   onSalvar?(args: EditarEventoInput): Promise<void>;
   onConcluido?(): void;
 }
@@ -37,6 +39,7 @@ export default function TelaEditarEvento(props: TelaEditarEventoProps = {}) {
 
 function FormularioEditarEvento({
   evento: eventoRecebido,
+  onGps,
   onSalvar,
   onConcluido,
 }: TelaEditarEventoProps = {}) {
@@ -56,6 +59,18 @@ function FormularioEditarEvento({
   const [ponto, setPonto] = useState<{ latitude: number; longitude: number } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const gps = useLocalizacaoAtual(
+    onGps ?? (services ? () => services.gateways.location.getCurrent() : undefined),
+  );
+
+  async function usarGps() {
+    const coordenada = await gps.buscar();
+    if (!coordenada) return;
+    setPonto({ latitude: coordenada.latitude, longitude: coordenada.longitude });
+    setLatitudeTexto(String(coordenada.latitude));
+    setLongitudeTexto(String(coordenada.longitude));
+    setErro(null);
+  }
 
   function usarLocalizacaoManual() {
     if (!latitudeTexto.trim() || !longitudeTexto.trim()) {
@@ -69,6 +84,7 @@ function FormularioEditarEvento({
       const coordenada = new Coordenada(latitude, longitude);
       setPonto({ latitude: coordenada.latitude, longitude: coordenada.longitude });
       setErro(null);
+      gps.limparFalha();
     } catch (error) {
       setErro(error instanceof Error ? error.message : 'Informe latitude e longitude válidas');
     }
@@ -165,17 +181,30 @@ function FormularioEditarEvento({
       </Text>
       <ActionButton
         label="botao-usar-gps"
-        title="Atualizar localização"
-        onPress={() => {}}
-        disabled
+        title={gps.buscando ? 'Buscando localização...' : 'Atualizar localização'}
+        onPress={() => void usarGps()}
+        disabled={gps.buscando || loading}
         appearance="secondary"
         icon="location"
+        busy={gps.buscando}
       />
-      <Text testID="aviso-gps" style={uiStyles.muted}>
-        Localização automática chega em breve. Informe as coordenadas manualmente.
-      </Text>
+      {gps.falha ? (
+        <View style={uiStyles.field}>
+          <Text testID="erro-gps" accessibilityLiveRegion="polite" style={uiStyles.error}>
+            {gps.falha.mensagem}
+          </Text>
+          {gps.falha.podeAbrirConfiguracoes ? (
+            <ActionButton
+              label="botao-abrir-configuracoes"
+              title="Abrir configurações"
+              onPress={gps.abrirConfiguracoes}
+              appearance="secondary"
+            />
+          ) : null}
+        </View>
+      ) : null}
       <View style={uiStyles.field}>
-      <Text style={uiStyles.body}>Informe as novas coordenadas</Text>
+      <Text style={uiStyles.body}>Ou informe as novas coordenadas</Text>
       <TextInput
         accessibilityLabel="Latitude"
         placeholder="Latitude"

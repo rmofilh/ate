@@ -2,6 +2,7 @@ import { ExecutorDeTransacao } from '../../../infrastructure/database/sqlite/Exe
 import type { DrizzleAppDb } from '../../../infrastructure/database/sqlite/DrizzleDb';
 import { clientes, filaSync, fotos, pedidos } from '../../../infrastructure/database/sqlite/schema';
 import { ExpoCameraGateway } from '../../../infrastructure/device/camera/ExpoCameraGateway';
+import { ExpoLocationGateway } from '../../../infrastructure/device/location/ExpoLocationGateway';
 import { bancoDeTeste } from '../../../test-support/bancoDeTeste';
 import { fsDeTeste } from '../../../test-support/mocks/expoFileSystem';
 import { makeSqliteProviders, type SqliteProviderBag } from '../makeSqliteProviders';
@@ -126,6 +127,10 @@ describe('makeSqliteProviders (SQLite real)', () => {
   it('usa a câmera real e expõe a mesma instância como ponte para a UI', () => {
     expect(bag.gateways.camera).toBeInstanceOf(ExpoCameraGateway);
     expect(bag.ponteDaCamera).toBe(bag.gateways.camera);
+  });
+
+  it('usa o GPS real (expo-location) no runtime', () => {
+    expect(bag.gateways.location).toBeInstanceOf(ExpoLocationGateway);
   });
 
   it('aoIniciar remove fotos órfãs antigas', async () => {

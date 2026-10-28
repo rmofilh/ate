@@ -40,6 +40,14 @@
           "cameraPermission": "Permita que o ate use a câmera para fotografar pedidos concluídos e obras do catálogo.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permita que o ate use sua localização para marcar o local dos eventos.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
       ]
     ],
     "experiments": {
