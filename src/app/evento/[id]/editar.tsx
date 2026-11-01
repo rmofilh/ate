@@ -6,6 +6,7 @@ import { Coordenada } from '@/core/domain/value-objects/Coordenada';
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { DateField } from '@/presentation/components/DateField';
 import { FormScreen } from '@/presentation/components/FormScreen';
+import { CoordenadasManuais } from '@/presentation/components/mapa/CoordenadasManuais';
 import { SeletorDeLocal } from '@/presentation/components/mapa/SeletorDeLocal';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
 import { useLocalizarNoMapa } from '@/presentation/hooks/useLocalizarNoMapa';
@@ -193,38 +194,19 @@ function FormularioEditarEvento({
         onChangeText={setObservacoes}
       />
       </View>
-      <Text testID="pin-atual" style={uiStyles.notice}>
-        Pin atual: {evento.localizacao.latitude}, {evento.localizacao.longitude}
-      </Text>
-      <View style={uiStyles.field}>
-      <Text style={uiStyles.body}>Ou informe as novas coordenadas</Text>
-      <TextInput
-        accessibilityLabel="Latitude"
-        placeholder="Latitude"
-        testID="campo-latitude-manual"
-        value={latitudeTexto}
-        onChangeText={setLatitudeTexto}
-        keyboardType="numbers-and-punctuation"
-      />
-      <TextInput
-        accessibilityLabel="Longitude"
-        placeholder="Longitude"
-        testID="campo-longitude-manual"
-        value={longitudeTexto}
-        onChangeText={setLongitudeTexto}
-        keyboardType="numbers-and-punctuation"
-      />
-      </View>
-      <ActionButton
-        label="usar-localizacao-manual"
-        title="Usar localização informada"
-        onPress={usarLocalizacaoManual}
+      {ponto ? null : <Text testID="pin-atual" style={uiStyles.notice}>Local marcado no mapa</Text>}
+      <CoordenadasManuais
+        titulo="Ou informe as novas coordenadas"
+        latitude={latitudeTexto}
+        longitude={longitudeTexto}
+        onLatitude={setLatitudeTexto}
+        onLongitude={setLongitudeTexto}
+        onUsar={usarLocalizacaoManual}
         disabled={loading}
-        appearance="secondary"
       />
       {ponto ? (
         <Text testID="ponto-selecionado" style={uiStyles.notice}>
-          Novo pin: {ponto.latitude}, {ponto.longitude}
+          Novo local marcado no mapa
         </Text>
       ) : null}
       {erro ? (

@@ -17,6 +17,7 @@ describe('datas de calendário', () => {
     await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira');
     await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-02-31');
     await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Um');
+    await fireEvent.press(screen.getByTestId('alternar-coordenadas-manuais'));
     await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '1');
     await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '2');
     await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));

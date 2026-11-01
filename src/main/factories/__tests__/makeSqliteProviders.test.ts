@@ -46,11 +46,13 @@ describe('makeSqliteProviders (SQLite real)', () => {
     });
 
     const dados = await bag.loadData();
-    expect(dados.clientes.map((c) => c.id)).toEqual([cliente.id]);
+    expect(dados.clientes.map((c) => c.nome)).toEqual(['Ana', 'Cliente Avulso']);
     expect(dados.obras.map((o) => o.statusObra)).toEqual(['RESERVADA']);
     expect(dados.pedidos).toHaveLength(1);
     expect(dados.pedidos[0].obraId).toBe(obra.id);
-    expect(await fila()).toEqual(['CRIAR Cliente', 'CRIAR Obra', 'EDITAR Obra', 'CRIAR Pedido']);
+    expect(await fila()).toEqual([
+      'CRIAR Cliente', 'CRIAR Obra', 'EDITAR Obra', 'CRIAR Pedido', 'CRIAR Cliente',
+    ]);
   });
 
   it('falha no enqueue do pedido desfaz tudo: obra continua DISPONIVEL', async () => {
@@ -98,6 +100,29 @@ describe('makeSqliteProviders (SQLite real)', () => {
       eventos: [],
       clientes: [],
     });
+  });
+
+  it('loadData garante o Cliente Avulso uma única vez, sem nunca ter havido venda direta', async () => {
+    const primeira = await bag.loadData();
+    const segunda = await bag.loadData();
+
+    expect(primeira.clientes.map((c) => c.nome)).toEqual(['Cliente Avulso']);
+    expect(segunda.clientes.map((c) => c.id)).toEqual(primeira.clientes.map((c) => c.id));
+    expect(await fila()).toEqual(['CRIAR Cliente']);
+  });
+
+  it('venda direta reaproveita o Cliente Avulso criado pelo loadData', async () => {
+    await bag.loadData();
+    const obra = await bag.useCases.cadastrarObra.execute({
+      usuarioId: USUARIO,
+      nome: 'Coruja',
+      tipo: 'SERIE',
+      quantidade: 5,
+    });
+
+    await bag.useCases.vendaDireta.execute({ usuarioId: USUARIO, obraId: obra.id, qtd: 1 });
+
+    expect(await db.select().from(clientes)).toHaveLength(1);
   });
 
   it('venda direta em paralelo cria o cliente balcão uma única vez', async () => {

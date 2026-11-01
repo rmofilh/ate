@@ -29,7 +29,9 @@ describe('TelaEditarEvento', () => {
     );
 
     expect(screen.queryByTestId('aviso-gps')).toBeNull();
+    expect(screen.queryByTestId('campo-latitude-manual')).toBeNull();
 
+    await fireEvent.press(screen.getByTestId('alternar-coordenadas-manuais'));
     await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '1');
     await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '2');
     await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
@@ -51,9 +53,8 @@ describe('TelaEditarEvento', () => {
     expect(onBuscarEndereco).toHaveBeenCalledWith(evento.endereco);
     await fireEvent.press(await screen.findByTestId('botao-confirmar-local'));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-22.9, -43.2/),
-    );
+    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
+    expect(screen.queryByTestId('pin-atual')).toBeNull();
     await fireEvent.press(screen.getByTestId('botao-salvar-evento'));
 
     await waitFor(() =>

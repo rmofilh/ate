@@ -39,7 +39,7 @@ Ordem de execução:
 | 1 | Plano 1 — SQLite + Drizzle | Concluído (27/10) |
 | 2 | Plano 2 — Câmera + imagens | Concluído (27/10) |
 | 3 | **Plano 5A — Local do evento: busca, mapa e GPS** | Implementado (27/10); falta o smoke test no aparelho |
-| 4 | Plano 5B — Mapa de eventos com pins | Depois do 5A; pode ficar para depois do Plano 4 se faltar tempo |
+| 4 | Plano 5B — Mapa de eventos com pins | Concluído em versão enxuta nos ajustes finais (01/11): modal com pins, sem tela própria; ver `ate-fase3.md` |
 | 5 | Plano 3 — Supabase + Auth | Adiado; corrigir os pontos da revisão antes de executar |
 | 6 | Plano 4 — Sincronização | Sem mudança |
 | 7 | Plano 6 — Fechamento + build | Sem mudança |

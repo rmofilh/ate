@@ -36,7 +36,7 @@ describe('foto de catálogo na Nova Obra', () => {
     await waitFor(() =>
       expect(uriDaImagem('miniatura-foto-catalogo')).toBe('file:///docs/fotos/garca.jpg'),
     );
-    expect(screen.getByTestId('botao-foto-catalogo')).toHaveTextContent('Tirar outra foto');
+    expect(screen.getByTestId('botao-foto-catalogo')).toHaveTextContent('Substituir foto');
     await fireEvent.press(screen.getByTestId('botao-salvar-obra'));
     expect(onSalvar).toHaveBeenCalledWith(expect.objectContaining({ fotoPath: 'fotos/garca.jpg' }));
   });

@@ -18,6 +18,7 @@ import { LogoutUseCase } from '../../core/application/usecases/LogoutUseCase';
 import { RemoverEventoUseCase } from '../../core/application/usecases/RemoverEventoUseCase';
 import { RemoverObraUseCase } from '../../core/application/usecases/RemoverObraUseCase';
 import { RemoverUnidadesUseCase } from '../../core/application/usecases/RemoverUnidadesUseCase';
+import { ResolverClienteBalcaoUseCase } from '../../core/application/usecases/ResolverClienteBalcaoUseCase';
 import { VendaDiretaUseCase } from '../../core/application/usecases/VendaDiretaUseCase';
 import type { DrizzleAppDb } from '../../infrastructure/database/sqlite/DrizzleDb';
 import {
@@ -62,6 +63,7 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
   const sync = new OutboxSyncGateway(db, ids);
   const tx = <U extends { execute(...args: never[]): Promise<unknown> }>(casoDeUso: U) =>
     transacional(casoDeUso, executor);
+  const resolverClienteBalcao = tx(new ResolverClienteBalcaoUseCase(clientes, sync, ids));
 
   const useCases: CasosDeUso = {
     login: new LoginUseCase(auth),
@@ -106,6 +108,8 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
     async loadData(): Promise<DadosCarregados> {
       if (!sessao) return { pedidos: [], obras: [], eventos: [], clientes: [] };
       const usuarioId = sessao.userId;
+      // O Cliente Avulso precisa existir antes da primeira venda direta: Novo Pedido o oferece fixado.
+      await resolverClienteBalcao.execute({ usuarioId });
       const [pedidosCarregados, obrasCarregadas, eventosCarregados, clientesCarregados] =
         await Promise.all([
           useCases.consultarPedidos.execute({ usuarioId }),

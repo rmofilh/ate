@@ -164,3 +164,13 @@ Pendente. Roteiro: endereço real → "Localizar no mapa" → pin no lugar certo
 - Mapa de eventos com pins (Plano 5B).
 - Texto de permissão em português visível só no APK (Plano 6).
 - Se o app for além do uso acadêmico, trocar os blocos do `tile.openstreetmap.org` por um provedor com chave e cota.
+
+## Ajustes finais de uso (01/11/2026)
+
+Correções pontuais após revisão de uso, sem migration, sem dependência nova e sem mudança nas entidades.
+
+- **Mapa de eventos (RF13/UC15, Plano 5B):** "Ver mapa" e "Ver no mapa" abrem `MapaDeEventos`, um modal com os pins no `MapaLeaflet` em modo somente leitura; "Como chegar" abre o app de mapas do aparelho. Sem internet, a lista continua disponível.
+- **Datas dos eventos:** `separarEventos` divide a lista em Próximos (data crescente) e Realizados (data decrescente), com selo "Realizado". O evento de hoje ainda é próximo.
+- **Coordenadas:** saem do card; no formulário, os campos manuais ficam recolhidos em `CoordenadasManuais`. O seletor de local mantém a coordenada no rodapé.
+- **Fotos:** `ArtworkThumbnail` mostra a foto inteira (`contain`) e amplia em tela cheia ao toque. Nova Obra deixa claro que há uma foto por obra.
+- **Cliente Avulso:** `loadData` garante sua existência de forma idempotente. Antes ele só nascia na primeira venda direta e não aparecia em Novo Pedido.

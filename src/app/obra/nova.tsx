@@ -142,11 +142,11 @@ export default function TelaNovaObra({
         </View>
       ) : null}
       <View style={uiStyles.field}>
-        <Text style={uiStyles.label}>Foto de catálogo (opcional)</Text>
+        <Text style={uiStyles.label}>Foto de catálogo (opcional, uma por obra)</Text>
         {fotoPath ? <ArtworkThumbnail photoPath={fotoPath} testID="miniatura-foto-catalogo" /> : null}
         <ActionButton
           label="botao-foto-catalogo"
-          title={capturando ? 'Abrindo câmera...' : fotoPath ? 'Tirar outra foto' : 'Adicionar foto de catálogo'}
+          title={capturando ? 'Abrindo câmera...' : fotoPath ? 'Substituir foto' : 'Adicionar foto de catálogo'}
           icon="camera"
           appearance="secondary"
           disabled={loading || capturando}

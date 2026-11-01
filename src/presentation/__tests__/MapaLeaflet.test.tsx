@@ -34,6 +34,31 @@ describe('htmlDoMapa', () => {
   });
 });
 
+describe('htmlDoMapa com eventos', () => {
+  const marcador = { id: 'e1', titulo: 'Feira', latitude: -23.5, longitude: -46.6 };
+
+  it('somente leitura não coloca pin ao tocar; o seletor continua colocando', () => {
+    expect(htmlDoMapa(CENTRO, 15, null, { somenteLeitura: true })).not.toContain("mapa.on('click'");
+    expect(htmlDoMapa(CENTRO, 15, null)).toContain("mapa.on('click'");
+  });
+
+  it('nome com </script> ou HTML não quebra a página nem vira marcação', () => {
+    const html = htmlDoMapa(CENTRO, 15, null, {
+      marcadores: [{ ...marcador, titulo: '</script><img src=x onerror=alert(1)>' }],
+    });
+
+    expect(html.match(/<\/script>/g)).toHaveLength(2);
+    expect(html).not.toContain('<img');
+    expect(html).toContain('rotulo.textContent = m.titulo');
+  });
+
+  it('ajusta ao conjunto de pins só quando não há evento em foco', () => {
+    expect(htmlDoMapa(CENTRO, 15, null, { marcadores: [marcador] })).toContain('var foco = null');
+    expect(htmlDoMapa(CENTRO, 15, null, { marcadores: [marcador], marcadorEmFoco: 'e1' }))
+      .toContain('var foco = "e1"');
+  });
+});
+
 describe('MapaLeaflet', () => {
   async function renderizar(pinInicial: typeof CENTRO | null = null) {
     const onEscolher = jest.fn();
@@ -81,6 +106,21 @@ describe('MapaLeaflet', () => {
     await fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'erro' }));
 
     expect(screen.getByTestId('mapa-indisponivel')).toHaveTextContent(/sem internet/i);
+  });
+
+  it('somente leitura: marcador tocado chega ao app e o aviso não cita o formulário', async () => {
+    const onSelecionarMarcador = jest.fn();
+    await render(
+      <MapaLeaflet centroInicial={CENTRO} zoomInicial={15} somenteLeitura
+        onSelecionarMarcador={onSelecionarMarcador} />,
+    );
+    const webview = screen.getByTestId('mapa');
+
+    await fireEvent(webview, 'message', mensagemDaPagina({ tipo: 'marcador', id: 'e1' }));
+    await fireEvent(webview, 'message', mensagemDaPagina({ tipo: 'erro' }));
+
+    expect(onSelecionarMarcador).toHaveBeenCalledWith('e1');
+    expect(screen.getByTestId('mapa-indisponivel')).toHaveTextContent(/continuam na lista/);
   });
 
   it('falha ao carregar a página também mostra o aviso', async () => {

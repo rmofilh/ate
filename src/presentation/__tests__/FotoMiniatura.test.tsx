@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import { Pedido, type PedidoProps } from '../../core/domain/entities/Pedido';
@@ -59,6 +59,27 @@ describe('miniaturas', () => {
   it('ArtworkThumbnail sem foto mostra só o ícone', async () => {
     await render(<ArtworkThumbnail photoPath={null} testID="miniatura" />);
     expect(screen.queryByTestId('miniatura')).toBeNull();
+    expect(screen.queryByTestId('miniatura-ampliar')).toBeNull();
+  });
+
+  it('ArtworkThumbnail mostra a foto inteira e amplia ao tocar', async () => {
+    await render(<ArtworkThumbnail photoPath="fotos/obra.jpg" testID="miniatura" />);
+    expect(screen.getByTestId('miniatura').props.contentFit).toBe('contain');
+    expect(screen.queryByTestId('foto-ampliada')).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('miniatura-ampliar'));
+    expect(uriDaImagem('foto-ampliada')).toBe('file:///docs/fotos/obra.jpg');
+
+    await fireEvent.press(screen.getByTestId('fechar-foto-ampliada'));
+    expect(screen.queryByTestId('foto-ampliada')).toBeNull();
+  });
+
+  it('ArtworkThumbnail com falha ao carregar volta ao ícone, sem ampliar', async () => {
+    await render(<ArtworkThumbnail photoPath="fotos/obra.jpg" testID="miniatura" />);
+
+    await fireEvent(screen.getByTestId('miniatura'), 'error', { nativeEvent: { error: 'arquivo ausente' } });
+
+    expect(screen.queryByTestId('miniatura-ampliar')).toBeNull();
   });
 
   it('PedidoCard Feito mostra a foto de conclusão', async () => {

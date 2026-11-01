@@ -9,11 +9,98 @@ import { FakeGeocodingGateway } from '../../infrastructure/device/FakeGeocodingG
 import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
 import { mensagemDaPagina } from '../../test-support/mocks/reactNativeWebview';
 import type { ProviderBag } from '../../main/factories/ProviderBag';
+import { Evento } from '../../core/domain/entities/Evento';
+import { gerarIdTeste } from '../../test-support/ids';
 import { DataContext, NetworkContext, ServicesContext } from '../hooks/AppProviders';
 
 const pinNoMapa = (latitude: number, longitude: number) =>
   fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'pin', latitude, longitude }));
 const textoDoPin = () => screen.getByTestId('coordenada-do-pin');
+const abrirCoordenadas = () => fireEvent.press(screen.getByTestId('alternar-coordenadas-manuais'));
+
+jest.mock('expo-linking', () => ({ openURL: jest.fn(async () => true) }));
+const abrirUrl = jest.requireMock('expo-linking').openURL as jest.Mock;
+
+const USUARIO = 'a1111111-1111-4111-8111-111111111111';
+const eventoEm = (nome: string, data: string) => Evento.criar({
+  id: gerarIdTeste(),
+  usuarioId: USUARIO,
+  nome,
+  data: new Date(`${data}T12:00:00.000Z`),
+  endereco: `Endereço de ${nome}`,
+  localizacao: new Coordenada(-23.5, -46.6),
+});
+
+async function renderizarLista(eventos: Evento[]) {
+  await render(
+    <DataContext.Provider value={{ pedidos: [], obras: [], eventos, clientes: [], reload: async () => {} }}>
+      <TelaEventos onNovo={() => {}} onRemover={async () => {}} />
+    </DataContext.Provider>,
+  );
+}
+
+describe('TelaEventos: datas e mapa', () => {
+  const passado = eventoEm('Feira Antiga', '2020-03-01');
+  const futuro = eventoEm('Feira Futura', '2099-03-01');
+
+  beforeEach(() => abrirUrl.mockReset());
+
+  it('separa próximos e realizados, com selo só no evento passado e sem coordenadas', async () => {
+    await renderizarLista([passado, futuro]);
+
+    expect(screen.getByTestId('secao-eventos-proximos')).toBeTruthy();
+    expect(screen.getByTestId('secao-eventos-realizados')).toBeTruthy();
+    expect(screen.getByTestId(`realizado-${passado.id}`)).toHaveTextContent('Realizado');
+    expect(screen.queryByTestId(`realizado-${futuro.id}`)).toBeNull();
+    expect(screen.queryByText(/-23\.5/)).toBeNull();
+  });
+
+  it('sem eventos próximos não oferece o mapa geral', async () => {
+    await renderizarLista([passado]);
+
+    expect(screen.queryByTestId('botao-ver-mapa')).toBeNull();
+    expect(screen.queryByTestId('secao-eventos-proximos')).toBeNull();
+  });
+
+  it('Ver mapa mostra só os próximos; tocar no pin revela o evento e Como chegar', async () => {
+    abrirUrl.mockResolvedValue(true);
+    await renderizarLista([passado, futuro]);
+
+    await fireEvent.press(screen.getByTestId('botao-ver-mapa'));
+
+    const html = screen.getByTestId('mapa').props.source.html;
+    expect(html).toContain('Feira Futura');
+    expect(html).not.toContain('Feira Antiga');
+
+    await fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'marcador', id: futuro.id }));
+    expect(screen.getByTestId('evento-selecionado')).toHaveTextContent(/Endereço de Feira Futura/);
+
+    await fireEvent.press(screen.getByTestId('botao-como-chegar'));
+    expect(abrirUrl).toHaveBeenCalledWith('https://www.google.com/maps/search/?api=1&query=-23.5,-46.6');
+
+    await fireEvent.press(screen.getByTestId('botao-fechar-mapa'));
+    expect(screen.queryByTestId('mapa')).toBeNull();
+  });
+
+  it('Ver no mapa de um evento realizado abre com ele selecionado', async () => {
+    await renderizarLista([passado, futuro]);
+
+    await fireEvent.press(screen.getByTestId(`ver-mapa-${passado.id}`));
+
+    expect(screen.getByTestId('mapa').props.source.html).toContain('Feira Antiga');
+    expect(screen.getByTestId('evento-selecionado')).toHaveTextContent(/Feira Antiga/);
+  });
+
+  it('falha ao abrir o app de mapas vira mensagem na tela', async () => {
+    abrirUrl.mockRejectedValue(new Error('sem app'));
+    await renderizarLista([futuro]);
+
+    await fireEvent.press(screen.getByTestId(`ver-mapa-${futuro.id}`));
+    await fireEvent.press(screen.getByTestId('botao-como-chegar'));
+
+    expect(await screen.findByTestId('erro-como-chegar')).toBeTruthy();
+  });
+});
 
 describe('TelaEventos', () => {
   it('lista eventos e pins das fixtures mesmo offline', async () => {
@@ -29,7 +116,6 @@ describe('TelaEventos', () => {
     );
 
     expect(screen.getAllByTestId(/evento-/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByTestId(/pin-/)).toHaveLength(seed.eventos.length);
     expect(screen.getByTestId('banner-offline')).toBeTruthy();
     expect(screen.getByText(/12\/10\/2026/)).toBeTruthy();
     expect(screen.getByTestId('scroll-eventos')).toBeTruthy();
@@ -83,6 +169,7 @@ describe('TelaEventos', () => {
     await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-10');
     await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Central, 10');
     await fireEvent.changeText(screen.getByTestId('campo-obs-evento'), 'Levar estoque');
+    await abrirCoordenadas();
     await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '-23.5');
     await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '-46.6');
     await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
@@ -128,7 +215,8 @@ describe('TelaEventos', () => {
     await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
 
     await waitFor(() => expect(screen.queryByTestId('mapa')).toBeNull());
-    expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-23.5611, -46.6822/);
+    expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent('Local marcado no mapa');
+    await abrirCoordenadas();
     expect(screen.getByTestId('campo-latitude-manual').props.value).toBe('-23.5611');
     expect(screen.getByTestId('campo-longitude-manual').props.value).toBe('-46.6822');
 
@@ -155,7 +243,9 @@ describe('TelaEventos', () => {
     await pinNoMapa(-23.4, -46.5);
     await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
 
-    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-23.4, -46.5/));
+    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
+    await abrirCoordenadas();
+    expect(screen.getByTestId('campo-latitude-manual').props.value).toBe('-23.4');
   });
 
   it('Novo Evento: busca indisponível (sem internet) abre o mapa com a mensagem', async () => {
@@ -207,6 +297,7 @@ describe('TelaEventos', () => {
   it('Novo Evento: reabrir o mapa sem endereço começa no ponto já escolhido', async () => {
     await render(<TelaNovoEvento onSalvar={async () => {}} onBuscarEndereco={async () => null} />);
 
+    await abrirCoordenadas();
     await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '-23.4');
     await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '-46.5');
     await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
@@ -225,7 +316,9 @@ describe('TelaEventos', () => {
     await waitFor(() => expect(textoDoPin()).toHaveTextContent('Pin: -22.9, -43.2'));
     await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
 
-    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toHaveTextContent(/-22.9, -43.2/));
+    await waitFor(() => expect(screen.getByTestId('ponto-selecionado')).toBeTruthy());
+    await abrirCoordenadas();
+    expect(screen.getByTestId('campo-latitude-manual').props.value).toBe('-22.9');
     expect(onGps).toHaveBeenCalledTimes(1);
   });
 
@@ -290,6 +383,7 @@ describe('TelaEventos', () => {
     await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira Manual');
     await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-11');
     await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Manual');
+    await abrirCoordenadas();
     await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
     await fireEvent.press(screen.getByTestId('botao-salvar-evento'));
 
@@ -304,6 +398,7 @@ it('Novo Evento aceita coordenadas manuais zero', async () => {
   await fireEvent.changeText(screen.getByTestId('campo-nome-evento'), 'Feira Equador');
   await fireEvent.changeText(screen.getByTestId('campo-data-evento'), '2026-12-11');
   await fireEvent.changeText(screen.getByTestId('campo-endereco-evento'), 'Rua Um');
+  await abrirCoordenadas();
   await fireEvent.changeText(screen.getByTestId('campo-latitude-manual'), '0');
   await fireEvent.changeText(screen.getByTestId('campo-longitude-manual'), '0');
   await fireEvent.press(screen.getByTestId('usar-localizacao-manual'));
