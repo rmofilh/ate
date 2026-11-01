@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 
 import { borderRadius, fontSizes, layout, spacing, textStyles } from '@/constants/theme';
 import { ActionButton } from '@/presentation/components/ActionButton';
@@ -18,7 +19,7 @@ export default function TelaLogin() {
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const passwordInput = useRef<TextInput>(null);
+  const passwordInput = useRef<TextInputInstance>(null);
 
   async function entrar() {
     if (loading) return;

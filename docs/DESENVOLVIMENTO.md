@@ -18,7 +18,7 @@ Requisito de runtime: Node >= 22.13.
 
 - Instale e ajuste dependências com `npx expo install <pacote>`, nunca `npm install` para pacotes
   Expo — o `expo install` resolve a versão compatível com o SDK. As versões fixadas em `package.json`
-  são alinhadas ao SDK 57 (React 19.2.3, React Native 0.86.3).
+  são alinhadas ao SDK 58 (React 19.3.0, React Native 0.88.1).
 - Rotas em `src/app/` (Expo Router); componentes, hooks e utilidades fora de `src/app/`.
 
 ## Verificações

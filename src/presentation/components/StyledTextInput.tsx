@@ -1,11 +1,11 @@
 import React, { forwardRef, useState } from 'react';
 import { Platform, TextInput as NativeTextInput } from 'react-native';
-import type { TextInputProps } from 'react-native';
+import type { TextInputInstance, TextInputProps } from 'react-native';
 
 import { borderRadius, borderWidths, layout, spacing, textStyles } from '@/constants/theme';
 import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesignTheme';
 
-export const StyledTextInput = forwardRef<NativeTextInput, TextInputProps>(function StyledTextInput(
+export const StyledTextInput = forwardRef<TextInputInstance, TextInputProps>(function StyledTextInput(
   { style, onFocus, onBlur, ...props }, ref,
 ) {
   const [focused, setFocused] = useState(false);

@@ -2,7 +2,7 @@
 
 Aplicativo de gestão para artesãos: pedidos em Kanban, clientes, estoque de peças únicas e em série e eventos.
 
-![Expo SDK 57](https://img.shields.io/badge/Expo-57-000020?logo=expo&logoColor=white)
+![Expo SDK 58](https://img.shields.io/badge/Expo-58-000020?logo=expo&logoColor=white)
 
 ## Capturas de tela
 
@@ -20,13 +20,13 @@ Demais telas em [docs/screenshots/](docs/screenshots/).
 
 ## Stack
 
-- Expo SDK 57, React Native 0.86, Expo Router e TypeScript
+- Expo SDK 58, React Native 0.88, Expo Router e TypeScript
 - Jest e React Native Testing Library
 - Arquitetura em camadas (Clean Architecture / DDD)
 
 ## Como rodar
 
-Pré-requisitos: Node >= 22.13, npm e Expo Go compatível com o SDK 57 em Android ou iOS.
+Pré-requisitos: Node >= 22.13, npm e Expo Go compatível com o SDK 58 em Android ou iOS.
 
 ```sh
 npm ci

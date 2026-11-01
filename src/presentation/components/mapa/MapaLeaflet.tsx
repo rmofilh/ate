@@ -152,7 +152,7 @@ export const MapaLeaflet = forwardRef<
   marcadorEmFoco,
 }, ref) {
   const uiStyles = useUIStyles();
-  const webview = useRef<WebView>(null);
+  const webview = useRef<WebView<object>>(null);
   const [html] = useState(() =>
     htmlDoMapa(centroInicial, zoomInicial, pinInicial, { somenteLeitura, marcadores, marcadorEmFoco }),
   );
@@ -175,7 +175,7 @@ export const MapaLeaflet = forwardRef<
 
   return (
     <View style={styles.area}>
-      <WebView
+      <WebView<object>
         ref={webview}
         testID="mapa"
         style={styles.area}

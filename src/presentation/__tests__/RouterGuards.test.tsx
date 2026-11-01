@@ -60,15 +60,13 @@ const routes = {
 };
 
 it('link direto ao Kanban sem login termina na rota pública', async () => {
-  const app = renderRouter(routes, { initialUrl: '/kanban' });
-  await app;
+  const app = await renderRouter(routes, { initialUrl: '/kanban' });
   await screen.findByText('Entrar no ate');
   expect(app.getPathname()).toBe('/login');
 });
 
 it('login libera as stacks e logout volta a proteger o histórico', async () => {
-  const app = renderRouter(routes, { initialUrl: '/pedido/novo' });
-  await app;
+  const app = await renderRouter(routes, { initialUrl: '/pedido/novo' });
   expect(app.getPathname()).toBe('/login');
   await fireEvent.changeText(screen.getByTestId('campo-email'), 'artesao@email.com');
   await fireEvent.changeText(screen.getByTestId('campo-senha'), '123456');

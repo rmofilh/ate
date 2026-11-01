@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, ScrollView, Text, useWindowDimensions, View } from 'react-native';
-import type { ListRenderItem } from 'react-native';
+import type { ListRenderItem, ScrollViewInstance } from 'react-native';
 
 import { borderRadius, fontSizes, layout, spacing, textStyles } from '@/constants/theme';
 import type { Pedido } from '@/core/domain/entities/Pedido';
@@ -27,7 +27,7 @@ export function KanbanBoard({ groups, renderItem, allDoneCollapsed = false, onTo
   const [active, setActive] = useState(0);
   const activeRef = useRef(active);
   const [overview, setOverview] = useState(false);
-  const scroller = useRef<ScrollView>(null);
+  const scroller = useRef<ScrollViewInstance>(null);
   const minWidth = layout.columnMinWidth * Math.max(1, Math.min(fontScale, 1.6));
   const largeType = fontScale > 1.6;
   const stackedControls = viewport < 600 && !largeType;

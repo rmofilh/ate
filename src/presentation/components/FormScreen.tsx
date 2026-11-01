@@ -1,5 +1,6 @@
 import React, { type PropsWithChildren, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { layout, spacing } from '@/constants/theme';
@@ -10,7 +11,7 @@ export function FormScreen({ children, testID, auth = false }: PropsWithChildren
   auth?: boolean;
 }>) {
   const styles = useStyles();
-  const container = useRef<View>(null);
+  const container = useRef<ViewInstance>(null);
   const [offset, setOffset] = useState(0);
   return (
     <SafeAreaView style={styles.screen} edges={auth ? ['top', 'bottom', 'left', 'right'] : ['bottom', 'left', 'right']}>

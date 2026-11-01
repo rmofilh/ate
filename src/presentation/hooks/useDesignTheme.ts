@@ -1,4 +1,5 @@
 import { StyleSheet, useColorScheme } from 'react-native';
+import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
 
 import { colors, darkColors, type ThemeColors } from '@/constants/theme';
 
@@ -8,7 +9,7 @@ export function useDesignTheme() {
 }
 
 /** Two cached stylesheets; only presentation subscribes to system appearance. */
-export function createThemedStyles<T extends StyleSheet.NamedStyles<T>>(
+export function createThemedStyles<T extends { [K in keyof T]: ViewStyle | TextStyle | ImageStyle }>(
   factory: (palette: ThemeColors) => T,
 ) {
   const themes = {

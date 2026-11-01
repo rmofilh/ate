@@ -174,3 +174,7 @@ Correções pontuais após revisão de uso, sem migration, sem dependência nova
 - **Coordenadas:** saem do card; no formulário, os campos manuais ficam recolhidos em `CoordenadasManuais`. O seletor de local mantém a coordenada no rodapé.
 - **Fotos:** `ArtworkThumbnail` mostra a foto inteira (`contain`) e amplia em tela cheia ao toque. Nova Obra deixa claro que há uma foto por obra.
 - **Cliente Avulso:** `loadData` garante sua existência de forma idempotente. Antes ele só nascia na primeira venda direta e não aparecia em Novo Pedido.
+
+## Atualização para o Expo SDK 58 (01/11/2026)
+
+O Expo Go da loja só suporta o SDK mais recente, então o app saiu do SDK 57 para o 58 (React Native 0.88, React 19.3, Jest 30). Sem mudança de funcionalidade: só o que os tipos estritos do React Native e o `renderRouter` assíncrono exigiram (`createThemedStyles`, refs com `ViewInstance`, `ScrollViewInstance` e `TextInputInstance`, testes de rota). `npm audit` caiu de 7 alertas altos para nenhum; os restantes são moderados e baixos em ferramentas de desenvolvimento e build. Não usar `npm audit fix --force`: ele sugere rebaixar `expo` e `jest`.

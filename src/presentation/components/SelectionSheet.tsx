@@ -115,7 +115,7 @@ export function SelectionSheet({ title, searchLabel, emptyMessage, options, sele
             </View>}
             ListEmptyComponent={<Text style={styles.empty}>{query ? 'Nenhum resultado para esta busca.' : emptyMessage}</Text>}
             ListFooterComponent={onCreate ? <ActionButton label={createTestID} title="Cadastrar novo cliente" icon="plus"
-              onPress={onCreate} appearance="secondary" /> : null} />
+              onPress={onCreate} appearance="secondary" /> : undefined} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
