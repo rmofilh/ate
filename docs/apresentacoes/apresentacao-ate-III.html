@@ -80,665 +80,515 @@ Monokai style - ported by Luigi Maselli - http://grigio.org
   font-weight: bold;
 }
 </style>
-<style>:root {
-  --ink: #17211d; --muted: #5a655f; --paper: #f4f0e7; --cream: #fffaf0;
-  --terracotta: #b94f2e; --green: #335b49; --gold: #e2b75b; --line: rgba(23,33,29,.16);
+<style>/* Identidade da apresentação I, adaptada ao palco 1280×720 do Reveal. */
+:root {
+  --ink: #17211d; --muted: #5f6a64; --paper: #f4f0e7; --cream: #fffaf0;
+  --terracotta: #ca5f3d; --terracotta-dark: #8d3926; --sage: #b9c7b4; --green: #335b49;
+  --gold: #e2b75b; --line: rgba(23,33,29,.14); --shadow: 0 24px 60px rgba(35,31,22,.16);
   --serif: Georgia, "Times New Roman", serif;
   --sans: Inter, ui-sans-serif, system-ui, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, "DejaVu Sans Mono", monospace;
 }
 html, body, .reveal-viewport { background: var(--paper); }
-.reveal { font-family: var(--sans); font-size: 26px; color: var(--ink); }
+.reveal { font-family: var(--sans); font-size: 24px; color: var(--ink); }
 .reveal .slides { text-align: left; }
-.reveal .slides > section { height: 100%; padding: 26px 44px !important; box-sizing: border-box; }
-.reveal .slides > section.dark { background: var(--ink); color: var(--cream); box-shadow: 0 0 0 200vmax var(--ink); }
-.reveal h1, .reveal h2, .reveal h3, .reveal h4 { margin: 0; font-family: var(--serif); color: inherit; }
-.reveal h1 { font-size: 150px; line-height: 1; letter-spacing: -.04em; margin: 8px 0 4px; }
-.reveal h2 { font-size: 42px; line-height: 1.12; letter-spacing: -.02em; margin: 4px 0 16px; font-weight: 700; }
-.reveal h2 code { font-size: .86em; }
-.reveal h3 { font-size: 30px; color: var(--terracotta); margin-bottom: 10px; }
-.reveal h3.verde { color: var(--green); }
-.reveal h3.ouro { color: var(--gold); }
-.reveal p { margin: 0; line-height: 1.35; }
-.reveal a { color: var(--terracotta); }
-.reveal .accent { color: var(--terracotta); }
-.reveal .kicker { font-size: 16px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--terracotta); }
-.reveal .dark .kicker { color: var(--gold); }
-.reveal .lede { font-size: 32px; font-family: var(--serif); color: rgba(255,250,240,.82); }
-.reveal .meta { margin-top: 44px; font-size: 22px; color: rgba(255,250,240,.82); }
-.reveal .meta b { font-size: 28px; color: var(--cream); }
-.reveal .conta { margin-top: 30px; font-size: 22px; color: var(--gold); }
-.reveal .capa { padding-top: 56px !important; }
-.reveal ul { margin: 0; padding-left: 26px; display: block; }
-.reveal li { margin-bottom: 11px; line-height: 1.3; }
-.reveal .menor li { font-size: 24px; margin-bottom: 9px; }
-.reveal .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; margin-top: 12px; }
-.reveal .duas.estreita { gap: 30px; margin-top: 2px; }
-.reveal :not(pre) > code { font-family: var(--mono); font-size: .86em; background: rgba(23,33,29,.08); padding: 1px 6px; border-radius: 4px; }
-.reveal .dark :not(pre) > code { background: rgba(255,250,240,.12); }
-.reveal table { border-collapse: collapse; width: 100%; font-size: 23px; margin: 8px 0 0; }
-.reveal th { text-align: left; font-size: 17px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; border-bottom: 2px solid var(--ink); }
-.reveal td { padding: 13px 12px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.25; }
-.reveal table.compacta { font-size: 22px; margin: 0; }
-.reveal table.compacta td { padding: 7px 8px; }
-.reveal td.n { font-family: var(--serif); font-size: 30px; font-weight: 700; color: var(--terracotta); text-align: right; width: 72px; line-height: 1; }
-.reveal .faixa { margin-top: 14px; padding: 11px 16px; font-size: 21px; background: rgba(51,91,73,.12); border-left: 5px solid var(--green); }
-.reveal .camadas { display: grid; grid-template-columns: 1.1fr 34px 1.2fr 34px 1.1fr 34px .85fr; align-items: stretch; margin-top: 18px; }
-.reveal .camada { background: var(--cream); border: 1px solid var(--line); padding: 14px; border-radius: 8px; min-height: 410px; box-sizing: border-box; }
-.reveal .camada h4 { font-family: var(--mono); font-size: 18px; color: var(--muted); margin-bottom: 14px; }
-.reveal .camada p { font-size: 21px; margin-bottom: 9px; line-height: 1.22; overflow-wrap: anywhere; }
-.reveal .camada.app { background: #f6e2d7; border-color: var(--terracotta); }
-.reveal .camada.dom { background: #dfe8db; border-color: var(--green); }
-.reveal .seta { align-self: center; text-align: center; font-size: 30px; font-weight: 700; color: var(--terracotta); }
-.reveal .fluxo { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 20px; font-weight: 600; flex-wrap: nowrap; white-space: nowrap; }
-.reveal .fluxo span { background: var(--cream); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; }
-.reveal .fluxo i { font-style: normal; color: var(--terracotta); font-weight: 800; }
-.reveal .apis { margin-top: 12px; font-size: 20px; color: var(--muted); }
-.reveal .indice { columns: 2; column-gap: 44px; margin-top: 12px; }
-.reveal .indice li { font-size: 24px; break-inside: avoid; }
-.reveal .apx ul:not(.indice) li { font-size: 25px; }
+.reveal .slides section { height: 100%; padding: 38px 58px 50px !important; box-sizing: border-box; isolation: isolate; }
+/* Gradientes e textura de papel, como na apresentação I */
+.reveal .slides section::before { content: ""; position: absolute; inset: 0; z-index: -2;
+  background: radial-gradient(circle at 12% 16%, rgba(202,95,61,.10), transparent 28%),
+              radial-gradient(circle at 90% 88%, rgba(51,91,73,.11), transparent 26%); }
+.reveal .slides section::after { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .28; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E"); }
+.reveal .slides section.dark { color: var(--cream); }
+.reveal .slides section.dark::before { background: radial-gradient(circle at 14% 14%, rgba(202,95,61,.26), transparent 30%),
+  radial-gradient(circle at 86% 86%, rgba(226,183,91,.14), transparent 26%); }
+.reveal .slides section.rust { color: #fff8eb; }
+.reveal .slides section.rust::before { background: linear-gradient(135deg, rgba(255,255,255,.09), transparent 50%),
+  radial-gradient(circle at 86% 12%, rgba(56,26,19,.24), transparent 30%); }
 
-.reveal pre.codigo { position: relative; width: 100%; margin: 6px 0 0; box-shadow: none; font-family: var(--mono); font-size: 20px; line-height: 1.32; }
-.reveal pre.codigo code { display: block; max-height: none; overflow: hidden; padding: 12px 16px; border-radius: 8px; background: #17211d; color: #f4f0e7; font-family: var(--mono); box-sizing: border-box; white-space: pre; }
-.reveal pre.codigo.small { font-size: 18px; }
-.reveal pre.codigo code .hljs-ln-numbers { display: none; }
-.reveal pre.codigo code table { margin: 0; width: auto; font-size: inherit; }
-.reveal pre.codigo code td { padding: 0; border: 0; line-height: inherit; vertical-align: baseline; }
-.reveal pre.codigo .hljs-comment { color: #a9b5ad; }
-.reveal .hljs:not(.nothing) { background: #17211d; }
-.reveal .rodape-fonte { margin-top: 5px; font-family: var(--mono); font-size: 15px; color: var(--muted); }
-.reveal .slide-number { background: transparent; color: var(--muted); font-size: 16px; font-family: var(--sans); right: 16px; bottom: 10px; }
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 { margin: 0; font-family: var(--serif); color: inherit; text-transform: none; }
+.reveal h1 { font-size: 150px; line-height: .88; letter-spacing: -.055em; font-weight: 700; }
+.reveal h2 { font-size: 50px; line-height: 1.02; letter-spacing: -.035em; font-weight: 700; margin: 12px 0 0; max-width: 1120px; }
+.reveal h3 { font-size: 27px; line-height: 1.12; }
+.reveal p { margin: 0; line-height: 1.38; }
+.reveal .accent { color: var(--terracotta); }
+.reveal .dark .accent, .reveal .rust .accent { color: var(--gold); }
+.reveal .muted { color: var(--muted); }
+.reveal .eyebrow { display: flex; align-items: center; gap: 12px; font-size: 15px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--terracotta); }
+.reveal .eyebrow::before { content: ""; width: 34px; height: 3px; background: currentColor; border-radius: 5px; }
+.reveal .dark .eyebrow, .reveal .rust .eyebrow { color: var(--gold); }
+.reveal .lede { font-size: 25px; line-height: 1.38; color: var(--muted); }
+.reveal .dark .lede, .reveal .rust .lede { color: rgba(255,250,240,.76); }
+.reveal .fonte { position: absolute; left: 58px; right: 140px; bottom: 16px; font-size: 13px; letter-spacing: .03em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reveal .dark .fonte, .reveal .rust .fonte { color: rgba(255,255,255,.5); }
+.reveal :not(pre) > code { font-family: var(--mono); font-size: .84em; background: rgba(23,33,29,.08); padding: 1px 7px; border-radius: 5px; }
+.reveal .dark :not(pre) > code, .reveal .rust :not(pre) > code { background: rgba(255,250,240,.14); }
+.reveal ul { margin: 0; padding: 0; list-style: none; display: block; }
+
+/* Capa */
+.reveal .hero { display: flex; flex-direction: column; justify-content: center; }
+.reveal .mark { display: inline-flex; align-items: center; justify-content: center; width: 84px; height: 84px; border-radius: 50% 50% 43% 57% / 47% 42% 58% 53%; background: var(--terracotta); color: #fff; font-family: var(--serif); font-size: 44px; font-weight: 700; margin-bottom: 26px; transform: rotate(-3deg); }
+.reveal .subtitle { margin-top: 22px; font-size: 32px; line-height: 1.28; color: rgba(255,250,240,.8); max-width: 820px; font-family: var(--serif); }
+.reveal .meta { margin-top: 38px; display: flex; flex-wrap: wrap; gap: 14px 18px; color: rgba(255,250,240,.6); font-size: 15px; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
+.reveal .meta span + span::before { content: "•"; margin-right: 18px; color: var(--gold); }
+.reveal .pill { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 999px; background: rgba(226,183,91,.15); color: var(--gold); font-weight: 700; font-size: 19px; }
+
+/* Grades */
+.reveal .split { display: grid; grid-template-columns: 1fr 1fr; gap: 54px; align-items: center; margin-top: 26px; }
+.reveal .split.wide-left { grid-template-columns: 1.15fr .85fr; }
+.reveal .split.wide-right { grid-template-columns: .82fr 1.18fr; }
+.reveal .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; transform: rotate(1deg); }
+.reveal .paper-note { min-height: 118px; background: var(--cream); border: 1px solid rgba(69,53,36,.12); box-shadow: 0 18px 34px rgba(61,44,26,.10); padding: 20px 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; transform: rotate(var(--r)); border-radius: 3px; }
+.reveal .paper-note:nth-child(2) { margin-top: 30px; } .reveal .paper-note:nth-child(3) { margin-top: -10px; }
+.reveal .paper-note strong { font-size: 21px; line-height: 1.2; } .reveal .paper-note span { color: var(--muted); font-size: 16px; }
+.reveal .traits { display: grid; gap: 18px; margin-top: 26px; }
+.reveal .trait { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start; }
+.reveal .trait b { width: 38px; height: 38px; border-radius: 50%; background: var(--terracotta); color: #fff; display: grid; place-items: center; font-size: 18px; }
+.reveal .trait.g b { background: var(--green); } .reveal .trait.o b { background: #b17c19; }
+.reveal .trait p { font-size: 22px; line-height: 1.3; } .reveal .trait span { display: block; color: var(--muted); font-size: .78em; margin-top: 4px; }
+
+/* Arquitetura */
+.reveal .arch { display: grid; grid-template-columns: 1fr 54px 1fr 54px 1fr; gap: 10px; margin-top: 30px; align-items: stretch; }
+.reveal .layer { border-radius: 20px; padding: 22px 22px; background: rgba(255,255,255,.64); border: 1px solid var(--line); }
+.reveal .layer h3 { font-size: 26px; } .reveal .layer .papel { margin-top: 6px; color: var(--muted); font-size: 17px; }
+.reveal .layer.app { background: #f1dfd7; } .reveal .layer.dom { background: #e5eadf; }
+.reveal .layer ul { margin-top: 14px; display: grid; gap: 8px; }
+.reveal .layer li { font-size: 18px; line-height: 1.25; display: flex; gap: 8px; align-items: baseline; }
+.reveal .tag { flex: none; display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .06em; color: #fff; background: var(--terracotta); }
+.reveal .tag.geo { background: var(--green); } .reveal .tag.out { background: #8a8f8c; }
+.reveal .connector { display: grid; place-items: center; color: var(--terracotta); font-size: 40px; font-weight: 300; }
+.reveal .arch-note { margin-top: 18px; color: var(--muted); font-size: 19px; }
+.reveal .arch-note b { color: var(--terracotta-dark); }
+.reveal .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.reveal .chips span { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--cream); font-size: 16px; font-weight: 700; }
+.reveal .chips span b { color: var(--terracotta); }
+.reveal .dark .chips span, .reveal .rust .chips span { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); color: rgba(255,250,240,.85); }
+
+/* Evidências */
+.reveal .evidence { display: grid; grid-template-columns: .8fr 1.2fr; gap: 46px; margin-top: 26px; align-items: start; }
+.reveal .numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.reveal .stat { border: 1px solid rgba(255,255,255,.16); border-radius: 20px; padding: 20px 20px; min-height: 128px; background: rgba(255,255,255,.05); }
+.reveal .stat strong { display: block; color: var(--gold); font-family: var(--serif); font-size: 56px; line-height: .9; }
+.reveal .stat span { display: block; margin-top: 10px; color: rgba(255,255,255,.72); line-height: 1.28; font-size: 16px; }
+.reveal .steps3 { display: grid; gap: 10px; margin-top: 4px; }
+.reveal .steps3 div { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: center; font-size: 20px; color: rgba(255,250,240,.88); }
+.reveal .steps3 b { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--gold); color: var(--gold); display: grid; place-items: center; font-family: var(--serif); font-size: 17px; }
+.reveal .label { font-size: 14px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: var(--muted); margin-bottom: 10px; }
+.reveal .dark .label, .reveal .rust .label { color: rgba(255,250,240,.55); }
+
+/* Checklist */
+.reveal .checklist { display: grid; gap: 12px; margin-top: 4px; }
+.reveal .check { display: flex; gap: 13px; align-items: flex-start; font-size: 20px; line-height: 1.3; }
+.reveal .check::before { content: "✓"; display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: var(--gold); color: var(--ink); font-weight: 900; flex: none; font-size: 15px; margin-top: 1px; }
+.reveal .check.next::before { content: "→"; background: transparent; border: 2px dashed var(--terracotta); color: var(--terracotta); }
+.reveal .dark .check.next::before { border-color: var(--gold); color: var(--gold); }
+.reveal .check small { display: block; color: var(--muted); font-size: .8em; margin-top: 2px; }
+.reveal .dark .check small, .reveal .rust .check small { color: rgba(255,250,240,.6); }
+
+/* Código */
+.reveal pre.codigo { position: relative; width: 100%; margin: 0; box-shadow: var(--shadow); font-family: var(--mono); font-size: 21px; line-height: 1.36; }
+.reveal pre.codigo code { display: block; max-height: none; overflow: hidden; padding: 16px 20px; border-radius: 14px; background: #1c2723; color: #f4f0e7; font-family: var(--mono); box-sizing: border-box; white-space: pre; }
+.reveal pre.codigo.small { font-size: 19px; }
+.reveal pre.codigo .hljs-comment { color: #a9b5ad; font-style: italic; }
+.reveal .hljs:not(.nothing) { background: #1c2723; }
+.reveal .rodape-fonte { margin-top: 7px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.reveal .dark .rodape-fonte, .reveal .rust .rodape-fonte { color: rgba(255,250,240,.55); }
+.reveal .codecard + .codecard { margin-top: 14px; }
+.reveal .badge { display: inline-flex; padding: 9px 15px; border-radius: 999px; background: rgba(51,91,73,.12); color: var(--green); font-weight: 800; font-size: 16px; letter-spacing: .03em; margin-top: 16px; }
+.reveal .rust .badge, .reveal .dark .badge { background: rgba(226,183,91,.16); color: var(--gold); }
+.reveal .card { padding: 22px 24px; border-radius: 18px; background: rgba(255,255,255,.6); border: 1px solid var(--line); }
+.reveal .card + .card { margin-top: 16px; }
+.reveal .card b { display: block; font-size: 22px; margin-bottom: 6px; font-family: var(--serif); }
+.reveal .card span { color: var(--muted); font-size: 19px; line-height: 1.38; display: block; }
+.reveal .card.dom { border-left: 5px solid var(--green); } .reveal .card.app { border-left: 5px solid var(--terracotta); }
+.reveal .aaa { display: grid; gap: 14px; }
+.reveal .aaa div { display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; }
+.reveal .aaa b { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-family: var(--serif); font-size: 20px; background: var(--green); }
+.reveal .aaa div:nth-child(2) b { background: var(--terracotta); } .reveal .aaa div:nth-child(3) b { background: #b17c19; }
+.reveal .aaa p { font-size: 20px; line-height: 1.32; } .reveal .aaa p span { display: block; color: var(--muted); font-size: .86em; }
+
+/* Tradução SDK → domínio */
+.reveal .traducao { width: 100%; border-collapse: collapse; font-size: 19px; margin: 0; }
+.reveal .traducao td { padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,.2); vertical-align: middle; line-height: 1.22; }
+.reveal .traducao td:nth-child(2) { color: var(--gold); text-align: center; width: 34px; font-size: 22px; }
+.reveal .traducao td:nth-child(3) code { color: #fff; }
+.reveal .traducao .cab td { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: rgba(255,250,240,.6); border-bottom-width: 2px; }
+
+/* Celular da câmera */
+.reveal .camera-layout { display: grid; grid-template-columns: 1fr 300px; gap: 50px; align-items: center; margin-top: 14px; }
+.reveal .phone { width: 262px; height: 500px; border: 10px solid #202724; border-radius: 44px; background: #111; box-shadow: var(--shadow); padding: 12px; position: relative; margin: auto; transform: rotate(2deg); box-sizing: border-box; }
+.reveal .phone::before { content: ""; position: absolute; top: 9px; left: 38%; right: 38%; height: 16px; border-radius: 10px; background: #202724; z-index: 2; }
+.reveal .camera-screen { height: 100%; border-radius: 26px; overflow: hidden; position: relative; background: linear-gradient(145deg, #466854, #18231e); }
+.reveal .camera-screen::before { content: ""; position: absolute; width: 78%; height: 58%; left: 11%; top: 14%; border: 2px solid rgba(255,255,255,.8); background: radial-gradient(ellipse at 50% 42%, #d6b05f 0 11%, #8b5c31 12% 28%, transparent 29%), linear-gradient(115deg, transparent 42%, rgba(255,255,255,.12) 43% 45%, transparent 46%); }
+.reveal .camera-screen .botoes { position: absolute; left: 12px; right: 12px; bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+.reveal .camera-screen .botoes span { font-size: 12px; font-weight: 800; color: #fff; background: rgba(0,0,0,.35); border-radius: 999px; padding: 6px 10px; }
+.reveal .camera-screen .botoes span.usar { background: var(--terracotta); }
+.reveal .shutter { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); width: 58px; height: 58px; border-radius: 50%; border: 5px solid #fff; background: rgba(255,255,255,.25); box-sizing: border-box; }
+.reveal .miniflow { display: flex; align-items: center; gap: 6px; margin: 20px 0 16px; flex-wrap: wrap; }
+.reveal .miniflow span { padding: 8px 13px; border-radius: 999px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.26); font-weight: 700; font-size: 17px; }
+.reveal .miniflow i { font-style: normal; color: var(--gold); font-weight: 800; }
+.reveal .ponte { margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.reveal .ponte div { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.1); font-size: 16px; line-height: 1.3; }
+.reveal .ponte div b { display: block; color: var(--gold); font-size: 15px; }
+.reveal .rust .check::before { background: #fff8eb; color: var(--terracotta-dark); }
+
+/* Fluxo com círculos */
+.reveal .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-top: 30px; position: relative; }
+.reveal .flow::before { content: ""; position: absolute; top: 33px; left: 9%; right: 9%; height: 3px; background: linear-gradient(90deg, var(--sage), var(--terracotta), var(--gold)); z-index: -1; }
+.reveal .step { text-align: center; }
+.reveal .step .circle { width: 66px; height: 66px; margin: 0 auto 14px; background: var(--cream); border: 3px solid var(--green); border-radius: 50%; display: grid; place-items: center; font-family: var(--serif); font-size: 26px; color: var(--green); box-shadow: 0 0 0 9px var(--paper); box-sizing: border-box; }
+.reveal .step:nth-child(2) .circle, .reveal .step:nth-child(3) .circle { border-color: var(--terracotta); color: var(--terracotta); }
+.reveal .step:nth-child(4) .circle { border-color: #b17c19; color: #8e6211; }
+.reveal .step.futuro .circle { border-style: dashed; border-color: #9aa39e; color: #9aa39e; }
+.reveal .step h3 { font-size: 22px; font-family: var(--sans); font-weight: 800; }
+.reveal .step p { color: var(--muted); font-size: 16px; line-height: 1.35; margin-top: 6px; }
+.reveal .step.futuro h3, .reveal .step.futuro p { color: #9aa39e; }
+
+/* Cartões local × nuvem */
+.reveal .stores { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 26px; }
+.reveal .store { background: var(--cream); color: var(--ink); padding: 22px 26px; border-radius: 22px; border: 1px solid var(--line); }
+.reveal .store.local { box-shadow: inset 0 5px 0 var(--gold); } .reveal .store.cloud { box-shadow: inset 0 5px 0 var(--terracotta); }
+.reveal .store h3 { font-size: 25px; }
+.reveal .store ul { margin-top: 12px; display: grid; gap: 7px; color: var(--muted); font-size: 18px; }
+.reveal .store li::before { content: "—"; color: var(--terracotta); margin-right: 10px; }
+.reveal .offline { display: grid; grid-template-columns: 1fr 150px 1fr; align-items: center; gap: 22px; margin-top: 26px; }
+.reveal .sync { display: grid; place-items: center; text-align: center; color: var(--gold); font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; }
+.reveal .sync .arrows { font-size: 60px; line-height: 1; }
+.reveal .sync small { margin-top: 8px; color: rgba(255,255,255,.62); line-height: 1.4; font-size: 13px; }
+.reveal .pegadinha { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: center; }
+.reveal .alerta { border-left: 4px solid var(--gold); padding-left: 18px; font-size: 18px; line-height: 1.4; color: rgba(255,250,240,.82); }
+.reveal .alerta b { color: var(--gold); }
+
+/* Pronto para sincronizar */
+.reveal .ready { display: grid; grid-template-columns: 1.2fr .8fr; gap: 40px; margin-top: 26px; }
+.reveal .ready .checklist { grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+.reveal .ready .check::before { background: var(--green); color: #fff; }
+.reveal .ready .check.next::before { background: transparent; color: var(--terracotta); }
+.reveal .roadbox { background: var(--cream); border: 2px dashed rgba(202,95,61,.45); border-radius: 20px; padding: 22px 24px; }
+
+/* Fecho */
+.reveal .closing { display: flex; flex-direction: column; justify-content: center; }
+.reveal .closing h2 { font-size: 76px; max-width: 1100px; }
+.reveal .summary { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 40px; }
+.reveal .summary span { padding: 12px 20px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; color: rgba(255,255,255,.82); font-weight: 700; font-size: 20px; }
+.reveal .prompt { margin-top: 48px; color: var(--gold); font-size: 16px; text-transform: uppercase; letter-spacing: .13em; font-weight: 900; }
+
+/* Perguntas */
+.reveal .qa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 26px; }
+.reveal .qa div { padding: 18px 20px; border-radius: 18px; background: rgba(255,255,255,.62); border: 1px solid var(--line); }
+.reveal .qa b { display: block; font-family: var(--serif); font-size: 21px; color: var(--terracotta-dark); margin-bottom: 8px; line-height: 1.15; }
+.reveal .qa span { font-size: 16.5px; line-height: 1.38; color: var(--ink); display: block; }
+
+.reveal .slide-number { background: transparent; color: var(--muted); font-size: 14px; font-family: var(--sans); right: 18px; bottom: 12px; letter-spacing: .06em; }
 .reveal .progress { color: var(--terracotta); height: 4px; }
-#problema li { font-size: 30px; margin-bottom: 20px; }
-#problema h3 { font-size: 34px; margin-bottom: 16px; }
-#recursos table { font-size: 26px; }
-#recursos td { padding: 20px 12px; }
-#fecho h2 { font-size: 58px; margin: 14px 0 44px; }
-#fecho li { font-size: 30px; margin-bottom: 18px; }
-#fecho h3 { font-size: 36px; }
-#tdd .menor li { font-size: 25px; margin-bottom: 13px; }
-html.reveal-print .reveal .hljs.has-highlights tr:not(.highlight-line),
-html.print-pdf .reveal .hljs.has-highlights tr:not(.highlight-line) { opacity: 1 !important; }
+html.reveal-print .reveal .slides section, html.print-pdf .reveal .slides section { overflow: hidden; }
+.reveal .split > *, .reveal .offline > *, .reveal .evidence > *, .reveal .arch > *, .reveal .ready > *, .reveal .camera-layout > * { min-width: 0; }
+.reveal .disciplina { margin-top: 12px; font-size: 19px; color: rgba(255,250,240,.72); }
+.reveal .aaa.linha { grid-template-columns: repeat(3, 1fr); margin-top: 22px; gap: 22px; }
+.reveal .aaa.linha p { font-size: 21px; } .reveal .aaa.linha p span { font-size: .84em; margin-top: 3px; }
+.reveal .gps-grid { display: grid; grid-template-columns: 1.45fr .55fr; gap: 34px; margin-top: 20px; align-items: center; }
+.reveal .gps-grid > * { min-width: 0; }
+.reveal .traducao td { padding: 8px 6px; font-size: 20px; }
+.reveal .chips.vertical { flex-direction: column; align-items: flex-start; margin-top: 0; }
+.reveal .chips.vertical span { font-size: 17px; }
+.reveal .pegadinha { grid-template-columns: 1fr; margin-top: 16px; }
+.reveal .alerta { font-size: 19px; }
+.reveal .ready .check { font-size: 22px; }
+.reveal .qa span { font-size: 18px; }
+.reveal .camera-layout .check { font-size: 21px; }
+.reveal .ponte div { font-size: 17px; }
+.reveal .ready { grid-template-columns: 1.38fr .62fr; gap: 34px; }
+.reveal .ready .roadbox .checklist { grid-template-columns: 1fr; }
+.reveal .ready .roadbox .check { font-size: 20px; }
+.reveal .dark pre.codigo code { border: 1px solid rgba(255,250,240,.16); }
 </style>
 </head>
 <body>
 <div class="reveal"><div class="slides">
-<section id="capa" class="dark capa" data-t="20">
-  <p class="kicker">Fase 3 · Câmera e Geolocalização</p>
-  <h1>ate<span class="accent">.</span></h1>
-  <p class="lede">Gestão móvel para artesãos, com foto e local salvos no próprio celular</p>
-  <div class="meta">
-    <p><b>Ricardo Moreira Filho</b></p>
-    <p>Laboratório de Desenvolvimento de Aplicações para Dispositivos Móveis</p>
-    <p>03/11/2026</p>
+<section id="capa" class="dark" data-background-color="#17211d" data-t="20">
+  <div class="hero" style="height:100%">
+    <div><div class="mark">a</div></div>
+    <div class="eyebrow">Fase 3 · Câmera e Geolocalização</div>
+    <h1 style="margin-top:14px">ate<span class="accent">.</span></h1>
+    <p class="subtitle">A foto confirma a entrega. O mapa marca a feira. Tudo salvo no próprio celular.</p>
+    <div class="meta"><span>Ricardo Moreira Filho</span><span>03/11/2026</span></div>
+    <p class="disciplina">Laboratório de Desenvolvimento de Aplicações para Dispositivos Móveis</p>
+    <div style="margin-top:34px"><span class="pill">Conta de demonstração: <code>artesao@email.com</code> · <code>123456</code></span></div>
   </div>
-  <p class="conta">Conta de demonstração: <code>artesao@email.com</code> · senha <code>123456</code></p>
-  <aside class="notes"><b>[0:20 · chegar aqui em 0:20]</b> Bom dia. Este é o ate, um app de gestão para artesãos. O app já está com o senhor, e a conta de demonstração está na tela. Nesta fase mostro como câmera e geolocalização entraram no projeto e como os dados ficam salvos no celular.</aside>
+  <aside class="notes"><b>[0:20 · chegar aqui em 0:20]</b> Bom dia. Este é o ate, um app de gestão para artesãos que já está no seu celular; a conta de demonstração está na tela. Na fase 3, o app ganhou câmera e localização de verdade, com tudo salvo no próprio aparelho. Vou seguir o roteiro pedido: problema, arquitetura, testes, domínio, implementação e persistência.</aside>
 </section>
 
 <section id="problema" data-t="45">
-  <p class="kicker">1 · Abertura e contextualização</p>
-  <h2>Quem faz a peça também cuida do negócio</h2>
-  <div class="duas">
+  <div class="eyebrow">1 · O problema e a solução</div>
+  <div class="split wide-left">
     <div>
-      <h3>O problema</h3>
-      <ul>
-        <li>Pedidos espalhados entre Instagram, WhatsApp, telefone e balcão</li>
-        <li>Nenhum registro da peça pronta quando o pedido é fechado</li>
-        <li>A feira é cadastrada antes do evento, longe do local</li>
-        <li>Na feira, a internet pode não ajudar</li>
-      </ul>
+      <h2>A foto <span class="accent">confirma</span>.<br>O mapa <span class="accent">localiza</span>.</h2>
+      <div class="traits">
+        <div class="trait"><b>◉</b><p>Câmera: sem foto, o pedido não vira Feito<span>RF05 e RNF11, regra rígida. Foto opcional de catálogo no estoque (RF09)</span></p></div>
+        <div class="trait g"><b>⌖</b><p>Localização: endereço, mapa e ajuste do pin<span>RF12 e RF13. O GPS é um atalho para quem já está na feira</span></p></div>
+        <div class="trait o"><b>⇅</b><p>Offline-first: grava no celular primeiro<span>Funciona em modo avião; a nuvem é a próxima etapa</span></p></div>
+      </div>
     </div>
-    <div>
-      <h3 class="verde">A solução</h3>
-      <ul>
-        <li>Quadro único de pedidos: A fazer, Fazendo, Feito</li>
-        <li><b>Câmera:</b> sem foto, o pedido não vira Feito</li>
-        <li><b>Localização:</b> endereço, mapa e ajuste do pin, com GPS como atalho</li>
-        <li><b>Offline-first:</b> tudo salvo primeiro no celular</li>
-      </ul>
+    <div class="channels">
+      <div class="paper-note" style="--r:-2deg"><strong>Pedido entregue</strong><span>e nenhum registro da peça pronta</span></div>
+      <div class="paper-note" style="--r:2deg"><strong>Feira cadastrada</strong><span>de casa, dias antes, longe do local</span></div>
+      <div class="paper-note" style="--r:1deg"><strong>Internet fraca</strong><span>no meio da feira de rua</span></div>
+      <div class="paper-note" style="--r:-1deg"><strong>Permissão</strong><span>pedida só na hora de usar (RNF12)</span></div>
     </div>
   </div>
-  <aside class="notes"><b>[0:45 · chegar aqui em 1:05]</b> O artesão recebe pedido por vários canais e cuida de tudo sozinho. O ate junta os pedidos em um quadro. A câmera entra numa regra rígida: para passar de Fazendo para Feito, tem que fotografar a peça. A localização marca onde fica a feira. Como ela é cadastrada antes, longe do local, o caminho principal é digitar o endereço e ajustar o pin; o GPS é um atalho. Se quiser testar: conclua um pedido com foto, cadastre um evento pelo mapa, ligue o modo avião e repita, depois feche e reabra o app.</aside>
-</section>
-
-<section id="recursos" data-t="25">
-  <p class="kicker">1 · Como o app usa cada recurso</p>
-  <h2>Cada sensor existe por causa de uma regra</h2>
-  <table>
-    <thead><tr><th>Recurso</th><th>Regra de negócio</th><th>Onde aparece no app</th></tr></thead>
-    <tbody>
-      <tr><td><b>Câmera</b></td><td>RF05 / RNF11: foto obrigatória para concluir, sem bypass</td><td>Pedidos → Concluir com foto</td></tr>
-      <tr><td><b>Câmera</b></td><td>RF09: foto opcional de catálogo</td><td>Estoque → Nova obra</td></tr>
-      <tr><td><b>Localização</b></td><td>RF12: local do evento pelo mapa ou pelo GPS</td><td>Novo evento → Localizar no mapa</td></tr>
-      <tr><td><b>Localização</b></td><td>RF13: eventos como pins no mapa</td><td>Eventos → Ver mapa</td></tr>
-      <tr><td><b>Ambos</b></td><td>RNF12: permissão só no momento do uso</td><td>Nunca na abertura do app</td></tr>
-    </tbody>
-  </table>
-  <aside class="notes"><b>[0:25 · chegar aqui em 1:30]</b> [Pode pular se o tempo apertar.] Nenhum sensor está aqui só para cumprir requisito: cada um atende uma regra de negócio. E a permissão só é pedida na hora do uso, nunca ao abrir o app.</aside>
+  <p class="fonte">Fonte: docs/ate-fase2.md, RF05, RF09, RF12, RF13, RNF11 e RNF12 · docs/ate-fase3.md, Plano 5A</p>
+  <aside class="notes"><b>[0:45 · chegar aqui em 1:05]</b> O artesão faz tudo sozinho. A câmera resolve um problema concreto: provar que a peça ficou pronta. Por isso a foto é uma regra rígida, sem ela o pedido não passa para Feito. A localização marca onde é a feira. Detalhe importante: a feira é cadastrada de casa, dias antes; ali o GPS daria a posição da casa. Por isso o caminho principal é digitar o endereço e ajustar o pin, e o GPS virou atalho. E como feira de rua tem internet ruim, tudo é gravado primeiro no celular.</aside>
 </section>
 
 <section id="arquitetura" data-t="50">
-  <p class="kicker">2 · Clean Architecture e DDD</p>
-  <h2>As dependências apontam para o domínio</h2>
-  <div class="camadas">
-    <div class="camada"><h4>infrastructure</h4><p>ExpoCameraGateway</p><p>ExpoLocationGateway</p><p>ExpoGeocodingGateway</p><p>ArmazenamentoDeFotos</p><p>SQLite*Repository</p></div>
-    <div class="seta">→</div>
-    <div class="camada app"><h4>core/application</h4><p><b>ICameraGateway</b></p><p><b>ILocationGateway</b></p><p><b>IGeocodingGateway</b></p><p>Casos de uso</p><p>LocalizacaoIndisponivelError</p></div>
-    <div class="seta">→</div>
-    <div class="camada dom"><h4>core/domain</h4><p><b>Coordenada</b> (value object)</p><p>Pedido, Obra, Evento (entidades)</p><p>Regras: foto obrigatória</p></div>
-    <div class="seta">←</div>
-    <div class="camada"><h4>presentation</h4><p>Telas (src/app)</p><p>CameraModal</p><p>MapaLeaflet</p></div>
-  </div>
-  <p class="faixa"><b>main</b> · <code>makeSqliteProviders</code> é o único lugar que conhece os dois lados e liga contrato a adaptador</p>
-  <aside class="notes"><b>[0:50 · chegar aqui em 2:20]</b> Câmera e GPS aparecem em três lugares. O contrato fica em core/application, o valor de negócio em core/domain, e o SDK da Expo fica em infrastructure. O main faz a ligação. Do DDD uso entidades, o value object Coordenada, repositórios como contratos e linguagem do negócio em português. A camada de apresentação usa o expo-camera porque o visor é um componente de tela, mas o domínio nunca vê isso.</aside>
-</section>
-
-<section id="regra-teste" data-t="25">
-  <p class="kicker">2 · A regra é verificada</p>
-  <h2>Se o núcleo importar um SDK, o teste quebra</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>const PROIBIDOS = [
-  /^expo$/,
-  /^expo-/,
-  /^react$/,
-  /^react-native/,
-  /^drizzle-orm/,
-  /^better-sqlite3$/,
-  /^@supabase\//,
-  /^uuid$/,
-];
-  // ...
-  it('core/ só importa caminhos relativos, sem SDK nem framework', () =&gt; {
-    const violacoes = arquivosDoCore.flatMap((arquivo) =&gt;
-      importsDe(arquivo)
-        .filter((alvo) =&gt; !alvo.startsWith('.') || PROIBIDOS.some((p) =&gt; p.test(alvo)))
-        .map((alvo) =&gt; `${relativo(arquivo)} → ${alvo}`),
-    );
-    expect(violacoes).toEqual([]);
-  });</code></pre><p class="rodape-fonte">src/core/__tests__/Arquitetura.test.ts:5-14, 44-51</p>
-  <aside class="notes"><b>[0:25 · chegar aqui em 2:45]</b> [Pode pular se o tempo apertar.] A arquitetura não depende de disciplina. Este teste lê os imports de todo o core e falha se aparecer expo, react, drizzle ou qualquer pacote externo.</aside>
-</section>
-
-<section id="tdd" data-t="50">
-  <p class="kicker">3 · Estratégia de TDD</p>
-  <h2>461 testes, cada camada com a sua dublagem</h2>
-  <div class="duas estreita">
-    <div>
-      <h3>Como foi feito</h3>
-      <table class="compacta">
-        <tr><td class="n">92</td><td>Domínio, sem mock</td></tr>
-        <tr><td class="n">55</td><td>Casos de uso, com fakes</td></tr>
-        <tr><td class="n">98</td><td>Infra: SQLite real em memória, SDKs dublados</td></tr>
-        <tr><td class="n">18</td><td>Composição, ponta a ponta</td></tr>
-        <tr><td class="n">194</td><td>Telas, com Testing Library</td></tr>
-        <tr><td class="n">4</td><td>Arquitetura</td></tr>
-      </table>
+  <div class="eyebrow">2 · Clean Architecture e DDD</div>
+  <h2>O núcleo decide. <span class="accent">A infraestrutura executa.</span></h2>
+  <div class="arch">
+    <div class="layer">
+      <h3>Bordas</h3><p class="papel">Telas e infraestrutura: aqui ficam os SDKs</p>
+      <ul>
+        <li><span class="tag">CÂM</span>ExpoCameraGateway + CameraModal</li>
+        <li><span class="tag geo">GEO</span>ExpoLocationGateway</li>
+        <li><span class="tag geo">GEO</span>ExpoGeocodingGateway + mapa</li>
+        <li><span class="tag out">DADOS</span>SQLite (Drizzle) e arquivos</li>
+      </ul>
     </div>
-    <div>
-      <h3 class="verde">Nossos testes garantem que</h3>
-      <ul class="menor">
-        <li>Sem foto, o pedido continua em Fazendo</li>
-        <li>Permissão negada não grava nada</li>
-        <li>Cancelar a câmera não conclui o pedido</li>
-        <li>Coordenada fora da faixa nunca existe</li>
-        <li>Falha no meio não deixa arquivo solto</li>
-        <li>A coordenada salva volta igual do banco</li>
+    <div class="connector">→</div>
+    <div class="layer app">
+      <h3>Aplicação</h3><p class="papel">Casos de uso e contratos (interfaces)</p>
+      <ul>
+        <li><span class="tag">CÂM</span>ICameraGateway</li>
+        <li><span class="tag geo">GEO</span>ILocationGateway</li>
+        <li><span class="tag geo">GEO</span>IGeocodingGateway</li>
+        <li><span class="tag out">USO</span>ConcluirPedido, CadastrarEvento</li>
+      </ul>
+    </div>
+    <div class="connector">→</div>
+    <div class="layer dom">
+      <h3>Domínio</h3><p class="papel">Regras de negócio, sem nenhum import externo</p>
+      <ul>
+        <li><span class="tag">CÂM</span>Pedido: foto obrigatória</li>
+        <li><span class="tag geo">GEO</span>Coordenada (value object)</li>
+        <li><span class="tag out">DDD</span>Entidades: Pedido, Obra, Evento</li>
       </ul>
     </div>
   </div>
-  <p class="faixa">Sensor não roda no Jest: hardware real validado em roteiro manual no aparelho</p>
-  <aside class="notes"><b>[0:50 · chegar aqui em 3:35]</b> A pergunta central é como testar câmera e GPS sem hardware. A ordem foi: primeiro o contrato e o fake, depois os casos de uso testados contra o fake, e só então o adaptador real, com o SDK dublado. O banco é SQLite de verdade, em memória, com as mesmas migrations do app. O que o Jest não alcança, que é o sensor físico, foi validado no aparelho. Se perguntarem sobre Red-Green: os testes e o código entraram no mesmo commit, então o histórico não prova cada ciclo; a evidência é a ordem contrato, fake, caso de uso, adaptador.</aside>
+  <p class="arch-note"><b>Regra:</b> as setas só apontam para o centro. O <code>main</code> liga contrato e adaptador, e um teste falha se o núcleo importar Expo, React ou Drizzle.</p>
+  <p class="fonte">Fonte: src/core · src/infrastructure · src/main/factories/makeSqliteProviders.ts · src/core/__tests__/Arquitetura.test.ts</p>
+  <aside class="notes"><b>[0:50 · chegar aqui em 1:55]</b> Câmera e GPS aparecem nas três camadas, cada um com um papel. No domínio estão as regras: o pedido exige foto e a Coordenada se valida sozinha. Na aplicação ficam os contratos, interfaces que dizem o que o app precisa. Nas bordas fica o SDK da Expo, que cumpre esses contratos. As dependências só apontam para dentro: o domínio não sabe que existe Expo. Do DDD uso entidades, value object, repositórios e a linguagem do negócio em português. E isso não depende de disciplina: um teste de arquitetura quebra se o núcleo importar um SDK.</aside>
 </section>
 
-<section id="dominio-coordenada" data-t="20">
-  <p class="kicker">4 · O domínio</p>
-  <h2>Coordenada inválida não chega a existir</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>export class Coordenada {
-  readonly latitude: number;
-  readonly longitude: number;
-
-  constructor(latitude: number, longitude: number) {
-    if (!Coordenada.validar(latitude, longitude)) {
-      throw new CoordenadaInvalidaError(
-        `Coordenada inválida: latitude ${String(latitude)} longitude ${String(longitude)}`,
-      );
-    }
-    this.latitude = latitude;
-    this.longitude = longitude;
-  }
-
-  static validar(latitude: number, longitude: number): boolean {
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
-    return latitude &gt;= -90 &amp;&amp; latitude &lt;= 90 &amp;&amp; longitude &gt;= -180 &amp;&amp; longitude &lt;= 180;
-  }</code></pre><p class="rodape-fonte">src/core/domain/value-objects/Coordenada.ts:3-20</p>
-  <aside class="notes"><b>[0:20 · chegar aqui em 3:55]</b> Coordenada é um value object sem nenhum import de SDK. Se a latitude vier fora da faixa, ou NaN, o construtor lança. Quem recebe uma Coordenada sabe que ela é válida.</aside>
+<section id="tdd" class="dark" data-background-color="#17211d" data-t="50">
+  <div class="eyebrow">3 · Estratégia de TDD</div>
+  <h2>Como testar câmera <span class="accent">sem câmera?</span></h2>
+  <div class="evidence">
+    <div class="numbers">
+      <div class="stat"><strong>461</strong><span>testes passando, em 71 suítes</span></div>
+      <div class="stat"><strong>92</strong><span>no domínio, sem nenhum dublê</span></div>
+      <div class="stat"><strong>98</strong><span>na infra: SQLite real em memória e SDK dublado</span></div>
+      <div class="stat"><strong>194</strong><span>nas telas, com Testing Library</span></div>
+    </div>
+    <div>
+      <p class="label">Como foi feito</p>
+      <div class="steps3">
+        <div><b>1</b>Contrato e fake primeiro: o núcleo trabalha sem hardware</div>
+        <div><b>2</b>Casos de uso testados contra os fakes</div>
+        <div><b>3</b>Adaptador real testado com o SDK da Expo dublado</div>
+      </div>
+      <p class="label" style="margin-top:22px">Nossos testes garantem que</p>
+      <div class="checklist">
+        <div class="check">Sem foto, o pedido continua em Fazendo</div>
+        <div class="check">Permissão negada não grava nada</div>
+        <div class="check">Falha no meio não deixa arquivo solto</div>
+        <div class="check">A coordenada salva volta igual do banco</div>
+      </div>
+    </div>
+  </div>
+  <p class="fonte">Sensor físico não roda no Jest: validado no aparelho, inclusive em modo avião · npm test, 03/11/2026</p>
+  <aside class="notes"><b>[0:50 · chegar aqui em 2:45]</b> A pergunta central desta parte é como testar câmera sem câmera. A resposta é trocar a dependência por um dublê. Primeiro nasceu o contrato com um fake, uma versão simples que funciona sem hardware. Os casos de uso foram testados contra esses fakes. Depois veio o adaptador real, testado com o SDK da Expo dublado. O banco é SQLite de verdade, em memória, com as mesmas migrations do app. O limite é honesto: o Jest não prova que o sensor físico funciona; isso eu validei no aparelho, também em modo avião.</aside>
 </section>
 
-<section id="dominio-pedido" data-t="20">
-  <p class="kicker">4 · O domínio</p>
-  <h2>A foto é regra do Pedido, não da tela</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape data-line-numbers="2-5|6-8|9-10">concluir(fotoPath: string | null | undefined): void {
-  this.assertVivo();
-  if (this._props.status !== 'FAZENDO') {
-    throw new PedidoInvalidoError('concluir() válido somente de FAZENDO');
-  }
-  if (!fotoPath || !fotoPath.trim()) {
-    throw new PedidoInvalidoError('Foto de conclusão é obrigatória (regra rígida)');
-  }
-  this._props.fotoConclusaoPath = fotoPath;
-  this._props.status = 'FEITO';
-  this._props.statusSync = 'PENDENTE';
-}</code></pre><p class="rodape-fonte">src/core/domain/entities/Pedido.ts:231-242</p>
-  <aside class="notes"><b>[0:20 · chegar aqui em 4:15]</b> A regra da foto mora na entidade. O domínio recebe um caminho e não sabe que existe câmera. Nenhuma tela consegue contornar isso.</aside>
-</section>
-
-<section id="contratos" data-t="35">
-  <p class="kicker">4 · As interfaces</p>
-  <h2>O núcleo pede; quem atende é a infraestrutura</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>export interface ICameraGateway {
+<section id="contratos" data-t="45">
+  <div class="eyebrow">4 · O domínio e as interfaces</div>
+  <h2>O contrato veio <span class="accent">antes do hardware</span></h2>
+  <div class="split" style="align-items:start">
+    <div>
+      <div class="codecard"><pre class="codigo"><code class="language-typescript" data-noescape>export interface ICameraGateway {
   capture(): Promise&lt;string | null&gt;;
-}</code></pre>
-  <pre class="codigo"><code class="language-typescript" data-noescape>export interface ILocationGateway {
+}</code></pre><p class="rodape-fonte">src/core/application/gateways/ICameraGateway.ts:1-3</p>
+      </div>
+      <div class="codecard"><pre class="codigo"><code class="language-typescript" data-noescape>export interface ILocationGateway {
   getCurrent(): Promise&lt;Coordenada&gt;;
-}</code></pre>
-  <pre class="codigo"><code class="language-typescript" data-noescape>export interface IGeocodingGateway {
-  /** Coordenada do endereço, ou null quando nada é encontrado. */
-  buscar(endereco: string): Promise&lt;Coordenada | null&gt;;
-}</code></pre>
-  <pre class="codigo"><code class="language-typescript" data-noescape>export const MOTIVOS_LOCALIZACAO_INDISPONIVEL = [
-  'NEGADA',
-  'NEGADA_PERMANENTE',
-  'SERVICO_DESLIGADO',
-  'TIMEOUT',
-  'BUSCA_INDISPONIVEL',
-] as const;</code></pre>
-  <p class="rodape-fonte">core/application/gateways/ · core/application/errors/ · ICameraGateway e ILocationGateway: sem alteração desde 29/09/2026</p>
-  <aside class="notes"><b>[0:35 · chegar aqui em 4:50]</b> Este é o contrato. A câmera devolve um caminho, ou null se o usuário cancelar. O GPS devolve uma Coordenada, que é tipo do domínio. As falhas também estão na linguagem da aplicação: cinco motivos, sem nenhum tipo do SDK. O ponto principal é a data: esses dois contratos são da fase 2 e não mudaram quando o hardware real entrou.</aside>
-</section>
-
-<section id="tdd-camera" data-t="20">
-  <p class="kicker">5 · O teste</p>
-  <h2>Câmera: concluir sem foto falha e nada muda</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>it('concluir sem foto lanca e mantem FAZENDO (RNF11)', async () =&gt; {
-  const { pedidos, obras, sync, pedido } = await setupComObraUnica();
-  const useCase = new ConcluirPedidoUseCase(pedidos, obras, sync);
-
-  await expect(useCase.execute({ pedidoId: pedido.id, fotoPath: null })).rejects.toThrow(
-    /foto/i,
-  );
-
-  expect((await pedidos.findById(pedido.id))!.status).toBe('FAZENDO');
-});</code></pre><p class="rodape-fonte">src/core/application/__tests__/PedidoClose.test.ts:41-50</p>
-  <pre class="codigo"><code class="language-typescript" data-noescape>async capture(): Promise&lt;string | null&gt; {
-  if (this.mode === 'denied') {
-    throw new Error('Permissao de camera negada - habilite nas configuracoes do dispositivo');
-  }
-  if (this.mode === 'cancel') return null;
-  return this.nextPath;
-}</code></pre><p class="rodape-fonte">src/infrastructure/device/FakeCameraGateway.ts:9-15</p>
-  <aside class="notes"><b>[0:20 · chegar aqui em 5:10]</b> O teste chama o caso de uso sem foto, espera o erro e confere que o pedido continua em Fazendo. Embaixo, o fake da câmera: com ele os testes de tela simulam permitir, negar e cancelar sem hardware.</aside>
-</section>
-
-<section id="tdd-gps" data-t="25">
-  <p class="kicker">5 · O teste</p>
-  <h2>GPS: permissão negada não grava nada</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>const repo = new InMemoryEventoRepository();
-const sync = new FakeSyncGateway();
-const gps = new FakeLocationGateway(new Coordenada(0, 0), 'NEGADA');
-const useCase = new CadastrarEventoUseCase(repo, sync, gps, idsTeste);
-// ...
-await expect(tentativa).rejects.toBeInstanceOf(LocalizacaoIndisponivelError);
-await expect(tentativa).rejects.toMatchObject({ motivo: 'NEGADA' });
-await expect(tentativa).rejects.toThrow(/manualmente/i);
-expect(await repo.findByUsuario(USUARIO_ID)).toHaveLength(0);
-expect(sync.queue).toHaveLength(0);</code></pre><p class="rodape-fonte">src/core/application/__tests__/EventoUseCases.test.ts:52-55, 65-69</p>
-  <pre class="codigo"><code class="language-typescript" data-noescape>async getCurrent(): Promise&lt;Coordenada&gt; {
-  if (this.falha) throw new LocalizacaoIndisponivelError(this.falha);
-  return this.coord;
-}</code></pre><p class="rodape-fonte">src/infrastructure/device/FakeLocationGateway.ts:14-17</p>
-  <aside class="notes"><b>[0:25 · chegar aqui em 5:35]</b> O fake é configurado para falhar com o motivo NEGADA. O caso de uso propaga o erro, a mensagem orienta o usuário, e as duas últimas linhas são as mais importantes: nada no repositório e nada na fila.</aside>
-</section>
-
-<section id="tdd-adaptador" data-t="35">
-  <p class="kicker">5 · O teste</p>
-  <h2>O adaptador também é testado, com o SDK dublado</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>it('permissão negada → NEGADA, sem ler a posição', async () =&gt; {
-  localizacaoDeTeste.respostaAoPedir = permissoesDeLocalizacao.negada;
-
-  expect(await motivoDaFalha(new ExpoLocationGateway())).toBe('NEGADA');
-  expect(localizacaoDeTeste.getCurrentPositionAsync).not.toHaveBeenCalled();
-});
-// ...
-it('GPS que não responde dentro do limite → TIMEOUT', async () =&gt; {
-  jest.useFakeTimers();
-  localizacaoDeTeste.getCurrentPositionAsync.mockImplementation(() =&gt; new Promise(() =&gt; {}));
-
-  const resultado = new ExpoLocationGateway().getCurrent().catch((e: unknown) =&gt; e);
-  await jest.advanceTimersByTimeAsync(TEMPO_LIMITE_GPS_MS);
-
-  const erro = await resultado;
-  expect(erro).toBeInstanceOf(LocalizacaoIndisponivelError);
-  expect((erro as LocalizacaoIndisponivelError).motivo).toBe('TIMEOUT');
-});</code></pre><p class="rodape-fonte">src/infrastructure/device/location/__tests__/ExpoLocationGateway.test.ts:48-53, 62-72</p>
-  <aside class="notes"><b>[0:35 · chegar aqui em 6:10]</b> [Pode pular se o tempo apertar.] Aqui o sujeito é o adaptador real, e quem é dublado é o expo-location. Testo a tradução: permissão negada vira NEGADA sem ler a posição, e GPS que não responde vira TIMEOUT. Com timer falso, o teste não espera dez segundos de verdade.</aside>
-</section>
-
-<section id="adaptador-gps" data-t="50">
-  <p class="kicker">6 · A infraestrutura se adequa ao domínio</p>
-  <h2>GPS: o adaptador fala as duas línguas</h2>
-  <pre class="codigo small"><code class="language-typescript" data-noescape data-line-numbers="1|2-4|6-9|11-12">async getCurrent(): Promise&lt;Coordenada&gt; {
-  if (!(await Location.hasServicesEnabledAsync())) {
-    throw new LocalizacaoIndisponivelError('SERVICO_DESLIGADO');
-  }
-
-  const permissao = await Location.requestForegroundPermissionsAsync();
-  if (!permissao.granted) {
-    throw new LocalizacaoIndisponivelError(permissao.canAskAgain ? 'NEGADA' : 'NEGADA_PERMANENTE');
-  }
-
-  const posicao = await this.lerPosicao();
-  return new Coordenada(posicao.coords.latitude, posicao.coords.longitude);
-}</code></pre><p class="rodape-fonte">src/infrastructure/device/location/ExpoLocationGateway.ts:18-30</p>
-  <p class="apis"><code>hasServicesEnabledAsync</code> · <code>requestForegroundPermissionsAsync</code> · <code>getCurrentPositionAsync</code> · Expo SDK 58</p>
-  <aside class="notes"><b>[0:50 · chegar aqui em 7:00]</b> Este é o expo-location do SDK 58. A assinatura é a do contrato: devolve Coordenada. Primeiro confere se o serviço está ligado. Depois pede a permissão de primeiro plano, só agora, na hora do uso. canAskAgain separa o negado do negado para sempre, e a tela decide se oferece abrir as configurações. Por fim, o objeto do SDK vira Coordenada. O SDK não tem timeout, então coloquei um limite de dez segundos. Quem se adaptou foi o adaptador; o domínio não mudou.</aside>
-</section>
-
-<section id="adaptador-camera" data-t="45">
-  <p class="kicker">6 · A infraestrutura se adequa ao domínio</p>
-  <h2>Câmera: uma tela inteira atrás de um <code>capture()</code></h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape data-line-numbers="1|6|7-8|9-10">async capture(): Promise&lt;string | null&gt; {
-  if (!this.abridor) throw new Error(MENSAGEM_CAMERA_INDISPONIVEL);
-  if (this.aberta) throw new Error(MENSAGEM_CAMERA_OCUPADA);
-  this.aberta = true;
-  try {
-    const resultado = await this.abridor();
-    if (resultado.tipo === 'cancelado') return null;
-    if (resultado.tipo === 'negado') throw new Error(MENSAGEM_PERMISSAO_NEGADA);
-    const { uri, largura, altura } = resultado;
-    return await this.destino.armazenar({ uri, largura, altura });
-  } finally {
-    this.aberta = false;
-  }
-}</code></pre><p class="rodape-fonte">src/infrastructure/device/camera/ExpoCameraGateway.ts:39-52</p>
-  <pre class="codigo"><code class="language-tsx" data-noescape>const resultado = await camera.current.takePictureAsync({ quality: 1 });
-// ...
-&lt;CameraView ref={camera} style={styles.visor} facing="back"
-  onCameraReady={() =&gt; setPronta(true)} onMountError={(evento) =&gt; setErro(evento.message)} /&gt;</code></pre><p class="rodape-fonte">src/presentation/components/camera/CameraModal.tsx:59, 129-130</p>
-  <aside class="notes"><b>[0:45 · chegar aqui em 7:45]</b> A câmera foi o caso mais difícil, porque o expo-camera é um componente de tela, o CameraView, e o contrato é uma simples Promise. A solução é uma ponte: a UI registra como abrir o modal, e o capture espera o modal fechar. Cancelar vira null, negar vira erro, e a foto aceita vai para o armazenamento. Do lado de fora, continua sendo capture. O contrato de 3 linhas não precisou mudar.</aside>
-</section>
-
-<section id="salvar-foto" data-t="45">
-  <p class="kicker">7 · Salvando no celular: a foto</p>
-  <h2>O arquivo no disco, os dados no SQLite</h2>
-  <p class="fluxo"><span>CameraView</span><i>→</i><span>1600 px · JPEG 0,7</span><i>→</i><span>fotos/&lt;uuid&gt;.jpg</span><i>→</i><span>SHA-256</span><i>→</i><span>linha em <code>fotos</code></span></p>
-  <pre class="codigo"><code class="language-typescript" data-noescape data-line-numbers="2|3-6|7|8-15">const caminhoRelativo = `${PASTA_FOTOS}/${id}.jpg`;
-const uriComprimida = await comprimir(foto);
-new Directory(Paths.document, PASTA_FOTOS).create({ intermediates: true, idempotent: true });
-const destino = new File(Paths.document, caminhoRelativo);
-try {
-  await new File(uriComprimida).move(destino);
-  const hash = await sha256(destino);
-  await this.db.insert(fotos).values({
-    id,
-    caminhoLocal: caminhoRelativo,
-    hash,
-    status: 'PENDENTE_UPLOAD',
-    tentativas: 0,
-    criadoEmLocal: this.relogio().toISOString(),
-  });
-// ...</code></pre><p class="rodape-fonte">src/infrastructure/fileSystem/ArmazenamentoDeFotos.ts:36-50</p>
-  <aside class="notes"><b>[0:45 · chegar aqui em 8:30]</b> A foto nunca vai como BLOB para o banco. Ela é comprimida, de vários megabytes para centenas de KB; no teste deu 106 KB. É movida para a pasta de documentos, recebe um hash e ganha uma linha na tabela fotos como PENDENTE_UPLOAD. O pedido guarda só o caminho relativo, porque o absoluto muda entre builds. Se falhar no meio, o arquivo é apagado. Essa gravação fica fora da transação do pedido, e por isso existe uma limpeza de fotos órfãs ao abrir o app.</aside>
-</section>
-
-<section id="salvar-local" data-t="40">
-  <p class="kicker">7 · Salvando no celular: a coordenada</p>
-  <h2>Evento e fila entram juntos, ou nenhum entra</h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>await this.eventos.save(evento);
-await this.sync.enqueue('CRIAR', 'Evento', evento.id, JSON.stringify({ nome: evento.nome }));</code></pre>
-  <pre class="codigo"><code class="language-typescript" data-noescape>cadastrarEvento: tx(new CadastrarEventoUseCase(eventos, sync, location, ids)),</code></pre>
-  <pre class="codigo"><code class="language-typescript" data-noescape>export const eventos = sqliteTable('eventos', {
-  // ...
-  latitude: real('latitude').notNull(),
-  longitude: real('longitude').notNull(),
-  // ...
-  check('ck_eventos_lat', sql`latitude BETWEEN -90 AND 90`),
-  check('ck_eventos_lng', sql`longitude BETWEEN -180 AND 180`),</code></pre>
-  <p class="rodape-fonte">CadastrarEventoUseCase.ts:40-41 · makeSqliteProviders.ts:86 · schema.ts:67-80</p>
-  <p class="faixa">expo-sqlite + Drizzle · tabela <code>fila_sync</code> (outbox) · o <code>CHECK</code> repete a regra da Coordenada no banco</p>
-  <aside class="notes"><b>[0:40 · chegar aqui em 9:10]</b> O caso de uso só conhece os contratos: salva e enfileira. Quem transforma isso em transação é o composition root, com o decorator transacional. Se a fila falhar, o evento não fica. É o padrão outbox, que deixa tudo pronto para sincronizar depois. E o CHECK do banco repete a faixa da Coordenada, como defesa em profundidade.</aside>
-</section>
-
-<section id="fecho" class="dark" data-t="20">
-  <p class="kicker">Resultado</p>
-  <h2>Trocamos o fake pelo real. O contrato ficou igual.</h2>
-  <div class="duas">
-    <div>
-      <h3 class="ouro">Entregue</h3>
-      <ul class="menor">
-        <li>Câmera, GPS, busca de endereço e mapa reais</li>
-        <li>SQLite com fila outbox, funcionando offline</li>
-        <li>461 testes passando, typecheck limpo</li>
-      </ul>
+}</code></pre><p class="rodape-fonte">src/core/application/gateways/ILocationGateway.ts:3-5</p>
+      </div>
+      <span class="badge">Os dois sem nenhuma mudança desde 29/09, ainda na fase 2</span>
     </div>
     <div>
-      <h3 class="ouro">Ainda local</h3>
-      <ul class="menor">
-        <li>Login de demonstração (fake)</li>
-        <li>Fotos em <code>PENDENTE_UPLOAD</code></li>
-        <li>Próximo passo: Supabase e envio da fila</li>
-      </ul>
+      <div class="card app"><b>O que o núcleo pede</b><span><code>capture()</code> devolve o caminho da foto, ou <code>null</code> se o usuário cancelar. <code>getCurrent()</code> devolve uma <code>Coordenada</code>, tipo do domínio, nunca o objeto do SDK.</span></div>
+      <div class="card dom"><b>O que o domínio garante</b><span><code>Coordenada</code> se valida no construtor: latitude e longitude fora da faixa nem chegam a existir. <code>Pedido.concluir()</code> recusa caminho vazio.</span></div>
     </div>
   </div>
-  <aside class="notes"><b>[0:20 · chegar aqui em 9:30]</b> Resumindo: o contrato veio antes do hardware. Os sensores entraram sem mudar os contratos, e também sem mudar a Coordenada e os casos de uso de concluir pedido e cadastrar evento, que seguem iguais desde 29/09. O que ainda é local: login de demonstração e envio para a nuvem, que a estrutura já prevê. Obrigado, fico à disposição para perguntas.</aside>
+  <p class="fonte">Fonte: core/application/gateways · core/domain/value-objects/Coordenada.ts · core/domain/entities/Pedido.ts:231-242</p>
+  <aside class="notes"><b>[0:45 · chegar aqui em 3:30]</b> Este é o contrato: três linhas cada. A câmera devolve um caminho, ou null quando o usuário desiste, porque desistir é um caminho normal, não um erro. O GPS devolve uma Coordenada, que é do domínio. Se devolvesse o objeto do Expo, o SDK vazaria para dentro do núcleo. Do lado do domínio, a Coordenada se valida no construtor, então nenhuma coordenada inválida existe, e o Pedido recusa ser concluído sem foto. O ponto principal é a data: esses contratos são da fase 2 e não mudaram quando o hardware real entrou.</aside>
 </section>
 
-<section id="apendice" class="apx">
-  <p class="kicker">Apêndice · perguntas</p>
-  <h2>Índice do código</h2>
-  <ul class="indice">
-    <li><a href="#/ap-modal">CameraModal: permissão em três estados</a></li>
-    <li><a href="#/ap-host">CameraHost: a ponte UI → gateway</a></li>
-    <li><a href="#/ap-transacao">ExecutorDeTransacao: por que não db.transaction</a></li>
-    <li><a href="#/ap-geocoding">ExpoGeocodingGateway: busca de endereço</a></li>
-    <li><a href="#/ap-orfas">Limpeza de fotos órfãs</a></li>
-    <li><a href="#/ap-repo">Repositório SQLite e reidratar()</a></li>
-    <li><a href="#/ap-mapa">Por que Leaflet, e não react-native-maps</a></li>
-    <li><a href="#/ap-e2e">Teste ponta a ponta da geolocalização</a></li>
-    <li><a href="#/adaptador-gps">Voltar ao adaptador de GPS</a></li>
-    <li><a href="#/salvar-foto">Voltar ao salvamento da foto</a></li>
-  </ul>
-  <aside class="notes">Fora do tempo da apresentação. Use os links para ir direto ao trecho da pergunta.</aside>
-</section>
-
-<section id="ap-modal" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Permissão da câmera em três estados</h2>
-  <pre class="codigo small"><code class="language-tsx" data-noescape>const [permissao, pedirPermissao, lerPermissao] = useCameraPermissions();
+<section id="teste" data-t="45">
+  <div class="eyebrow">5 · O teste</div>
+  <h2>Negar a permissão <span class="accent">não grava nada</span></h2>
+  <div style="margin-top:22px"><pre class="codigo"><code class="language-typescript" data-noescape>const gps = new FakeLocationGateway(new Coordenada(0, 0), 'NEGADA');
 // ...
-useEffect(() =&gt; {
-  const assinatura = AppState.addEventListener('change', (estado) =&gt; {
-    if (estado === 'active') void lerPermissao();
-  });
-  return () =&gt; assinatura.remove();
-}, [lerPermissao]);
-// ...
-if (!permissao) {
-// ...
-if (!permissao.granted) {
-        // ...
-        {permissao.canAskAgain ? (
-          &lt;ActionButton label="botao-permitir-camera" title="Permitir câmera" icon="camera"
-            appearance="primary" onPress={() =&gt; void pedirPermissao()} /&gt;
-        ) : (
-          &lt;ActionButton label="botao-abrir-configuracoes" title="Abrir configurações"
-            appearance="primary" onPress={() =&gt; void Linking.openSettings()} /&gt;
-        )}</code></pre><p class="rodape-fonte">src/presentation/components/camera/CameraModal.tsx:39, 47-52, 75, 86, 96-102</p>
-  <aside class="notes">Sem resposta ainda: carregando. Não concedida e pode pedir: botão Permitir câmera. Bloqueada: Abrir configurações. Ao voltar das configurações, o AppState relê a permissão.</aside>
-</section>
-
-<section id="ap-host" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>A ponte entre o gateway e o modal</h2>
-  <pre class="codigo small"><code class="language-tsx" data-noescape>useEffect(() =&gt; {
-  if (!ponte) return;
-  const remover = ponte.registrarAbridor(
-    () =&gt;
-      new Promise&lt;ResultadoDaCamera&gt;((resolve) =&gt; {
-        resolver.current = resolve;
-        setVisivel(true);
-      }),
-  );
-  return () =&gt; {
-    remover();
-    resolver.current?.({ tipo: 'cancelado' });
-    resolver.current = null;
-  };
-}, [ponte]);
-// ...
-function concluir(resultado: ResultadoDaCamera) {
-  const resolve = resolver.current;
-  resolver.current = null;
-  setVisivel(false);
-  resolve?.(resultado);
-}</code></pre><p class="rodape-fonte">src/presentation/components/camera/CameraHost.tsx:14-28, 30-35</p>
-  <aside class="notes">O host registra uma função que abre o modal e guarda o resolve da Promise. Quando o modal fecha, o resolve é chamado e o capture continua. Se desmontar no meio, vira cancelamento. A ponte é tipo de infraestrutura, não uma porta nova no core.</aside>
-</section>
-
-<section id="ap-transacao" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Por que não <code>db.transaction(async ...)</code></h2>
-  <pre class="codigo"><code class="language-typescript" data-noescape>executar&lt;T&gt;(trabalho: () =&gt; Promise&lt;T&gt;): Promise&lt;T&gt; {
-  const execucao = this.fila.then(async () =&gt; {
-    this.db.run(sql`BEGIN IMMEDIATE`);
-    try {
-      const resultado = await trabalho();
-      this.db.run(sql`COMMIT`);
-      return resultado;
-    } catch (erro) {
-      this.db.run(sql`ROLLBACK`);
-      throw erro;
-    }
-  });
-  this.fila = execucao.catch(() =&gt; undefined);
-  return execucao;
-}</code></pre><p class="rodape-fonte">src/infrastructure/database/sqlite/ExecutorDeTransacao.ts:25-39</p>
-  <p class="faixa">No expo-sqlite a transação do Drizzle é síncrona: com callback async, faz COMMIT no primeiro await</p>
-  <aside class="notes">As escritas depois do primeiro await ficariam fora da transação, sem erro nenhum. Por isso o BEGIN IMMEDIATE, COMMIT e ROLLBACK são manuais, com os trabalhos serializados em uma fila de Promises.</aside>
-</section>
-
-<section id="ap-geocoding" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Busca de endereço com o geocoder nativo</h2>
-  <pre class="codigo small"><code class="language-typescript" data-noescape>async buscar(endereco: string): Promise&lt;Coordenada | null&gt; {
-  const texto = endereco.trim();
-  if (!texto) return null;
-
-  if (this.plataforma === 'android') {
-    const permissao = await Location.requestForegroundPermissionsAsync();
-    if (!permissao.granted) {
-      throw new LocalizacaoIndisponivelError(permissao.canAskAgain ? 'NEGADA' : 'NEGADA_PERMANENTE');
-    }
-  }
+const tentativa = useCase.execute({
   // ...
-  const primeiro = resultados[0];
-  if (!primeiro || !Coordenada.validar(primeiro.latitude, primeiro.longitude)) return null;
-  return new Coordenada(primeiro.latitude, primeiro.longitude);</code></pre><p class="rodape-fonte">src/infrastructure/device/location/ExpoGeocodingGateway.ts:20-29, 44-46</p>
-  <p class="faixa">Grátis, sem chave, precisa de internet. No Android exige a permissão de localização</p>
-  <aside class="notes">Sem resultado devolve null, e o mapa abre mesmo assim para posicionar o pin à mão. Google Places exigiria chave e faturamento.</aside>
-</section>
-
-<section id="ap-orfas" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Limpeza de fotos órfãs, ao abrir o app</h2>
-  <pre class="codigo small"><code class="language-typescript" data-noescape>const orfas = await this.db
-  .select({ id: fotos.id, caminhoLocal: fotos.caminhoLocal })
-  .from(fotos)
-  .where(
-    and(
-      eq(fotos.status, 'PENDENTE_UPLOAD'),
-      lt(fotos.criadoEmLocal, new Date(limite).toISOString()),
-      notExists(
-        this.db
-          .select({ id: pedidos.id })
-          .from(pedidos)
-          .where(eq(pedidos.fotoConclusaoPath, fotos.caminhoLocal)),
-      ),
-      notExists(
-        this.db.select({ id: obras.id }).from(obras).where(eq(obras.fotoPath, fotos.caminhoLocal)),
-      ),
-    ),
-  );
-for (const orfa of orfas) {
-  apagarSeExistir(new File(Paths.document, orfa.caminhoLocal));
-  await this.db.delete(fotos).where(eq(fotos.id, orfa.id));
-}</code></pre><p class="rodape-fonte">src/infrastructure/fileSystem/ArmazenamentoDeFotos.ts:70-91</p>
-  <aside class="notes">Remove foto PENDENTE_UPLOAD com mais de 24 horas que nenhum pedido ou obra referencia. Acontece quando a foto foi tirada e o usuário desistiu, ou o app morreu antes do caso de uso. Tombstones contam como uso.</aside>
-</section>
-
-<section id="ap-repo" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Do banco de volta para o domínio</h2>
-  <pre class="codigo small"><code class="language-typescript" data-noescape>  async save(evento: Evento): Promise&lt;void&gt; {
-    const { id, ...resto } = paraLinha(evento);
-    await this.db
-      .insert(eventos)
-      .values({ id, ...resto })
-      .onConflictDoUpdate({ target: eventos.id, set: resto });
-  }
-// ...
-function paraEntidade(l: typeof eventos.$inferSelect): Evento {
-  return Evento.reidratar({
-    // ...
-    localizacao: new Coordenada(l.latitude, l.longitude),</code></pre><p class="rodape-fonte">src/infrastructure/database/sqlite/SQLiteEventoRepository.ts:13-19, 55-56, 62</p>
-  <pre class="codigo small"><code class="language-typescript" data-noescape>static reidratar(props: EventoProps): Evento {
-  Evento.validarEstrutura(props);
-  return new Evento({
-    ...props,
-    localizacao: new Coordenada(props.localizacao.latitude, props.localizacao.longitude),
-    criadoEmLocal: copiarData(props.criadoEmLocal),
-    deletedAt: copiarDataOuNula(props.deletedAt),
-  });</code></pre><p class="rodape-fonte">src/core/domain/entities/Evento.ts:70-77</p>
-  <aside class="notes">Upsert para gravar. Na leitura, reidratar reconstrói a entidade validando só a estrutura, sem reaplicar regras de criação. A latitude e a longitude voltam a ser uma Coordenada.</aside>
-</section>
-
-<section id="ap-mapa" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Por que Leaflet em WebView</h2>
-  <ul>
-    <li>O <code>react-native-maps</code> ficou em branco no Expo Go para Android: a chave do Google embutida estava vencida (expo/expo#49323)</li>
-    <li>A alternativa exigia development build, chave própria e faturamento no Google Cloud</li>
-    <li>Leaflet + OpenStreetMap roda no Expo Go e no APK, sem chave</li>
-    <li>Comunicação: <code>postMessage</code> da página para o app, <code>injectJavaScript</code> do app para a página</li>
-    <li>Custo: depende da política de uso dos blocos do OSM; num produto real, trocar por provedor com chave</li>
-  </ul>
-  <aside class="notes">Registrado em docs/ate-fase3.md, decisão 11 do Plano 5A. O diagnóstico foi feito no SDK 57.</aside>
-</section>
-
-<section id="ap-e2e" class="apx">
-  <p class="kicker">Apêndice · <a href="#/apendice">índice</a></p>
-  <h2>Ponta a ponta: do SDK dublado ao SQLite real</h2>
-  <pre class="codigo small"><code class="language-typescript" data-noescape>it('coordenada lida do GPS (fluxo da tela) é gravada no SQLite e enfileirada', async () =&gt; {
-  const ponto = await bag.gateways.location.getCurrent();
-  const evento = await bag.useCases.cadastrarEvento.execute({ ...DADOS_DO_EVENTO, localizacao: ponto });
-
-  const linha = await linhaDoEvento(evento.id);
-  expect(linha.latitude).toBe(-23.5617);
-  expect(linha.longitude).toBe(-46.6559);
-  expect(linha.statusSync).toBe('PENDENTE');
-  expect(await fila()).toEqual([`CRIAR Evento ${evento.id}`]);
+  usarGps: true,
 });
 // ...
-it('permissão negada não grava evento nem entrada na fila', async () =&gt; {
-  localizacaoDeTeste.respostaAoPedir = permissoesDeLocalizacao.negada;
+await expect(tentativa).rejects.toMatchObject({ motivo: 'NEGADA' });
+// ...
+expect(await repo.findByUsuario(USUARIO_ID)).toHaveLength(0);
+expect(sync.queue).toHaveLength(0);</code></pre></div>
+  <div class="aaa linha">
+    <div><b>1</b><p>Prepara<span>O fake do GPS responde <code>NEGADA</code>, sem celular nenhum</span></p></div>
+    <div><b>2</b><p>Executa<span>Cadastra o evento pedindo o GPS</span></p></div>
+    <div><b>3</b><p>Confere<span>O erro traz o motivo; repositório e fila continuam vazios</span></p></div>
+  </div>
+  <p class="fonte">Fonte: src/core/application/__tests__/EventoUseCases.test.ts · dublê: src/infrastructure/device/FakeLocationGateway.ts</p>
+  <aside class="notes"><b>[0:45 · chegar aqui em 4:15]</b> Este é um teste típico do projeto, em três tempos. Prepara: o fake do GPS é configurado para negar a permissão; não precisa de celular. Executa: tenta cadastrar o evento usando o GPS. Confere: o erro vem com o motivo NEGADA e uma mensagem que orienta o usuário. As duas últimas linhas são as mais importantes: nada no repositório e nada na fila de sincronização. Testar o caminho de erro importa tanto quanto o de sucesso. O teste equivalente da câmera garante que, sem foto, o pedido continua em Fazendo.</aside>
+</section>
 
-  await expect(
-    bag.useCases.cadastrarEvento.execute({ ...DADOS_DO_EVENTO, usarGps: true }),
-  ).rejects.toBeInstanceOf(LocalizacaoIndisponivelError);
+<section id="gps" class="rust" data-background-color="#bf5737" data-t="45">
+  <div class="eyebrow">6 · A infraestrutura se adequa ao domínio</div>
+  <h2>GPS: o adaptador <span class="accent">traduz o SDK</span></h2>
+  <div class="gps-grid">
+    <table class="traducao">
+        <tr class="cab"><td>expo-location diz</td><td></td><td>a aplicação entende</td></tr>
+        <tr><td>Serviço de localização desligado</td><td>→</td><td><code>SERVICO_DESLIGADO</code></td></tr>
+        <tr><td>Usuário negou</td><td>→</td><td><code>NEGADA</code></td></tr>
+        <tr><td>Negou e bloqueou (<code>canAskAgain</code> falso)</td><td>→</td><td><code>NEGADA_PERMANENTE</code></td></tr>
+        <tr><td>10 s sem resposta</td><td>→</td><td><code>TIMEOUT</code></td></tr>
+        <tr><td><code>coords.latitude</code> e <code>longitude</code></td><td>→</td><td><code>new Coordenada(...)</code></td></tr>
+      </table>
+    <div class="chips vertical"><span>Permissão pedida no momento do uso</span><span>Só primeiro plano</span><span>Background desligado (LGPD)</span><span>Limite de 10 s: o SDK não tem timeout</span></div>
+  </div>
+  <div style="margin-top:16px"><pre class="codigo small"><code class="language-typescript" data-noescape>const permissao = await Location.requestForegroundPermissionsAsync();
+if (!permissao.granted) {
+  throw new LocalizacaoIndisponivelError(permissao.canAskAgain ? 'NEGADA' : 'NEGADA_PERMANENTE');
+}</code></pre><p class="rodape-fonte">src/infrastructure/device/location/ExpoLocationGateway.ts:23-26</p></div>
+  <p class="fonte">Fonte: src/infrastructure/device/location/ExpoLocationGateway.ts · app.json (plugin expo-location) · Expo SDK 58</p>
+  <aside class="notes"><b>[0:45 · chegar aqui em 5:00]</b> Aqui está a frase do roteiro: a infraestrutura se adequa ao domínio. O expo-location fala a língua dele; a aplicação fala a dela. O adaptador traduz. Serviço desligado, permissão negada e permissão bloqueada viram motivos da aplicação. O canAskAgain separa o negou agora do bloqueou de vez, quando só resta abrir as configurações. O SDK não tem timeout, então coloquei um limite de dez segundos. A posição vira Coordenada. A permissão é pedida só na hora do uso, só em primeiro plano, e o background fica desligado no app.json.</aside>
+</section>
 
-  expect(await db.select().from(eventos)).toEqual([]);
-  expect(await fila()).toEqual([]);
-});</code></pre><p class="rodape-fonte">src/main/factories/__tests__/GeolocalizacaoPersistencia.test.ts:48-57, 103-112</p>
-  <aside class="notes">Usa o composition root de produção, o makeSqliteProviders, com banco em memória. Só o expo-location é dublado. Confere a linha gravada e a entrada na fila.</aside>
+<section id="camera" class="rust" data-background-color="#bf5737" data-t="55">
+  <div class="eyebrow">6 · Câmera com expo-camera</div>
+  <div class="camera-layout">
+    <div>
+      <h2>O fluxo da aula, <span class="accent">atrás de um <code>capture()</code></span></h2>
+      <div class="miniflow"><span>Preview</span><i>→</i><span>Capturar</span><i>→</i><span>Revisar</span><i>→</i><span>Tratar</span><i>→</i><span>Salvar</span></div>
+      <div class="checklist">
+        <div class="check">expo-camera, não image-picker<small>Preview ao vivo e foto tirada na hora: galeria deixaria burlar a regra</small></div>
+        <div class="check">Três estados de permissão e "Abrir configurações"</div>
+        <div class="check">Captura só após <code>onCameraReady</code>; botão travado enquanto captura</div>
+        <div class="check">Câmera montada só com o modal aberto</div>
+      </div>
+      <div class="ponte">
+        <div><b>Usar foto</b>devolve o caminho</div>
+        <div><b>Cancelar</b>devolve <code>null</code></div>
+        <div><b>Negar</b>vira erro com instrução</div>
+      </div>
+    </div>
+    <div class="phone"><div class="camera-screen"><div class="shutter"></div><div class="botoes"><span>Refazer</span><span class="usar">Usar foto</span></div></div></div>
+  </div>
+  <p class="fonte">Fonte: Aulas 01 e 02 (permissões e expo-camera) · src/presentation/components/camera/CameraModal.tsx · src/infrastructure/device/camera/ExpoCameraGateway.ts</p>
+  <aside class="notes"><b>[0:55 · chegar aqui em 5:55]</b> Na câmera, escolhi o expo-camera e não o image-picker, pelo critério da própria aula: preciso de preview ao vivo e de uma interface própria. E não ofereço galeria, porque a foto de conclusão tem que ser tirada na hora. O fluxo é o da aula: preview, capturar, revisar com Refazer ou Usar foto. A permissão trata os três estados, com Abrir configurações quando foi bloqueada. O desafio de arquitetura é que a câmera é um componente de tela e o contrato é uma função. A solução é uma ponte: o capture abre o modal e espera ele fechar. Usar devolve o caminho, cancelar devolve null, negar vira erro.</aside>
+</section>
+
+<section id="foto" data-t="50">
+  <div class="eyebrow">7 · Salvando a foto no celular</div>
+  <h2>Arquivo no disco, <span class="accent">dados no SQLite</span></h2>
+  <div class="flow">
+    <div class="step"><div class="circle">1</div><h3>Capturar</h3><p><code>takePictureAsync</code>, qualidade máxima</p></div>
+    <div class="step"><div class="circle">2</div><h3>Tratar</h3><p>Maior lado reduzido a 1600 px</p></div>
+    <div class="step"><div class="circle">3</div><h3>Comprimir</h3><p>JPEG 0,7: 106 KB medidos no aparelho</p></div>
+    <div class="step"><div class="circle">4</div><h3>Guardar</h3><p>Arquivo em documentos e linha em <code>fotos</code></p></div>
+    <div class="step futuro"><div class="circle">5</div><h3>Enviar</h3><p>Bucket do Supabase: próxima etapa</p></div>
+  </div>
+  <div class="stores">
+    <div class="store local"><h3>No File System</h3><ul><li><code>documentos/fotos/&lt;uuid&gt;.jpg</code>, fora do cache</li><li>Temporário apagado; órfãs limpas na abertura</li><li>Sem EXIF, sem localização na foto</li></ul></div>
+    <div class="store cloud"><h3>No SQLite, tabela <code>fotos</code></h3><ul><li>Caminho <b>relativo</b>, nunca BLOB</li><li><code>hash</code> SHA-256 e <code>status = PENDENTE_UPLOAD</code></li><li><code>caminho_remoto</code> reservado para o envio</li></ul></div>
+  </div>
+  <p class="fonte">Fonte: Aulas 03 e 04 (pipeline e quem guarda o quê) · src/infrastructure/fileSystem/ArmazenamentoDeFotos.ts · docs/ate-fase3.md, Plano 2</p>
+  <aside class="notes"><b>[0:50 · chegar aqui em 6:45]</b> É o pipeline da aula: capturar, tratar, comprimir, guardar e enviar. Capturo sem perda e comprimo uma vez só: maior lado em 1600 pixels e JPEG 0,7. Medi no aparelho: 106 KB. A foto vai para a pasta de documentos do app, e não para o cache, que o sistema pode limpar. Não peço EXIF, então a foto não carrega localização, como a aula alerta sobre LGPD. No SQLite fica só o caminho relativo, o hash e o status, nunca a imagem. O caminho é relativo porque o absoluto muda entre instalações. O envio para o bucket é a próxima etapa, e a linha já está pronta para ele.</aside>
+</section>
+
+<section id="coordenada" class="dark" data-background-color="#17211d" data-t="45">
+  <div class="eyebrow">7 · Salvando a coordenada no celular</div>
+  <h2>Evento e fila: <span class="accent">tudo ou nada</span></h2>
+  <div class="offline">
+    <div class="store local"><h3>Tabela <code>eventos</code></h3><ul><li><code>latitude</code> e <code>longitude</code> como <code>REAL</code></li><li><code>CHECK</code> repete a faixa da Coordenada</li><li><code>status_sync = PENDENTE</code></li></ul></div>
+    <div class="sync"><div class="arrows">⇄</div><small>mesma<br>transação</small></div>
+    <div class="store cloud"><h3>Tabela <code>fila_sync</code></h3><ul><li>Outbox: "CRIAR Evento &lt;id&gt;"</li><li>Lida depois pelo envio para a nuvem</li><li>Se falhar, o evento também não fica</li></ul></div>
+  </div>
+  <div style="margin-top:22px"><pre class="codigo small"><code class="language-typescript" data-noescape>await this.eventos.save(evento);
+await this.sync.enqueue('CRIAR', 'Evento', evento.id, JSON.stringify({ nome: evento.nome }));</code></pre></div>
+  <div class="pegadinha">
+    <p class="alerta"><b>Pegadinha encontrada:</b> no expo-sqlite, <code>db.transaction(async ...)</code> faz COMMIT no primeiro <code>await</code>. Por isso o caso de uso é embrulhado por um executor com BEGIN, COMMIT e ROLLBACK próprios.</p>
+  </div>
+  <p class="fonte">Fonte: material offline-first (outbox) · schema.ts · CadastrarEventoUseCase.ts:40-41 · ExecutorDeTransacao.ts · makeSqliteProviders.ts:86</p>
+  <aside class="notes"><b>[0:45 · chegar aqui em 7:30]</b> A coordenada vira duas colunas na tabela eventos, e o banco tem um CHECK que repete a regra da Coordenada, como defesa extra. O ponto principal é o padrão outbox da aula: o evento e a entrada na fila de sincronização são gravados na mesma transação. Ou entram os dois, ou nenhum. O caso de uso só chama salvar e enfileirar; quem coloca a transação em volta é a montagem, no main. E aqui achei uma pegadinha: no driver do expo-sqlite, a transação com callback assíncrono faz commit no primeiro await, sem erro nenhum. Por isso escrevi um executor com begin, commit e rollback manuais.</aside>
+</section>
+
+<section id="sync" data-t="35">
+  <div class="eyebrow">7 · Offline-first</div>
+  <h2>Pronto para <span class="accent">sincronizar</span></h2>
+  <div class="ready">
+    <div>
+      <p class="label">Do material, já no banco local</p>
+      <div class="checklist">
+        <div class="check">UUID gerado no aparelho</div>
+        <div class="check">Tombstone: <code>deleted_at</code></div>
+        <div class="check"><code>status_sync</code> por registro</div>
+        <div class="check">Outbox com tentativas e erro</div>
+        <div class="check"><code>updated_at</code> para o cursor</div>
+        <div class="check">Drizzle, migrations no bundle</div>
+        <div class="check">WAL e foreign keys ligados</div>
+        <div class="check">Testado em modo avião</div>
+      </div>
+    </div>
+    <div class="roadbox">
+      <p class="label">Próxima etapa</p>
+      <div class="checklist">
+        <div class="check next">Supabase Auth e RLS no lugar do login de demonstração</div>
+        <div class="check next">Bucket privado e URL assinada para as fotos</div>
+        <div class="check next">Envio da fila com retentativa</div>
+      </div>
+    </div>
+  </div>
+  <p class="fonte">Fonte: material offline-first ("Preparando o modelo para sincronizar") · src/infrastructure/database/sqlite/schema.ts · drizzle/ · src/app/_layout.tsx</p>
+  <aside class="notes"><b>[0:35 · chegar aqui em 8:05]</b> Este slide fecha a persistência com a lista da aula de offline-first. O banco local já tem tudo o que a sincronização precisa: identificador gerado no aparelho, exclusão lógica com tombstone, status de sincronização, a fila com tentativas e o campo de data para buscar só o que mudou. As migrations são geradas pelo drizzle-kit e aplicadas na abertura do app. O que falta é a nuvem: autenticação real com Supabase, o bucket das fotos e o envio da fila. Não fiz a coluna version de propósito: é um usuário em um aparelho.</aside>
+</section>
+
+<section id="fecho" class="dark" data-background-color="#17211d" data-t="20">
+  <div class="closing" style="height:100%">
+    <div class="eyebrow">Síntese</div>
+    <h2>Trocamos o fake pelo real. <span class="accent">O contrato ficou igual.</span></h2>
+    <div class="summary"><span>Câmera real</span><span>Endereço, mapa e GPS</span><span>SQLite offline-first</span><span>461 testes</span></div>
+    <div class="prompt">Obrigado · perguntas</div>
+  </div>
+  <aside class="notes"><b>[0:20 · chegar aqui em 8:25]</b> Para fechar: o contrato veio antes do hardware. A câmera e o GPS reais entraram sem mudar os contratos, nem os casos de uso de concluir pedido e cadastrar evento. Tudo fica salvo no celular, pronto para sincronizar. Obrigado, fico à disposição para perguntas.</aside>
+</section>
+
+<section id="perguntas">
+  <div class="eyebrow">Se perguntarem</div>
+  <h2>Respostas <span class="accent">curtas</span></h2>
+  <div class="qa">
+    <div><b>Foi TDD puro?</b><span>Teste e código entraram no mesmo commit; a evidência é a ordem: contrato, fake, caso de uso, adaptador.</span></div>
+    <div><b>Por que não galeria?</b><span>A foto de conclusão prova a peça pronta: precisa ser tirada na hora (decisão D2).</span></div>
+    <div><b>Por que o mapa antes do GPS?</b><span>A feira é cadastrada de casa; o GPS daria a posição errada. Ele virou atalho.</span></div>
+    <div><b>Por que Leaflet?</b><span>O Google Maps ficou em branco no Expo Go (chave vencida). Leaflet com OpenStreetMap não precisa de chave.</span></div>
+    <div><b>A tela importa o SDK?</b><span>Sim, o visor é componente de tela. A regra vale para o núcleo, que fica limpo.</span></div>
+    <div><b>Foto sem pedido?</b><span>Se o app morre no meio, sobra arquivo. Uma limpeza remove órfãs com mais de 24 h.</span></div>
+  </div>
+  <p class="fonte">Fonte: docs/ate-fase3.md (decisões dos Planos 2 e 5A)</p>
+  <aside class="notes">Fora do tempo. Use só se vier a pergunta.</aside>
 </section>
 
 </div></div>
