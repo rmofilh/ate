@@ -1575,6 +1575,8 @@ Sequencial e sem duplicidade: 1, 2, 3 (3.1–3.5, incluindo DER Local, DER Remot
 
 ## A.3 Rastreabilidade RF → UC → BCE → Sequência → Teste
 
+> Atualização da fase 4: a matriz RF → UC → suíte de teste real está em `docs/ate-fase4.md`, seção 4.
+
 - Todo RF01–26 possui pelo menos um UC na tabela 2.3 (cobertura total verificada, sem buraco UC01–27); RF25->UC26, RF26->UC27; RNF12/RNF13 rastreiam para UC05 FA2, UC13 FA1 e Decisão #10 da Etapa 1; RNF11 com exceção exceto venda_direta=true + SERIE (UC27).
 - UCs principais (UC01, UC03, UC05, UC07, UC09, UC11, UC12, UC13, UC16, UC19, UC20, UC21, UC26, UC27) estão na tabela BCE 6.1 com mesmos nomes de Boundary UI/Boundary Nativo/Control/Entity, incluindo os Gateways nativos (`CameraGateway`, `LocationGateway`, `AuthGateway`, `SyncGateway`).
 - UC05, UC07 e UC27 (fluxos críticos com regra rígida) possuem sequência em 7.1–7.3 com mesmos participantes da Seção 6 (incluindo `SyncGateway`) e mesma ordem de chamada que vira teste de use case (Fase 2) e de gateway (Fase 3).

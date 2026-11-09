@@ -1,15 +1,18 @@
+import { FakeAuthGateway } from '../../../infrastructure/device/FakeAuthGateway';
 import { ExecutorDeTransacao } from '../../../infrastructure/database/sqlite/ExecutorDeTransacao';
 import type { DrizzleAppDb } from '../../../infrastructure/database/sqlite/DrizzleDb';
-import { clientes, filaSync, fotos, pedidos } from '../../../infrastructure/database/sqlite/schema';
+import { clientes, filaSync, fotos, obras, pedidos, syncMeta } from '../../../infrastructure/database/sqlite/schema';
 import { ExpoCameraGateway } from '../../../infrastructure/device/camera/ExpoCameraGateway';
 import { ExpoGeocodingGateway } from '../../../infrastructure/device/location/ExpoGeocodingGateway';
 import { ExpoLocationGateway } from '../../../infrastructure/device/location/ExpoLocationGateway';
 import { bancoDeTeste } from '../../../test-support/bancoDeTeste';
 import { fsDeTeste } from '../../../test-support/mocks/expoFileSystem';
+import { DadosDeOutroUsuarioError } from '../../auth/protegerDonoDosDados';
 import { makeSqliteProviders, type SqliteProviderBag } from '../makeSqliteProviders';
 import { SessaoNaoDisponivelError } from '../SessaoNaoDisponivelError';
 
 const USUARIO = 'a1111111-1111-4111-8111-111111111111';
+const OUTRO = 'b2222222-2222-4222-8222-222222222222';
 
 describe('makeSqliteProviders (SQLite real)', () => {
   let db: DrizzleAppDb;
@@ -17,7 +20,16 @@ describe('makeSqliteProviders (SQLite real)', () => {
 
   beforeEach(() => {
     db = bancoDeTeste();
-    bag = makeSqliteProviders(db, new ExecutorDeTransacao(db));
+    bag = makeSqliteProviders(
+      db,
+      new ExecutorDeTransacao(db),
+      new FakeAuthGateway(
+        new Map([
+          ['a@ate.app', { password: '1', userId: USUARIO }],
+          ['b@ate.app', { password: '2', userId: OUTRO }],
+        ]),
+      ),
+    );
     bag.registrarSessao({ userId: USUARIO, token: 'x' });
   });
 
@@ -144,9 +156,9 @@ describe('makeSqliteProviders (SQLite real)', () => {
     expect(await db.select().from(pedidos)).toHaveLength(2);
   });
 
-  it('casos de uso de leitura e login ficam sem decorator', () => {
+  it('leitura fica sem decorator; login ganha só o D4 (sem transação)', () => {
     expect(Object.prototype.hasOwnProperty.call(bag.useCases.consultarPedidos, 'execute')).toBe(false);
-    expect(Object.prototype.hasOwnProperty.call(bag.useCases.login, 'execute')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(bag.useCases.login, 'execute')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(bag.useCases.cadastrarPedido, 'execute')).toBe(true);
   });
 
@@ -174,5 +186,45 @@ describe('makeSqliteProviders (SQLite real)', () => {
 
     expect(await db.select().from(fotos)).toEqual([]);
     expect(fsDeTeste.existe('file:///docs/fotos/f1.jpg')).toBe(false);
+  });
+
+  it('login registra o dono e bloqueia outra conta com dados locais (D4)', async () => {
+    await bag.useCases.login.execute({ email: 'a@ate.app', password: '1' });
+    await bag.useCases.cadastrarObra.execute({ usuarioId: USUARIO, nome: 'Coruja', tipo: 'UNICA' });
+    await bag.useCases.logout.execute();
+
+    await expect(
+      bag.useCases.login.execute({ email: 'b@ate.app', password: '2' }),
+    ).rejects.toBeInstanceOf(DadosDeOutroUsuarioError);
+    await expect(bag.gateways.auth.getSession()).resolves.toBeNull();
+    expect(await db.select().from(obras)).toHaveLength(1);
+  });
+
+  it('apagarDadosEEntrar autentica antes; senha errada não apaga nada', async () => {
+    await bag.useCases.login.execute({ email: 'a@ate.app', password: '1' });
+    await bag.useCases.cadastrarObra.execute({ usuarioId: USUARIO, nome: 'Coruja', tipo: 'UNICA' });
+    await bag.useCases.logout.execute();
+
+    await expect(bag.apagarDadosEEntrar({ email: 'b@ate.app', password: 'x' })).rejects.toThrow(
+      'E-mail ou senha incorretos',
+    );
+    expect(await db.select().from(obras)).toHaveLength(1);
+  });
+
+  it('apagarDadosEEntrar zera banco e fotos e registra a nova conta como dona', async () => {
+    await bag.useCases.login.execute({ email: 'a@ate.app', password: '1' });
+    await bag.useCases.cadastrarObra.execute({ usuarioId: USUARIO, nome: 'Coruja', tipo: 'UNICA' });
+    fsDeTeste.escrever('file:///docs/fotos/antiga.jpg');
+    await bag.useCases.logout.execute();
+
+    await expect(
+      bag.apagarDadosEEntrar({ email: 'b@ate.app', password: '2' }),
+    ).resolves.toMatchObject({ userId: OUTRO });
+
+    expect(await db.select().from(obras)).toEqual([]);
+    expect(await db.select().from(filaSync)).toEqual([]);
+    expect(await db.select().from(syncMeta)).toEqual([{ chave: 'dono_dos_dados', valor: OUTRO }]);
+    expect(fsDeTeste.existe('file:///docs/fotos/antiga.jpg')).toBe(false);
+    await expect(bag.gateways.auth.getSession()).resolves.toMatchObject({ userId: OUTRO });
   });
 });

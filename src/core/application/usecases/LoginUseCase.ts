@@ -5,7 +5,7 @@ export class LoginUseCase {
 
   async execute(args: { email: string; password: string }): Promise<AuthSession> {
     const email = args.email.trim().toLowerCase();
-    if (!email || !args.password) throw new Error('E-mail e senha sao obrigatorios');
+    if (!email || !args.password) throw new Error('E-mail e senha são obrigatórios');
     return this.auth.login(email, args.password);
   }
 }

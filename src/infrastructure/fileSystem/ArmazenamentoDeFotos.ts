@@ -109,6 +109,15 @@ export class ArmazenamentoDeFotos {
     }
     return orfas.length + soltos;
   }
+
+  /** Remove todas as fotos do aparelho (usado ao apagar os dados locais, D4). */
+  apagarArquivos(): void {
+    const pasta = new Directory(Paths.document, PASTA_FOTOS);
+    if (!pasta.exists) return;
+    for (const item of pasta.list()) {
+      if (item instanceof File) apagarSeExistir(item);
+    }
+  }
 }
 
 async function comprimir(foto: FotoCapturada): Promise<string> {

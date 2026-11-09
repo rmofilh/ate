@@ -5,7 +5,7 @@ import { LocalizacaoIndisponivelError } from '../../../core/application/errors/L
 import type { IGeocodingGateway } from '../../../core/application/gateways/IGeocodingGateway';
 import { Coordenada } from '../../../core/domain/value-objects/Coordenada';
 import { TEMPO_LIMITE_GPS_MS } from './ExpoLocationGateway';
-import { comLimiteDeTempo } from './limiteDeTempo';
+import { comLimiteDeTempo } from '../../shared/limiteDeTempo';
 
 /**
  * IGeocodingGateway com o geocoder nativo do aparelho (expo-location): grátis, sem chave,

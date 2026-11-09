@@ -36,6 +36,9 @@ import type {
   ResultadoDaCamera,
 } from '../../infrastructure/device/camera/ExpoCameraGateway';
 
+import type { MonitorDeRede } from '../../infrastructure/device/rede/MonitorDeRedeExpo';
+import type { MotorDeSync } from '../sync/MotorDeSync';
+
 export type { AbridorDaCamera, ResultadoDaCamera };
 
 /** Ponte pela qual a UI (CameraHost) ensina o gateway real a abrir a câmera. */
@@ -96,10 +99,16 @@ export interface ProviderBag {
   loadData(): Promise<DadosCarregados>;
   /** Informa a sessão ativa (ou null no logout). Ausente na bag fake. */
   registrarSessao?(sessao: AuthSession | null): void;
+  /** Motor de sincronização com o Supabase (ausente sem servidor remoto, como na bag fake). */
+  motorDeSync?: MotorDeSync;
+  /** Estado da conexão do aparelho (ausente na bag fake: o app se considera online). */
+  rede?: MonitorDeRede;
   /** Ponte para a UI abrir a câmera real (ausente na bag fake, que usa FakeCameraGateway). */
   ponteDaCamera?: PonteDaCamera;
   /** Manutenção na abertura do app (ex.: limpar fotos órfãs). Falha não impede o uso. */
   aoIniciar?(): Promise<void>;
+  /** D4: autentica a outra conta e só então apaga os dados locais deste aparelho (ausente na bag fake). */
+  apagarDadosEEntrar?(credenciais: { email: string; password: string }): Promise<AuthSession>;
   /** Dados iniciais opcionais (só a bag fake com fixtures). */
   pedidos?: Pedido[];
   obras?: Obra[];

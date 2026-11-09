@@ -6,6 +6,7 @@ import type { Obra } from '@/core/domain/entities/Obra';
 import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 import { ActionButton } from './ActionButton';
 import { ArtworkThumbnail } from './ArtworkThumbnail';
+import { IndicadorDeSync } from './IndicadorDeSync';
 import { IconButton } from './IconButton';
 
 const availability: Record<Obra['statusObra'], string> = {
@@ -30,6 +31,7 @@ export function ObraCard({ obra, onVenda, onAdicionar, onRemoverUnidades, onRemo
         <Text testID={`qtd-${obra.id}`} style={[styles.quantity, obra.quantidade === 0 && styles.empty]}>
           Quantidade: {obra.quantidade}{obra.quantidade === 0 ? ' (Esgotada)' : ''}
         </Text>
+        <IndicadorDeSync status={obra.statusSync} testID={`sync-${obra.id}`} />
       </View>
     </View>
     {obra.tipo === 'SERIE' ? <ActionButton label={`venda-${obra.id}`} title="Venda direta" icon="sale"

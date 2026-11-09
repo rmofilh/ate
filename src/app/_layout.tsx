@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { textStyles } from '@/constants/theme';
 import { ExecutorDeTransacao } from '@/infrastructure/database/sqlite/ExecutorDeTransacao';
+import { obterSupabaseDoApp } from '@/main/auth/criarSupabaseDoApp';
 import { openAppDatabase } from '@/main/database/openAppDatabase';
 import { makeSqliteProviders } from '@/main/factories/makeSqliteProviders';
 import { FontLoader } from '@/presentation/components/FontLoader';
@@ -60,15 +61,33 @@ function RootNavigator() {
   );
 }
 
+function carregarSupabase() {
+  try {
+    return { supabase: obterSupabaseDoApp(), erro: null };
+  } catch (erro) {
+    return { supabase: null, erro: erro instanceof Error ? erro.message : 'Configuração inválida' };
+  }
+}
+
 export default function RootLayout() {
   const [conexao] = useState(openAppDatabase);
+  const [config] = useState(carregarSupabase);
   const { success, error } = useMigrations(conexao.db, migrations);
   const [providers] = useState(() =>
-    makeSqliteProviders(conexao.db, new ExecutorDeTransacao(conexao.db)));
+    config.supabase
+      ? makeSqliteProviders(
+          conexao.db,
+          new ExecutorDeTransacao(conexao.db),
+          config.supabase.auth,
+          config.supabase.remoto,
+        )
+      : null);
 
   return (
     <FontLoader>
-      {error ? (
+      {config.erro || !providers ? (
+        <TelaErroBanco titulo="Configuração incompleta" mensagem={config.erro ?? 'Configuração inválida'} />
+      ) : error ? (
         <TelaErroBanco mensagem={error.message} />
       ) : !success ? (
         <TelaCarregando />

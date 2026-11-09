@@ -8,6 +8,7 @@ import { ActionButton } from '@/presentation/components/ActionButton';
 import { AppIcon } from '@/presentation/components/AppIcon';
 import { BrandMark } from '@/presentation/components/BrandMark';
 import { OfflineBanner } from '@/presentation/components/OfflineBanner';
+import { PainelDeSync } from '@/presentation/components/PainelDeSync';
 import { SairButton } from '@/presentation/components/SairButton';
 import { useAppNavigation, useData, useNetwork } from '@/presentation/hooks/AppProviders';
 import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesignTheme';
@@ -36,6 +37,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
       </View>
     </View>
     <OfflineBanner isOnline={isOnline} />
+    <PainelDeSync />
     <Text style={styles.section}>ESPAÇO DE TRABALHO</Text>
     <DrawerItemList {...props} />
     <View style={styles.summary}>

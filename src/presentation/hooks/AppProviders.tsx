@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import type { AuthSession } from '../../core/application/gateways/IAuthGateway';
@@ -7,12 +8,17 @@ import type { Evento } from '../../core/domain/entities/Evento';
 import type { Obra } from '../../core/domain/entities/Obra';
 import type { Pedido } from '../../core/domain/entities/Pedido';
 import type { ProviderBag } from '../../main/factories/ProviderBag';
+import type { EstadoDoSync } from '../../main/sync/MotorDeSync';
 import { CameraHost } from '../components/camera/CameraHost';
 
 export interface AuthCtx {
   session: AuthSession | null;
+  /** true enquanto a sessão guardada é lida na abertura do app. */
+  restaurando?: boolean;
   login(email: string, password: string): Promise<void>;
   logout(): Promise<void>;
+  /** D4: entra com a outra conta e, só depois de autenticar, apaga os dados locais deste aparelho. */
+  apagarDadosEEntrar?(email: string, password: string): Promise<void>;
 }
 
 export interface DataCtx {
@@ -28,6 +34,13 @@ export interface DataCtx {
 export interface NetCtx {
   isOnline: boolean;
   setOnline(isOnline: boolean): void;
+}
+
+export interface SyncCtx {
+  /** null quando não há servidor remoto (bag fake dos testes). */
+  estado: EstadoDoSync | null;
+  sincronizarAgora(): Promise<void>;
+  tentarDeNovo(): Promise<void>;
 }
 
 export interface NavigationCtx {
@@ -64,6 +77,11 @@ export const DataContext = createContext<DataCtx>({
   erro: null,
   reload: async () => {},
 });
+export const SyncContext = createContext<SyncCtx>({
+  estado: null,
+  sincronizarAgora: async () => {},
+  tentarDeNovo: async () => {},
+});
 export const NetworkContext = createContext<NetCtx>({
   isOnline: true,
   setOnline: () => {},
@@ -98,6 +116,10 @@ export function useNetwork(): NetCtx {
   return useContext(NetworkContext);
 }
 
+export function useSync(): SyncCtx {
+  return useContext(SyncContext);
+}
+
 export function useServices(): ProviderBag | null {
   return useContext(ServicesContext);
 }
@@ -122,12 +144,26 @@ export function AuthProvider({
   children,
 }: React.PropsWithChildren<{ providers: ProviderBag }>) {
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [restaurando, setRestaurando] = useState(true);
 
   useEffect(() => {
-    void providers.gateways.auth.getSession().then((restaurada) => {
-      providers.registrarSessao?.(restaurada);
-      setSession(restaurada);
-    });
+    let ativo = true;
+    providers.gateways.auth
+      .getSession()
+      .then(
+        (restaurada) => {
+          if (!ativo) return;
+          providers.registrarSessao?.(restaurada);
+          setSession(restaurada);
+        },
+        () => undefined,
+      )
+      .finally(() => {
+        if (ativo) setRestaurando(false);
+      });
+    return () => {
+      ativo = false;
+    };
   }, [providers]);
 
   async function login(email: string, password: string): Promise<void> {
@@ -142,7 +178,18 @@ export function AuthProvider({
     setSession(null);
   }
 
-  return <AuthContext.Provider value={{ session, login, logout }}>{children}</AuthContext.Provider>;
+  async function apagarDadosEEntrar(email: string, password: string): Promise<void> {
+    if (!providers.apagarDadosEEntrar) return;
+    const nextSession = await providers.apagarDadosEEntrar({ email, password });
+    providers.registrarSessao?.(nextSession);
+    setSession(nextSession);
+  }
+
+  return (
+    <AuthContext.Provider value={{ session, restaurando, login, logout, apagarDadosEEntrar }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function DataProvider({
@@ -202,13 +249,96 @@ export function DataProvider({
   );
 }
 
-export function NetworkProvider({ children }: React.PropsWithChildren) {
+/** Conexão real do aparelho (expo-network). Sem monitor (bag fake), o app se considera online. */
+export function NetworkProvider({
+  providers,
+  children,
+}: React.PropsWithChildren<{ providers?: ProviderBag }>) {
   const [isOnline, setOnline] = useState(true);
+  const rede = providers?.rede;
+
+  useEffect(() => {
+    if (!rede) return;
+    let ativo = true;
+    void rede.estaOnline().then((online) => {
+      if (ativo) setOnline(online);
+    });
+    const parar = rede.observar(setOnline);
+    return () => {
+      ativo = false;
+      parar();
+    };
+  }, [rede]);
 
   return (
     <NetworkContext.Provider value={{ isOnline, setOnline }}>
       {children}
     </NetworkContext.Provider>
+  );
+}
+
+/**
+ * Gatilhos do sync: ao entrar (sessão nova), ao reconectar e ao voltar o app para o primeiro
+ * plano. Depois de um ciclo que mudou dados locais, recarrega as telas. A escrita local agenda
+ * o próprio ciclo no composition root.
+ */
+export function SyncProvider({
+  providers,
+  children,
+}: React.PropsWithChildren<{ providers: ProviderBag }>) {
+  const motor = providers.motorDeSync;
+  const { session } = useAuth();
+  const { reload } = useData();
+  const { isOnline } = useNetwork();
+  const [estado, setEstado] = useState<EstadoDoSync | null>(() => motor?.obterEstado() ?? null);
+  const recarregar = useRef(reload);
+  const sessaoAtiva = useRef(!!session);
+  const estavaOnline = useRef(isOnline);
+
+  useEffect(() => {
+    recarregar.current = reload;
+    sessaoAtiva.current = !!session;
+  });
+
+  useEffect(() => {
+    if (!motor) return;
+    const pararEstado = motor.observar(setEstado);
+    const pararDados = motor.aoMudarDados(() => {
+      recarregar.current().catch(() => undefined);
+    });
+    void motor.atualizarResumo();
+    const assinatura = AppState.addEventListener('change', (estadoDoApp) => {
+      if (estadoDoApp === 'active' && sessaoAtiva.current) void motor.sincronizarAgora();
+    });
+    return () => {
+      pararEstado();
+      pararDados();
+      assinatura.remove();
+    };
+  }, [motor]);
+
+  useEffect(() => {
+    if (motor && session) void motor.sincronizarAgora();
+  }, [motor, session]);
+
+  useEffect(() => {
+    const reconectou = isOnline && !estavaOnline.current;
+    estavaOnline.current = isOnline;
+    if (motor && reconectou && sessaoAtiva.current) void motor.sincronizarAgora();
+  }, [motor, isOnline]);
+
+  async function sincronizarAgora(): Promise<void> {
+    await motor?.sincronizarAgora();
+  }
+
+  async function tentarDeNovo(): Promise<void> {
+    await motor?.tentarDeNovo();
+  }
+
+  return (
+    <SyncContext.Provider value={{ estado, sincronizarAgora, tentarDeNovo }}>
+      {children}
+    </SyncContext.Provider>
   );
 }
 
@@ -243,11 +373,13 @@ export function AppProviders({
     <ServicesContext.Provider value={providers}>
       <AuthProvider providers={providers}>
         <DataProvider providers={providers}>
-          <NetworkProvider>
-            <PedidoDraftProvider>
-              {children}
-              <CameraHost ponte={providers.ponteDaCamera} />
-            </PedidoDraftProvider>
+          <NetworkProvider providers={providers}>
+            <SyncProvider providers={providers}>
+              <PedidoDraftProvider>
+                {children}
+                <CameraHost ponte={providers.ponteDaCamera} />
+              </PedidoDraftProvider>
+            </SyncProvider>
           </NetworkProvider>
         </DataProvider>
       </AuthProvider>

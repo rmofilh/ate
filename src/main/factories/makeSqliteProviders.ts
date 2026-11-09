@@ -1,4 +1,6 @@
-import type { AuthSession } from '../../core/application/gateways/IAuthGateway';
+import type { IArmazenamentoRemoto } from '../../core/application/gateways/IArmazenamentoRemoto';
+import type { AuthSession, IAuthGateway } from '../../core/application/gateways/IAuthGateway';
+import type { IServidorRemoto } from '../../core/application/gateways/IServidorRemoto';
 import { AdicionarUnidadesUseCase } from '../../core/application/usecases/AdicionarUnidadesUseCase';
 import { CadastrarClienteUseCase } from '../../core/application/usecases/CadastrarClienteUseCase';
 import { CadastrarEventoUseCase } from '../../core/application/usecases/CadastrarEventoUseCase';
@@ -18,8 +20,10 @@ import { LogoutUseCase } from '../../core/application/usecases/LogoutUseCase';
 import { RemoverEventoUseCase } from '../../core/application/usecases/RemoverEventoUseCase';
 import { RemoverObraUseCase } from '../../core/application/usecases/RemoverObraUseCase';
 import { RemoverUnidadesUseCase } from '../../core/application/usecases/RemoverUnidadesUseCase';
+import { SincronizarUseCase } from '../../core/application/usecases/SincronizarUseCase';
 import { ResolverClienteBalcaoUseCase } from '../../core/application/usecases/ResolverClienteBalcaoUseCase';
 import { VendaDiretaUseCase } from '../../core/application/usecases/VendaDiretaUseCase';
+import { DonoDosDadosLocais } from '../../infrastructure/database/sqlite/DonoDosDadosLocais';
 import type { DrizzleAppDb } from '../../infrastructure/database/sqlite/DrizzleDb';
 import {
   type ExecutorDeTransacao,
@@ -30,27 +34,45 @@ import { SQLiteEventoRepository } from '../../infrastructure/database/sqlite/SQL
 import { SQLiteObraRepository } from '../../infrastructure/database/sqlite/SQLiteObraRepository';
 import { SQLitePedidoRepository } from '../../infrastructure/database/sqlite/SQLitePedidoRepository';
 import { ExpoCameraGateway } from '../../infrastructure/device/camera/ExpoCameraGateway';
-import { FakeAuthGateway } from '../../infrastructure/device/FakeAuthGateway';
 import { ExpoGeocodingGateway } from '../../infrastructure/device/location/ExpoGeocodingGateway';
 import { ExpoLocationGateway } from '../../infrastructure/device/location/ExpoLocationGateway';
+import { MonitorDeRedeExpo } from '../../infrastructure/device/rede/MonitorDeRedeExpo';
 import { UuidIdGenerator } from '../../infrastructure/device/UuidIdGenerator';
 import { ArmazenamentoDeFotos } from '../../infrastructure/fileSystem/ArmazenamentoDeFotos';
 import { OutboxSyncGateway } from '../../infrastructure/sync/OutboxSyncGateway';
+import { SQLiteEstadoLocalSync } from '../../infrastructure/sync/SQLiteEstadoLocalSync';
+import { SQLiteFilaSync } from '../../infrastructure/sync/SQLiteFilaSync';
+import { MotorDeSync } from '../sync/MotorDeSync';
+import { protegerDonoDosDados, protegerSessaoRestaurada } from '../auth/protegerDonoDosDados';
 import type { CasosDeUso, DadosCarregados, ProviderBag } from './ProviderBag';
 import { SessaoNaoDisponivelError } from './SessaoNaoDisponivelError';
 
+/** Destino remoto do sync (Supabase no app; servidor em memória nos testes). */
+export interface Remoto {
+  servidor: IServidorRemoto;
+  armazenamento: IArmazenamentoRemoto;
+}
+
 /**
  * Composition root do runtime: SQLite + fila outbox. Casos de uso que escrevem rodam em
- * transação (registro e fila juntos). Câmera e fotos (Plano 2), GPS e busca de endereço
- * (Plano 5A) são reais; auth (Plano 3) ainda é fake.
+ * transação (registro e fila juntos). Câmera, fotos, GPS, busca de endereço e auth (Supabase,
+ * injetado aqui) são reais. O D4 protege os dados locais no login e na sessão restaurada.
+ * Com `remoto`, o motor de sync envia a fila e traz as mudanças do servidor; cada escrita
+ * do usuário agenda um ciclo.
  */
-export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransacao) {
+export function makeSqliteProviders(
+  db: DrizzleAppDb,
+  executor: ExecutorDeTransacao,
+  authBruto: IAuthGateway,
+  remoto?: Remoto,
+) {
   const ids = new UuidIdGenerator();
   const clientes = new SQLiteClienteRepository(db);
   const pedidos = new SQLitePedidoRepository(db);
   const obras = new SQLiteObraRepository(db);
   const eventos = new SQLiteEventoRepository(db);
-  const auth = new FakeAuthGateway();
+  const donoDosDados = new DonoDosDadosLocais(db);
+  const auth = protegerSessaoRestaurada(authBruto, donoDosDados);
   const armazenamentoDeFotos = new ArmazenamentoDeFotos(
     db,
     ids,
@@ -61,12 +83,39 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
   const location = new ExpoLocationGateway();
   const geocodificador = new ExpoGeocodingGateway();
   const sync = new OutboxSyncGateway(db, ids);
-  const tx = <U extends { execute(...args: never[]): Promise<unknown> }>(casoDeUso: U) =>
-    transacional(casoDeUso, executor);
-  const resolverClienteBalcao = tx(new ResolverClienteBalcaoUseCase(clientes, sync, ids));
+  let sessao: AuthSession | null = null;
+  const motorDeSync = remoto
+    ? new MotorDeSync(
+        new SincronizarUseCase({
+          fila: new SQLiteFilaSync(db, executor),
+          estado: new SQLiteEstadoLocalSync(db, executor, ids),
+          servidor: remoto.servidor,
+          armazenamento: remoto.armazenamento,
+        }),
+        () => sessao?.userId ?? null,
+      )
+    : undefined;
+  /** Caso de uso que escreve: transação e, depois do commit, um ciclo de sync agendado. */
+  const tx = <U extends { execute(...args: never[]): Promise<unknown> }>(casoDeUso: U): U => {
+    const transacionado = transacional(casoDeUso, executor);
+    if (!motorDeSync) return transacionado;
+    const executar = transacionado.execute.bind(transacionado);
+    transacionado.execute = (async (...args: never[]) => {
+      const resultado = await executar(...args);
+      motorDeSync.agendar();
+      return resultado;
+    }) as U['execute'];
+    return transacionado;
+  };
+  // Manutenção da leitura (garante o Cliente Avulso): sem gatilho de sync, para não girar em
+  // falso a cada recarga; o que ela enfileira sobe no próximo ciclo.
+  const resolverClienteBalcao = transacional(
+    new ResolverClienteBalcaoUseCase(clientes, sync, ids),
+    executor,
+  );
 
   const useCases: CasosDeUso = {
-    login: new LoginUseCase(auth),
+    login: protegerDonoDosDados(new LoginUseCase(authBruto), authBruto, donoDosDados),
     logout: new LogoutUseCase(auth),
     consultarPedidos: new ConsultarPedidosUseCase(pedidos),
     iniciarProducao: tx(new IniciarProducaoUseCase(pedidos, sync)),
@@ -88,15 +137,28 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
     removerEvento: tx(new RemoverEventoUseCase(eventos, sync)),
   };
 
-  let sessao: AuthSession | null = null;
-
   const bag = {
     gateways: { auth, camera, location, geocodificador, sync },
     repositories: { clientes, pedidos, obras, eventos },
     useCases,
     ponteDaCamera: camera,
+    motorDeSync,
+    rede: new MonitorDeRedeExpo(),
     async aoIniciar(): Promise<void> {
       await armazenamentoDeFotos.limparOrfas();
+    },
+    /**
+     * D4, "Apagar dados locais e entrar": autentica a outra conta ANTES de apagar. Se o login
+     * falhar (senha, rede), nada é apagado. Depois apaga banco e fotos e registra o novo dono.
+     */
+    async apagarDadosEEntrar(credenciais: { email: string; password: string }): Promise<AuthSession> {
+      const nova = await new LoginUseCase(authBruto).execute(credenciais);
+      await executor.executar(async () => {
+        await donoDosDados.apagarTudo();
+        await donoDosDados.registrar(nova.userId);
+      });
+      armazenamentoDeFotos.apagarArquivos();
+      return nova;
     },
     get usuarioId(): string {
       if (!sessao) throw new SessaoNaoDisponivelError();
@@ -104,6 +166,7 @@ export function makeSqliteProviders(db: DrizzleAppDb, executor: ExecutorDeTransa
     },
     registrarSessao(nova: AuthSession | null): void {
       sessao = nova;
+      if (!nova) motorDeSync?.parar();
     },
     async loadData(): Promise<DadosCarregados> {
       if (!sessao) return { pedidos: [], obras: [], eventos: [], clientes: [] };

@@ -25,8 +25,23 @@ function paraBytes(conteudo: string): Uint8Array {
   return Uint8Array.from(conteudo, (caractere) => caractere.charCodeAt(0));
 }
 
+export const downloadsDeTeste: { conteudo: Map<string, string>; falha: Error | null } = {
+  conteudo: new Map(),
+  falha: null,
+};
+
 export class File {
   uri: string;
+
+  /** Baixa `url` para o destino; o conteúdo vem de `downloadsDeTeste.conteudo`. */
+  static async downloadFileAsync(url: string, destino: File | Directory): Promise<File> {
+    if (downloadsDeTeste.falha) throw downloadsDeTeste.falha;
+    const conteudo = downloadsDeTeste.conteudo.get(url);
+    if (conteudo === undefined) throw new Error(`URL sem conteúdo no dublê: ${url}`);
+    const alvo = destino instanceof File ? destino : new File(destino, url.split('/').pop() ?? '');
+    arquivos.set(alvo.uri, { bytes: paraBytes(conteudo), modificationTime: Date.now() });
+    return alvo;
+  }
 
   constructor(...partes: Parte[]) {
     this.uri = juntar(partes);
@@ -113,5 +128,7 @@ export const fsDeTeste = {
     arquivos.clear();
     pastas.clear();
     falhasFs.move = null;
+    downloadsDeTeste.conteudo.clear();
+    downloadsDeTeste.falha = null;
   },
 };

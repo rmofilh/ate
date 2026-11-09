@@ -140,4 +140,14 @@ describe('ArmazenamentoDeFotos.limparOrfas', () => {
   it('sem pasta fotos/ não falha', async () => {
     await expect(armazenamento.limparOrfas()).resolves.toBe(0);
   });
+
+  it('apagarArquivos remove todas as fotos do aparelho', () => {
+    fsDeTeste.escrever('file:///docs/fotos/a.jpg');
+    fsDeTeste.escrever('file:///docs/fotos/b.jpg');
+    fsDeTeste.escrever('file:///cache/outra.jpg');
+
+    armazenamento.apagarArquivos();
+
+    expect(fsDeTeste.uris()).toEqual(['file:///cache/outra.jpg']);
+  });
 });

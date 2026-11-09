@@ -3,8 +3,10 @@ import { Text, View } from 'react-native';
 import type { TextInputInstance } from 'react-native';
 
 import { borderRadius, fontSizes, layout, spacing, textStyles } from '@/constants/theme';
+import { DadosDeOutroUsuarioError } from '@/main/auth/protegerDonoDosDados';
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { BrandMark } from '@/presentation/components/BrandMark';
+import { ConfirmDialog } from '@/presentation/components/ConfirmDialog';
 import { FormScreen } from '@/presentation/components/FormScreen';
 import { IconButton } from '@/presentation/components/IconButton';
 import { StyledTextInput } from '@/presentation/components/StyledTextInput';
@@ -13,22 +15,41 @@ import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 
 export default function TelaLogin() {
   const styles = useStyles();
-  const { login } = useAuth();
+  const { login, apagarDadosEEntrar } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [outraConta, setOutraConta] = useState(false);
+  const [confirmandoApagar, setConfirmandoApagar] = useState(false);
   const passwordInput = useRef<TextInputInstance>(null);
 
   async function entrar() {
     if (loading) return;
     setLoading(true);
     setErro(null);
+    setOutraConta(false);
     try {
       await login(email, password);
-    } catch {
-      setErro('E-mail ou senha incorretos');
+    } catch (error) {
+      if (error instanceof DadosDeOutroUsuarioError) setOutraConta(true);
+      else setErro(error instanceof Error ? error.message : 'E-mail ou senha incorretos');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function apagarEEntrar() {
+    setConfirmandoApagar(false);
+    if (loading || !apagarDadosEEntrar) return;
+    setLoading(true);
+    setErro(null);
+    try {
+      await apagarDadosEEntrar(email, password);
+      setOutraConta(false);
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : 'Não foi possível apagar os dados locais');
     } finally {
       setLoading(false);
     }
@@ -68,6 +89,27 @@ export default function TelaLogin() {
           </View>
         </View>
         {erro ? <Text testID="erro-login" accessibilityLiveRegion="polite" style={styles.error}>{erro}</Text> : null}
+        {outraConta ? (
+          <View style={styles.field}>
+            <Text testID="aviso-outra-conta" accessibilityLiveRegion="polite" style={styles.error}>
+              Este aparelho tem dados de outra conta que ainda podem não ter sido enviados. Para entrar
+              com esta conta, apague os dados locais.
+            </Text>
+            {confirmandoApagar ? (
+              <ConfirmDialog
+                titulo="Apagar pedidos, obras, clientes, eventos e fotos deste aparelho?"
+                confirmLabel="Apagar e entrar"
+                onConfirm={() => void apagarEEntrar()}
+                onCancel={() => setConfirmandoApagar(false)}
+                loading={loading}
+                appearance="panel"
+              />
+            ) : (
+              <ActionButton label="botao-apagar-e-entrar" title="Apagar dados locais e entrar"
+                appearance="secondary" disabled={loading} onPress={() => setConfirmandoApagar(true)} />
+            )}
+          </View>
+        ) : null}
         <ActionButton label="botao-entrar" title={loading ? 'Entrando...' : 'Entrar'} icon="forward"
           onPress={() => void entrar()} disabled={loading} busy={loading} appearance="primary" />
       </View>

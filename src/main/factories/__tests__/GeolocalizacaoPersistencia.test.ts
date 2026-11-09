@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { LocalizacaoIndisponivelError } from '../../../core/application/errors/LocalizacaoIndisponivelError';
 import { Coordenada } from '../../../core/domain/value-objects/Coordenada';
 import type { DrizzleAppDb } from '../../../infrastructure/database/sqlite/DrizzleDb';
+import { FakeAuthGateway } from '../../../infrastructure/device/FakeAuthGateway';
 import { ExecutorDeTransacao } from '../../../infrastructure/database/sqlite/ExecutorDeTransacao';
 import { eventos, filaSync } from '../../../infrastructure/database/sqlite/schema';
 import { bancoDeTeste } from '../../../test-support/bancoDeTeste';
@@ -32,7 +33,7 @@ describe('geolocalização salva no banco local', () => {
   beforeEach(() => {
     localizacaoDeTeste.reiniciar();
     db = bancoDeTeste();
-    bag = makeSqliteProviders(db, new ExecutorDeTransacao(db));
+    bag = makeSqliteProviders(db, new ExecutorDeTransacao(db), new FakeAuthGateway());
     bag.registrarSessao({ userId: USUARIO, token: 'x' });
   });
 

@@ -16,6 +16,7 @@ jest.mock('expo-crypto', () => {
       const resumo = createHash('sha256').update(Buffer.from(dados)).digest();
       return resumo.buffer.slice(resumo.byteOffset, resumo.byteOffset + resumo.byteLength);
     }),
+    ...jest.requireActual('./src/test-support/mocks/expoCryptoAes'),
   };
 });
 
@@ -26,3 +27,6 @@ jest.mock('expo-image-manipulator', () =>
 jest.mock('expo-camera', () => jest.requireActual('./src/test-support/mocks/expoCamera'));
 jest.mock('expo-location', () => jest.requireActual('./src/test-support/mocks/expoLocation'));
 jest.mock('react-native-webview', () => jest.requireActual('./src/test-support/mocks/reactNativeWebview'));
+jest.mock('expo-secure-store', () => jest.requireActual('./src/test-support/mocks/expoSecureStore'));
+jest.mock('expo-sqlite/kv-store', () => jest.requireActual('./src/test-support/mocks/expoSqliteKvStore'));
+jest.mock('expo-network', () => jest.requireActual('./src/test-support/mocks/expoNetwork'));

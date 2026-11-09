@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { LocalizacaoIndisponivelError } from '../../../core/application/errors/LocalizacaoIndisponivelError';
 import type { ILocationGateway } from '../../../core/application/gateways/ILocationGateway';
 import { Coordenada } from '../../../core/domain/value-objects/Coordenada';
-import { comLimiteDeTempo } from './limiteDeTempo';
+import { comLimiteDeTempo } from '../../shared/limiteDeTempo';
 
 /** O expo-location não tem timeout próprio; sem limite, um GPS sem sinal prende a tela. */
 export const TEMPO_LIMITE_GPS_MS = 10_000;

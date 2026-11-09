@@ -7,6 +7,7 @@ import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesi
 import { formatCalendarDate } from '@/presentation/utils/date';
 import { ActionButton } from './ActionButton';
 import { AppIcon } from './AppIcon';
+import { IndicadorDeSync } from './IndicadorDeSync';
 import { IconButton } from './IconButton';
 
 const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
@@ -31,6 +32,7 @@ export function EventoCard({ evento, onEditar, onRemover, onVerNoMapa, loading, 
         <Text style={styles.name}>{evento.nome}</Text>
         <Text style={styles.date}>{formatCalendarDate(evento.data)}</Text>
         {realizado ? <Text testID={`realizado-${evento.id}`} style={styles.past}>Realizado</Text> : null}
+        <IndicadorDeSync status={evento.statusSync} testID={`sync-${evento.id}`} />
       </View>
     </View>
     <View style={styles.address}>

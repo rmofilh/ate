@@ -12,6 +12,7 @@ import { getControlTone } from '@/presentation/styles/controlTone';
 import { ActionButton } from './ActionButton';
 import { AppIcon } from './AppIcon';
 import { ArtworkThumbnail } from './ArtworkThumbnail';
+import { IndicadorDeSync } from './IndicadorDeSync';
 import { IconButton } from './IconButton';
 
 export function PedidoCard({ pedido, onIniciar, onConcluir, onCancelar, onEditarPedido,
@@ -65,6 +66,7 @@ export function PedidoCard({ pedido, onIniciar, onConcluir, onCancelar, onEditar
       </View>
       <Text style={[styles.tag, { color: context.foreground, backgroundColor: context.surface }]}>{channelLabels[pedido.canalOrigem]}</Text>
       {pedido.vendaDireta ? <Text style={[styles.tag, { color: context.foreground, backgroundColor: context.surface }]}>Venda direta</Text> : null}
+      <IndicadorDeSync status={pedido.statusSync} testID={`sync-${pedido.id}`} />
     </View>
     {pedido.status === 'FEITO' && pedido.fotoConclusaoPath ? (
       <View accessibilityLabel="Foto de conclusão" style={styles.photo}>

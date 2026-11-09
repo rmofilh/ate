@@ -43,6 +43,15 @@ jest.mock('../../main/database/openAppDatabase', () => ({
     return { sqlite: null, db: bancoDeTeste() };
   },
 }));
+// O layout raiz lê o .env do Supabase; no Jest usa o FakeAuthGateway com a conta demo.
+jest.mock('../../main/auth/criarSupabaseDoApp', () => ({
+  obterSupabaseDoApp: () => {
+    const { FakeAuthGateway } = jest.requireActual<{ FakeAuthGateway: new () => unknown }>(
+      '../../infrastructure/device/FakeAuthGateway',
+    );
+    return { auth: new FakeAuthGateway(), cliente: {}, remoto: undefined };
+  },
+}));
 jest.mock('drizzle-orm/expo-sqlite/migrator', () => ({
   useMigrations: () => ({ success: true, error: undefined }),
 }));
