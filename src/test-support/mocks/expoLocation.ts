@@ -46,6 +46,9 @@ const POSICAO_PADRAO: Posicao = {
 };
 
 export const localizacaoDeTeste = {
+  /** Permissão já concedida antes (getForegroundPermissionsAsync, sem pedir). */
+  permissaoAtual: permissoesDeLocalizacao.concedida,
+  ultimaPosicao: POSICAO_PADRAO as Posicao | null,
   servicosLigados: true,
   respostaAoPedir: permissoesDeLocalizacao.concedida,
   proximaPosicao: POSICAO_PADRAO,
@@ -60,7 +63,13 @@ export const localizacaoDeTeste = {
   getCurrentPositionAsync: jest.fn(
     async (_opcoes?: unknown): Promise<Posicao> => localizacaoDeTeste.proximaPosicao,
   ),
+  getForegroundPermissionsAsync: jest.fn(async (): Promise<Permissao> => localizacaoDeTeste.permissaoAtual),
+  getLastKnownPositionAsync: jest.fn(async (): Promise<Posicao | null> => localizacaoDeTeste.ultimaPosicao),
   reiniciar(): void {
+    localizacaoDeTeste.permissaoAtual = permissoesDeLocalizacao.concedida;
+    localizacaoDeTeste.ultimaPosicao = POSICAO_PADRAO;
+    localizacaoDeTeste.getForegroundPermissionsAsync.mockClear();
+    localizacaoDeTeste.getLastKnownPositionAsync.mockClear();
     localizacaoDeTeste.servicosLigados = true;
     localizacaoDeTeste.respostaAoPedir = permissoesDeLocalizacao.concedida;
     localizacaoDeTeste.proximaPosicao = POSICAO_PADRAO;
@@ -90,3 +99,5 @@ export const requestForegroundPermissionsAsync = () =>
 export const getCurrentPositionAsync = (opcoes?: unknown) =>
   localizacaoDeTeste.getCurrentPositionAsync(opcoes);
 export const geocodeAsync = (endereco: string) => localizacaoDeTeste.geocodeAsync(endereco);
+export const getForegroundPermissionsAsync = () => localizacaoDeTeste.getForegroundPermissionsAsync();
+export const getLastKnownPositionAsync = () => localizacaoDeTeste.getLastKnownPositionAsync();

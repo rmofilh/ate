@@ -8,27 +8,21 @@ import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesi
 import { AppIcon } from './AppIcon';
 
 /**
- * Selo discreto do estado de envio de um registro (RF17): nada quando já está no servidor;
- * "Aguardando envio" enquanto está só no aparelho; "Erro ao enviar" quando o servidor recusou.
+ * Selo do card só quando o servidor recusou o registro (raro). Enquanto ele espera o envio, nada
+ * aparece: a nuvem do menu já resume o estado, e a sincronização é automática.
  */
 export function IndicadorDeSync({ status, testID }: { status: StatusSync; testID?: string }) {
   const styles = useStyles();
   const { colors } = useDesignTheme();
-  if (status === 'SINCRONIZADO') return null;
-  const erro = status === 'ERRO';
-  const texto = erro ? 'Erro ao enviar' : 'Aguardando envio';
+  if (status !== 'ERRO') return null;
   return (
     <View
       testID={testID}
-      accessibilityLabel={erro ? 'Erro ao enviar para o servidor' : 'Aguardando envio para o servidor'}
-      style={[styles.selo, erro && styles.seloErro]}
+      accessibilityLabel="Não enviado: o servidor recusou este registro"
+      style={[styles.selo, styles.seloErro]}
     >
-      <AppIcon
-        name={erro ? 'warning' : 'sync'}
-        size={iconSizes.small}
-        color={erro ? colors.error : colors.textSecondary}
-      />
-      <Text style={[styles.texto, erro && styles.textoErro]}>{texto}</Text>
+      <AppIcon name="warning" size={iconSizes.small} color={colors.error} />
+      <Text style={[styles.texto, styles.textoErro]}>Não enviado</Text>
     </View>
   );
 }

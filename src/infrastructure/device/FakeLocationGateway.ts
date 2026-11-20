@@ -15,4 +15,8 @@ export class FakeLocationGateway implements ILocationGateway {
     if (this.falha) throw new LocalizacaoIndisponivelError(this.falha);
     return this.coord;
   }
+
+  async ultimaConhecida(): Promise<Coordenada | null> {
+    return this.falha ? null : this.coord;
+  }
 }

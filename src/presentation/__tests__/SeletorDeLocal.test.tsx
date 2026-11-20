@@ -4,13 +4,16 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 
 import { Coordenada } from '../../core/domain/value-objects/Coordenada';
 import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
-import { mensagemDaPagina, webviewDeTeste } from '../../test-support/mocks/reactNativeWebview';
+import { mapLibreDeTeste, toqueNoMapa } from '../../test-support/mocks/maplibre';
 import { SeletorDeLocal } from '../components/mapa/SeletorDeLocal';
 
-beforeEach(() => webviewDeTeste.reiniciar());
+beforeEach(() => mapLibreDeTeste.reiniciar());
 
 const pinNoMapa = (latitude: number, longitude: number) =>
-  fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'pin', latitude, longitude }));
+  fireEvent(screen.getByTestId('mapa'), 'press', toqueNoMapa(latitude, longitude));
+const arrastarPin = (latitude: number, longitude: number) =>
+  fireEvent(screen.getByTestId('anotacao-pin'), 'dragEnd', toqueNoMapa(latitude, longitude));
+const vistaInicial = () => screen.getByTestId('camera').props.initialViewState;
 
 async function renderizar(props: Partial<React.ComponentProps<typeof SeletorDeLocal>> = {}) {
   const onConfirmar = jest.fn();
@@ -33,9 +36,8 @@ describe('SeletorDeLocal', () => {
   it('abre com o pin no ponto inicial e mostra a coordenada', async () => {
     await renderizar({ pontoInicial: new Coordenada(-23.5614, -46.6558) });
 
-    const html = screen.getByTestId('mapa').props.source.html as string;
-    expect(html).toContain('setView([-23.5614,-46.6558],16)');
-    expect(html).toContain('colocarPin(-23.5614,-46.6558,false)');
+    expect(vistaInicial()).toEqual({ center: [-46.6558, -23.5614], zoom: 16 });
+    expect(screen.getByTestId('anotacao-pin').props.lngLat).toEqual([-46.6558, -23.5614]);
     expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent(/-23.5614, -46.6558/);
     expect(screen.getByTestId('aviso-sem-internet')).toBeTruthy();
   });
@@ -43,9 +45,8 @@ describe('SeletorDeLocal', () => {
   it('sem ponto inicial abre na região padrão, sem pin, e não deixa confirmar', async () => {
     const { onConfirmar } = await renderizar();
 
-    const html = screen.getByTestId('mapa').props.source.html as string;
-    expect(html).toContain('setView([-23.5505,-46.6333],10)');
-    expect(html).not.toContain('colocarPin(-');
+    expect(vistaInicial()).toEqual({ center: [-46.6333, -23.5505], zoom: 10 });
+    expect(screen.queryByTestId('anotacao-pin')).toBeNull();
     expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent('Nenhum ponto escolhido');
     expect(screen.getByTestId('botao-confirmar-local').props.accessibilityState.disabled).toBe(true);
     await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
@@ -58,7 +59,7 @@ describe('SeletorDeLocal', () => {
     expect(screen.getByTestId('aviso-seletor')).toHaveTextContent(/não encontrado/);
   });
 
-  it('toque no mapa (mensagem da página) coloca o pin e confirmar devolve a Coordenada', async () => {
+  it('toque no mapa coloca o pin e confirmar devolve a Coordenada', async () => {
     const { onConfirmar } = await renderizar();
 
     await pinNoMapa(-23.55, -46.64);
@@ -72,10 +73,10 @@ describe('SeletorDeLocal', () => {
     expect([coordenada.latitude, coordenada.longitude]).toEqual([-23.55, -46.64]);
   });
 
-  it('arrastar o pin (mensagem da página) move a coordenada', async () => {
+  it('arrastar o pin move a coordenada', async () => {
     const { onConfirmar } = await renderizar({ pontoInicial: new Coordenada(-23.5, -46.6) });
 
-    await pinNoMapa(-23.51, -46.61);
+    await arrastarPin(-23.51, -46.61);
     await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
 
     const [coordenada] = onConfirmar.mock.calls[0] as [Coordenada];
@@ -91,9 +92,10 @@ describe('SeletorDeLocal', () => {
     await waitFor(() =>
       expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent('Pin: -22.9, -43.2'),
     );
-    expect(webviewDeTeste.injectJavaScript).toHaveBeenCalledWith(
-      expect.stringContaining('colocarPin(-22.9,-43.2,true)'),
+    expect(mapLibreDeTeste.camera.flyTo).toHaveBeenCalledWith(
+      expect.objectContaining({ center: [-43.2, -22.9] }),
     );
+    expect(screen.getByTestId('anotacao-pin').props.lngLat).toEqual([-43.2, -22.9]);
     await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
     const [coordenada] = onConfirmar.mock.calls[0] as [Coordenada];
     expect([coordenada.latitude, coordenada.longitude]).toEqual([-22.9, -43.2]);
@@ -109,7 +111,7 @@ describe('SeletorDeLocal', () => {
 
     await waitFor(() => expect(screen.getByTestId('erro-gps')).toHaveTextContent(/negada/i));
     expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent('Pin: -23.5, -46.6');
-    expect(webviewDeTeste.injectJavaScript).not.toHaveBeenCalled();
+    expect(mapLibreDeTeste.camera.flyTo).not.toHaveBeenCalled();
     expect(screen.queryByTestId('botao-abrir-configuracoes')).toBeNull();
   });
 
@@ -149,5 +151,45 @@ describe('SeletorDeLocal', () => {
     await renderizar({ visivel: false });
 
     expect(screen.queryByTestId('mapa')).toBeNull();
+  });
+
+  it('toque fora da faixa de coordenadas é ignorado', async () => {
+    await renderizar();
+    await pinNoMapa(95, 10);
+    expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent('Nenhum ponto escolhido');
+  });
+
+  it('sem pin, abre perto da última posição conhecida (sem pedir o GPS)', async () => {
+    const lerUltimaPosicao = jest.fn(async () => new Coordenada(-19.92, -43.94));
+    const { lerGps } = await renderizar({ lerUltimaPosicao });
+
+    await waitFor(() =>
+      expect(mapLibreDeTeste.camera.flyTo).toHaveBeenCalledWith(
+        expect.objectContaining({ center: [-43.94, -19.92] }),
+      ),
+    );
+    expect(lerGps).not.toHaveBeenCalled();
+    expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent('Nenhum ponto escolhido');
+  });
+
+  it('com pin, não move o mapa para a última posição', async () => {
+    const lerUltimaPosicao = jest.fn(async () => new Coordenada(-19.92, -43.94));
+    await renderizar({ pontoInicial: new Coordenada(-23.5, -46.6), lerUltimaPosicao });
+    await act(async () => {});
+    expect(lerUltimaPosicao).not.toHaveBeenCalled();
+    expect(mapLibreDeTeste.camera.flyTo).not.toHaveBeenCalled();
+  });
+
+  it('no Expo Go (sem mapa nativo) avisa e o GPS continua funcionando', async () => {
+    mapLibreDeTeste.disponivel = false;
+    const { onConfirmar } = await renderizar();
+
+    expect(screen.getByTestId('mapa-indisponivel')).toHaveTextContent(/app instalado/);
+    await fireEvent.press(screen.getByTestId('botao-minha-localizacao'));
+    await waitFor(() =>
+      expect(screen.getByTestId('coordenada-do-pin')).toHaveTextContent('Pin: -22.9, -43.2'),
+    );
+    await fireEvent.press(screen.getByTestId('botao-confirmar-local'));
+    expect(onConfirmar).toHaveBeenCalled();
   });
 });

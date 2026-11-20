@@ -134,12 +134,14 @@ flowchart LR
 - reconexão (`expo-network`);
 - volta ao primeiro plano (`AppState`);
 - 3 s depois de cada escrita do usuário;
-- botão "Sincronizar agora" no menu.
+- (o botão "Sincronizar agora" foi retirado nos refinamentos de 20/11: a sincronização é só automática).
 
 **Estado visível (RF17):**
-- `OfflineBanner` com a conexão real;
-- `PainelDeSync` no menu: tudo sincronizado, sincronizando, N aguardando envio, N recusadas, sem conexão ou sessão expirada;
-- `IndicadorDeSync` nos cards de pedido, obra e evento ("Aguardando envio" / "Erro ao enviar").
+- `OfflineBanner`: linha discreta e cinza no topo das telas, só quando offline ("Sem conexão · salvo no aparelho"). O laranja foi abandonado porque é a cor da coluna "Fazendo";
+- `StatusDaNuvem`: uma linha só no menu, com ícone de nuvem ("Tudo sincronizado", "Sincronizando…", "Sem conexão…"). Só no raro caso de recusa do servidor vira "Algo não foi enviado · toque para tentar de novo";
+- `IndicadorDeSync`: selo "Não enviado" no card só quando o servidor recusou o registro.
+
+Refinamento de 20/11 (pedido do usuário): a primeira versão tinha "Sincronizar agora", contagem de pendências e selos "Aguardando envio" em cada card. Era informação demais para um app que deve ser simples, e o aviso de offline aparecia duplicado no menu.
 
 ### Decisões e divergências
 
@@ -148,7 +150,7 @@ flowchart LR
 | 1 | `@react-native-community/netinfo` | `expo-network` | Módulo Expo, incluído no Expo Go (regra do projeto: preferir módulos Expo) |
 | 2 | UI reativa via `addDatabaseChangeListener` | O motor avisa o `DataProvider` ao fim de um ciclo que mudou dados | Mais simples e testável; as escritas da própria UI já recarregam |
 | 3 | URL assinada para exibir fotos vindas do servidor | Download no pull para `fotos/` | Offline-first: depois de reinstalar, as fotos ficam disponíveis sem rede |
-| 4 | Pull-to-refresh no Kanban | Não feito | O quadro é horizontal, com uma lista por coluna; "Sincronizar agora" e os gatilhos automáticos cobrem o caso |
+| 4 | Pull-to-refresh no Kanban | Não feito | O quadro é horizontal, com uma lista por coluna; os gatilhos automáticos (abrir, reconectar, voltar ao app, após cada alteração) cobrem o caso |
 | 5 | — | Cliente Avulso duplicado na reinstalação: o do servidor vence, o local vira tombstone e os pedidos são reapontados | O índice único local travaria o pull para sempre |
 | 6 | — | Ciclo que gerou fila nova (item 5) agenda outro | No smoke test, o tombstone ficou esperando o próximo gatilho |
 | 7 | FK como erro permanente | FK (`23503`) é transitório | O pai pode estar esperando a própria foto |
@@ -192,12 +194,12 @@ Complementa o Apêndice A.3 de `docs/ate-fase2.md` com as suítes reais (todas e
 | RF09 Cadastrar obra | UC12 | `Obra`, `ObraUseCases`, `FotoCatalogo` |
 | RF10 Baixa de estoque | UC10 | `Obra`, `PedidoWrite`, `PedidoClose`, `makeSqliteProviders` (rollback) |
 | RF11 Vincular obra | UC10 | `WorkSelection`, `PedidoWrite` |
-| RF12 Cadastrar evento | UC13, UC14 | `Evento`, `Coordenada`, `EventoUseCases`, `ExpoLocationGateway`, `ExpoGeocodingGateway`, `SeletorDeLocal`, `GeolocalizacaoPersistencia` |
-| RF13 Mapa de eventos | UC15 | `MapaLeaflet`, `TelaEventos` |
+| RF12 Cadastrar evento | UC13, UC14 | `Evento`, `Coordenada`, `EventoUseCases`, `ExpoLocationGateway` (inclui `ultimaConhecida`), `ExpoGeocodingGateway`, `SeletorDeLocal`, `GeolocalizacaoPersistencia` |
+| RF13 Mapa de eventos | UC15 | `MapaNativo`, `TelaEventos`, `MapaOfflineMapLibre`, `AreasOffline` (regra e caso de uso), `geometria` |
 | RF14 Operar offline | UC07, UC09, UC11, UC12 | repositórios `SQLite*`, `ExecutorDeTransacao`, `OutboxSyncGateway`, `makeSqliteProviders`, `SincronizacaoPontaAPonta` (modo avião) |
 | RF15 Fila e sync | UC16 | `SincronizarUseCase`, `SyncRegras`, `SQLiteSync`, `SupabaseSync`, `SincronizacaoPontaAPonta` |
 | RF16 Upload de imagens | UC17 | `SincronizarUseCase` (fotos), `SupabaseSync` (Storage), `SQLiteSync`, `SincronizacaoPontaAPonta`, `ArmazenamentoDeFotos` (compressão) |
-| RF17 Banner de conectividade | UC18 | `Shell` (`OfflineBanner`), `Sincronizacao` (`PainelDeSync`, `IndicadorDeSync`, `NetworkProvider`) |
+| RF17 Banner de conectividade | UC18 | `Shell` (`OfflineBanner`), `Sincronizacao` (`StatusDaNuvem`, `IndicadorDeSync`, `NetworkProvider`) |
 | RF18 Editar cliente | UC19 | `ClienteUseCases`, `TelaEditarCliente` |
 | RF19 Editar pedido | UC20 | `PedidoWrite`, `TelaEditarPedido`, `RoteamentoEdicao` |
 | RF20 Cancelar pedido | UC21 | `PedidoClose`, `TelaKanban` |
@@ -217,9 +219,80 @@ RNFs com teste automatizado:
 - **RNF11:** `Pedido` e o `CHECK` remoto.
 - **RNF12:** `CameraModal` e `ExpoLocationGateway`.
 
-## 5. Pendências para a entrega final (01/12)
+## 5. Ajustes pós-avaliação (20/11/2026)
 
-- `eas.json` com os perfis `development` e `preview` (APK), `android.package`, `expo-dev-client` e `expo-updates` com `runtimeVersion`.
-- Variáveis `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no EAS (`eas env`), porque o `.env` fica fora do git.
-- Repetir os smoke tests B e C no APK instalado (os textos de permissão próprios só aparecem fora do Expo Go).
-- Opcional, se a lentidão incomodar: upsert em lote por tabela, com fallback por registro quando o lote for recusado.
+O professor apontou um problema: o mapa era uma aplicação web (Leaflet numa WebView, com a biblioteca baixada do `unpkg.com`) e por isso não funcionava offline: sem internet, o mapa nem aparecia. Supabase e as demais áreas foram aprovadas. Os ajustes seguem o material das aulas de geolocalização (`01-fundamentos-geolocalizacao`, `02-expo-location-maps`) e de Supabase (`03-supabase-backend-seguro`).
+
+### Mapa nativo: MapLibre + OpenFreeMap
+
+- `presentation/components/mapa/MapaNativo.tsx` substitui o `MapaLeaflet` com a mesma interface: `Map` e `Camera` (`initialViewState`, `flyTo`), pin com `ViewAnnotation` arrastável (`onDragEnd`) e toque no mapa devolvendo a coordenada (`nativeEvent.lngLat`). É o mesmo modelo da aula 2 (Region, Marker, toque com `nativeEvent.coordinate`, `animateToRegion`).
+- `infrastructure/device/mapa/geometria.ts` faz as conversões `{latitude, longitude}` ↔ `[longitude, latitude]` (a ordem inversa que o material alerta). A caixa em volta de um ponto usa 1° de latitude ≈ 111 km e a longitude encolhendo com cos(latitude), como na aula de fundamentos.
+- **Offline de verdade:** uma porta nova, `IMapaOffline`, mais a regra pura `planejarAreasOffline` e o `SincronizarAreasOfflineUseCase`, mantêm uma área baixada por evento: raio de 1,5 km, zoom de 10 a 16, pelo `OfflineManager` do MapLibre (`MapaOfflineMapLibre`). Com internet, a reconciliação roda sempre que a lista de eventos muda (inclusive depois do pull). Downloads interrompidos são retomados. Fora dessas áreas, sem rede, o mapa fica sem as ruas, mas pins, pin novo, GPS e coordenadas continuam funcionando.
+- **Abrir o mapa rápido (aula 2, slide 13):** `ILocationGateway.ultimaConhecida()` usa `getLastKnownPositionAsync` sem pedir permissão (RNF12) para abrir o seletor perto do usuário.
+- **"Como chegar"** continua abrindo o app Google Maps (decisão do usuário).
+- O `react-native-webview` saiu do projeto.
+
+| # | Material / fase anterior | Agora | Motivo |
+|---|---|---|---|
+| 1 | `react-native-maps` com `PROVIDER_GOOGLE` (aula 2) | MapLibre React Native 11.5 | No Android, `react-native-maps` exige chave do Google Maps com faturamento; o MapLibre é nativo, open source e não tem chave |
+| 2 | Leaflet + OSM numa WebView (D6 da fase 3) | Mapa nativo com áreas offline | Feedback do professor: a WebView dependia da internet até para carregar a biblioteca |
+| 3 | Imagens do OpenStreetMap (`tile.openstreetmap.org`) | Estilo vetorial do OpenFreeMap | A política do OSM não permite baixar áreas para uso offline; o OpenFreeMap permite (até 3.000 imagens ou 50 MB por área, com User-Agent próprio) e não tem chave. A atribuição fica visível no mapa |
+| 4 | MapViewDirections e Places Autocomplete (aula 2) | Fora: "Como chegar" abre o Google Maps e a busca usa o geocoder do `expo-location` | Exigem APIs pagas do Google e chave |
+| 5 | Rodar no Expo Go | Mapa só no app instalado (development build/APK) | O MapLibre não faz parte do Expo Go. O resto do app continua no Expo Go, e o mapa mostra um aviso |
+
+### Supabase: alinhamento com a aula 3
+
+- **Sessão encerrada pelo servidor (slide 14, `onAuthStateChange`):** `SupabaseAuthGateway.aoEncerrarSessao` escuta `SIGNED_OUT` (ex.: refresh revogado com o app aberto), e o `AuthProvider` volta ao login. Falha de rede ao renovar não gera `SIGNED_OUT`: o uso offline não muda.
+- **O que já atendia:**
+  - RLS com `(select auth.uid())` e `to authenticated` (slides 18–21);
+  - bucket privado com pasta por usuário e URL assinada (slides 24–28);
+  - só o caminho do arquivo no Postgres (slide 31);
+  - 401, offline e timeout com retentativa exponencial (slide 39);
+  - Context API e `Stack.Protected` (slides 41–45);
+  - LargeSecureStore (slide 48);
+  - fila offline e sincronização (aula 2, slides 40–41).
+- **Divergências do material (justificadas pela documentação do Expo):**
+  - sem `react-native-url-polyfill`, porque o Expo já fornece `URL`;
+  - a cifra da sessão fica no kv-store do `expo-sqlite`, não no AsyncStorage;
+  - AES-GCM nativo do `expo-crypto` no lugar do `aes-js` (CTR). O padrão LargeSecureStore é o mesmo: chave AES no SecureStore e sessão cifrada fora dele.
+
+### Testes e baseline
+
+Os testes novos cobrem `MapaNativo`, `SeletorDeLocal` (última posição, arrastar o pin, Expo Go), `geometria`, `MapaOfflineMapLibre` com o `OfflineManager` dublado, a regra e o caso de uso das áreas offline, `ExpoLocationGateway.ultimaConhecida` e a sessão encerrada pelo servidor. O dublê do MapLibre fica em `src/test-support/mocks/maplibre.tsx`.
+
+Baseline: 88 suítes e 629 testes passando; `typecheck` limpo; `lint` com 0 erros; `db:check` ok; `expo-doctor` 20/20 depois de alinhar 16 pacotes ao patch atual do SDK 58.
+
+**A validar no aparelho (primeiro passo da fase de EAS):**
+1. seletor e mapa de eventos com internet;
+2. cadastrar um evento com internet (a área baixa sozinha);
+3. modo avião → reabrir o mapa do evento: ruas da área, pin e GPS.
+
+## 6. Build, APK e atualizações (EAS, 20/11/2026)
+
+- **Projeto EAS:** `@ricardo1755/ate`. O app se chama **Ate** (o `slug` continua `ate`) e o pacote Android é `com.rmofilh.ate`.
+- **Ícone e tela de abertura:** a flor-de-lis da marca (`fleur-de-lis-light.svg`) sobre o azul `#355676`, com ícone adaptativo e monocromático (ícones temáticos do Android 13+), no lugar dos ícones de exemplo do Expo.
+- **`eas.json`:**
+
+  | Perfil | O que gera | Uso |
+  |---|---|---|
+  | `development` | APK de depuração com `expo-dev-client` (canal `development`) | Testes no celular conectados ao `npx expo start` |
+  | `preview` | APK de release, instalável direto (canal `preview`) | Apresentação e uso real |
+  | `production` | AAB (canal `production`) | Só se um dia for para a loja |
+
+- **Variáveis:** `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` cadastradas no EAS (`eas env:create`, visibilidade plaintext, ambientes `development` e `preview`). O `.env` local não vai para o servidor de build.
+- **Tamanho:** `expo-build-properties` com `buildArchs: ["arm64-v8a"]` (só processadores ARM 64 bits, praticamente todo Android de 2017 para cá), R8 (`enableMinifyInReleaseBuilds`) e remoção de recursos não usados (`enableShrinkResourcesInReleaseBuilds`). Medido: development build 323,5 MB; preview sem otimização 168,2 MB; preview otimizado **54,0 MB** (build `315aafa2…`, 68% menor que o anterior).
+- **Atualização automática (EAS Update, `expo-updates`):** `runtimeVersion` com a política `fingerprint`. Mudanças só de código chegam ao APK instalado sem build novo:
+
+  ```bash
+  npx eas-cli@latest update --channel preview --environment preview --message "descrição"
+  ```
+
+  O app baixa a atualização ao abrir e aplica na abertura seguinte. Uma mudança nativa (pacote novo, ícone, permissão, plugin) muda o fingerprint e exige um APK novo.
+- **Atenção, Supabase Free:** o projeto **pausa depois de 7 dias sem uso** e o endereço sai do ar; o app mostra "Sem conexão" no login. Isso aconteceu em 20/11 (o último uso tinha sido em 09/11). Para reativar: painel do Supabase → projeto → Restore. Antes da apresentação, abrir o app e conferir o login.
+- **Autocorreção do sync (20/11):** no aparelho, um evento ficou PENDENTE mesmo já estando no servidor, com a fila vazia. Agora cada ciclo recoloca na fila as linhas PENDENTE sem entrada (`reenfileirarOrfas`). O reenvio é idempotente, e o item volta a SINCRONIZADO.
+
+## 7. Pendências para a entrega final (01/12)
+
+- Repetir o smoke test completo no APK final instalado: login, pedidos com foto, estoque, eventos com mapa online e em modo avião, sincronização.
+- Na véspera da apresentação, abrir o app para o Supabase não pausar e conferir o login.
+- Ajustes só de código depois do APK: `eas update --channel preview --environment preview`. Ajustes nativos: novo `eas build --profile preview`.

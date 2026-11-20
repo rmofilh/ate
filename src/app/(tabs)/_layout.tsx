@@ -7,10 +7,9 @@ import { borderRadius, fontSizes, layout, spacing, textStyles } from '@/constant
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { AppIcon } from '@/presentation/components/AppIcon';
 import { BrandMark } from '@/presentation/components/BrandMark';
-import { OfflineBanner } from '@/presentation/components/OfflineBanner';
-import { PainelDeSync } from '@/presentation/components/PainelDeSync';
 import { SairButton } from '@/presentation/components/SairButton';
-import { useAppNavigation, useData, useNetwork } from '@/presentation/hooks/AppProviders';
+import { StatusDaNuvem } from '@/presentation/components/StatusDaNuvem';
+import { useAppNavigation, useData } from '@/presentation/hooks/AppProviders';
 import { createThemedStyles, useDesignTheme } from '@/presentation/hooks/useDesignTheme';
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
@@ -22,7 +21,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
     { label: 'Obras', count: obras.length, testID: 'drawer-resumo-obras', description: 'obras' },
     { label: 'Eventos', count: eventos.length, testID: 'drawer-resumo-eventos', description: 'eventos' },
   ];
-  const { isOnline } = useNetwork();
   const navigation = useAppNavigation();
   function shortcut(action: () => void) {
     props.navigation.closeDrawer();
@@ -36,8 +34,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
         <Text style={styles.muted}>Sua oficina, em harmonia.</Text>
       </View>
     </View>
-    <OfflineBanner isOnline={isOnline} />
-    <PainelDeSync />
+    <StatusDaNuvem />
     <Text style={styles.section}>ESPAÇO DE TRABALHO</Text>
     <DrawerItemList {...props} />
     <View style={styles.summary}>

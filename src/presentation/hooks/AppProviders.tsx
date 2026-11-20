@@ -166,6 +166,16 @@ export function AuthProvider({
     };
   }, [providers]);
 
+  // O servidor encerrou a sessão com o app aberto (ex.: acesso revogado): volta ao login.
+  useEffect(
+    () =>
+      providers.aoEncerrarSessao?.(() => {
+        providers.registrarSessao?.(null);
+        setSession(null);
+      }),
+    [providers],
+  );
+
   async function login(email: string, password: string): Promise<void> {
     const nextSession = await providers.useCases.login.execute({ email, password });
     providers.registrarSessao?.(nextSession);
@@ -288,7 +298,7 @@ export function SyncProvider({
 }: React.PropsWithChildren<{ providers: ProviderBag }>) {
   const motor = providers.motorDeSync;
   const { session } = useAuth();
-  const { reload } = useData();
+  const { reload, eventos } = useData();
   const { isOnline } = useNetwork();
   const [estado, setEstado] = useState<EstadoDoSync | null>(() => motor?.obterEstado() ?? null);
   const recarregar = useRef(reload);
@@ -326,6 +336,13 @@ export function SyncProvider({
     estavaOnline.current = isOnline;
     if (motor && reconectou && sessaoAtiva.current) void motor.sincronizarAgora();
   }, [motor, isOnline]);
+
+  // Mapa offline: com internet, mantém baixada a área de cada evento (inclui os vindos do pull).
+  const areasOffline = providers.areasOffline;
+  useEffect(() => {
+    if (!areasOffline || !session || !isOnline) return;
+    void areasOffline.execute({ eventos });
+  }, [areasOffline, session, isOnline, eventos]);
 
   async function sincronizarAgora(): Promise<void> {
     await motor?.sincronizarAgora();

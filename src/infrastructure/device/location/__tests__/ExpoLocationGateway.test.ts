@@ -115,3 +115,32 @@ describe('ExpoLocationGateway', () => {
     await expect(new ExpoLocationGateway().getCurrent()).rejects.toThrow('falha nativa');
   });
 });
+
+describe('ExpoLocationGateway.ultimaConhecida (abrir o mapa rápido)', () => {
+  beforeEach(() => localizacaoDeTeste.reiniciar());
+
+  it('com permissão já concedida devolve a última posição, sem pedir nem ligar o GPS', async () => {
+    const coordenada = await new ExpoLocationGateway().ultimaConhecida();
+
+    expect(coordenada).toMatchObject({ latitude: -23.5617, longitude: -46.6559 });
+    expect(localizacaoDeTeste.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(localizacaoDeTeste.getCurrentPositionAsync).not.toHaveBeenCalled();
+  });
+
+  it('sem permissão concedida devolve null e não abre o diálogo do sistema', async () => {
+    localizacaoDeTeste.permissaoAtual = permissoesDeLocalizacao.negada;
+
+    await expect(new ExpoLocationGateway().ultimaConhecida()).resolves.toBeNull();
+    expect(localizacaoDeTeste.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(localizacaoDeTeste.getLastKnownPositionAsync).not.toHaveBeenCalled();
+  });
+
+  it('sem posição conhecida ou com falha do SDK devolve null', async () => {
+    localizacaoDeTeste.ultimaPosicao = null;
+    await expect(new ExpoLocationGateway().ultimaConhecida()).resolves.toBeNull();
+
+    localizacaoDeTeste.getLastKnownPositionAsync.mockRejectedValueOnce(new Error('falha nativa'));
+    localizacaoDeTeste.ultimaPosicao = { coords: { latitude: 1, longitude: 1, accuracy: 5 }, timestamp: 0 };
+    await expect(new ExpoLocationGateway().ultimaConhecida()).resolves.toBeNull();
+  });
+});

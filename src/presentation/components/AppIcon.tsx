@@ -28,6 +28,7 @@ const symbols = {
   offline: { ios: 'wifi.slash', android: 'wifi_off', web: 'wifi_off' },
   sync: { ios: 'arrow.triangle.2.circlepath', android: 'sync', web: 'sync' },
   cloudDone: { ios: 'checkmark.icloud', android: 'cloud_done', web: 'cloud_done' },
+  cloudOff: { ios: 'icloud.slash', android: 'cloud_off', web: 'cloud_off' },
   warning: { ios: 'exclamationmark.triangle', android: 'warning', web: 'warning' },
   forward: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
   back: { ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' },

@@ -26,7 +26,18 @@ jest.mock('expo-image-manipulator', () =>
 );
 jest.mock('expo-camera', () => jest.requireActual('./src/test-support/mocks/expoCamera'));
 jest.mock('expo-location', () => jest.requireActual('./src/test-support/mocks/expoLocation'));
-jest.mock('react-native-webview', () => jest.requireActual('./src/test-support/mocks/reactNativeWebview'));
 jest.mock('expo-secure-store', () => jest.requireActual('./src/test-support/mocks/expoSecureStore'));
 jest.mock('expo-sqlite/kv-store', () => jest.requireActual('./src/test-support/mocks/expoSqliteKvStore'));
 jest.mock('expo-network', () => jest.requireActual('./src/test-support/mocks/expoNetwork'));
+jest.mock('@maplibre/maplibre-react-native', () => jest.requireActual('./src/test-support/mocks/maplibre'));
+// No Jest não há módulo nativo: o carregador devolve o dublê, ou null para simular o Expo Go.
+jest.mock('./src/infrastructure/device/mapa/mapLibre', () => {
+  const real = jest.requireActual('./src/infrastructure/device/mapa/mapLibre');
+  return {
+    ...real,
+    carregarMapLibre: () => {
+      const dublê = jest.requireActual('./src/test-support/mocks/maplibre');
+      return dublê.mapLibreDeTeste.disponivel ? dublê : null;
+    },
+  };
+});

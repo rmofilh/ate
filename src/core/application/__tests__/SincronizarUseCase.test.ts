@@ -117,6 +117,10 @@ class EstadoFake implements IEstadoLocalSync {
   async reenviarErros() {
     for (const linha of this.linhas.values()) if (linha.status === 'ERRO') linha.status = 'PENDENTE';
   }
+  reenfileiradas = 0;
+  async reenfileirarOrfas() {
+    return this.reenfileiradas;
+  }
   async cursor(tabela: TabelaSync) {
     return this.cursores.get(tabela) ?? null;
   }

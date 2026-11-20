@@ -1,11 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { spacing, textStyles } from '@/constants/theme';
 import { Coordenada } from '@/core/domain/value-objects/Coordenada';
 import { ActionButton } from '@/presentation/components/ActionButton';
-import { MapaLeaflet, type MapaLeafletRef, type PontoNoMapa } from '@/presentation/components/mapa/MapaLeaflet';
+import { MapaNativo, type MapaNativoRef, type PontoNoMapa } from '@/presentation/components/mapa/MapaNativo';
 import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 import { useLocalizacaoAtual } from '@/presentation/hooks/useLocalizacaoAtual';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
@@ -21,12 +21,14 @@ export interface SeletorDeLocalProps {
   /** Mensagem do fluxo de busca (ex.: endereço não encontrado). */
   aviso?: string | null;
   lerGps: (() => Promise<Coordenada>) | undefined;
+  /** Última posição conhecida (sem pedir permissão): abre o mapa perto do usuário. */
+  lerUltimaPosicao?: () => Promise<Coordenada | null>;
   onConfirmar(coordenada: Coordenada): void;
   onCancelar(): void;
 }
 
 /**
- * Modal com mapa (Leaflet + OpenStreetMap) para escolher o local do evento: toque ou arraste do pin, atalho
+ * Modal com mapa nativo (MapLibre) para escolher o local do evento: toque ou arraste do pin, atalho
  * "Minha localização" pelo GPS e confirmação. O mapa só é montado com o modal aberto.
  */
 export function SeletorDeLocal({ visivel, onCancelar, ...props }: SeletorDeLocalProps) {
@@ -41,17 +43,36 @@ function ConteudoDoSeletor({
   pontoInicial,
   aviso,
   lerGps,
+  lerUltimaPosicao,
   onConfirmar,
   onCancelar,
 }: Omit<SeletorDeLocalProps, 'visivel'>) {
   const uiStyles = useUIStyles();
   const styles = useStyles();
-  const mapa = useRef<MapaLeafletRef>(null);
+  const mapa = useRef<MapaNativoRef>(null);
   const gps = useLocalizacaoAtual(lerGps);
   const [pinInicial] = useState<PontoNoMapa | null>(() =>
     pontoInicial ? { latitude: pontoInicial.latitude, longitude: pontoInicial.longitude } : null,
   );
   const [pin, setPin] = useState<PontoNoMapa | null>(pinInicial);
+
+  // Sem pin, abre perto do usuário se o aparelho já souber onde ele está (aula 2, slide 13).
+  // Só na abertura: a função pode mudar de identidade a cada render da tela.
+  const ultimaPosicao = useRef(lerUltimaPosicao);
+  useEffect(() => {
+    const ler = ultimaPosicao.current;
+    if (pinInicial || !ler) return;
+    let ativo = true;
+    ler().then(
+      (ultima) => {
+        if (ativo && ultima) mapa.current?.mover({ latitude: ultima.latitude, longitude: ultima.longitude });
+      },
+      () => undefined,
+    );
+    return () => {
+      ativo = false;
+    };
+  }, [pinInicial]);
 
   async function irParaMinhaLocalizacao() {
     const coordenada = await gps.buscar();
@@ -75,7 +96,7 @@ function ConteudoDoSeletor({
           <Text testID="aviso-seletor" accessibilityLiveRegion="polite" style={uiStyles.notice}>{aviso}</Text>
         ) : null}
       </View>
-      <MapaLeaflet
+      <MapaNativo
         ref={mapa}
         centroInicial={pinInicial ?? CENTRO_PADRAO}
         zoomInicial={pinInicial ? ZOOM_DO_PIN : ZOOM_PADRAO}
@@ -84,7 +105,7 @@ function ConteudoDoSeletor({
       />
       <View style={styles.rodape}>
         <Text testID="aviso-sem-internet" style={uiStyles.muted}>
-          Sem internet o mapa pode não carregar; o pin e o GPS continuam funcionando.
+          Sem internet, só aparecem as ruas das áreas já baixadas; o pin e o GPS continuam funcionando.
         </Text>
         <Text testID="coordenada-do-pin" style={uiStyles.body}>
           {pin ? `Pin: ${pin.latitude}, ${pin.longitude}` : 'Nenhum ponto escolhido'}

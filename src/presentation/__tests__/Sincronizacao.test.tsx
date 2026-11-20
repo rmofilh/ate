@@ -7,7 +7,7 @@ import { makeFakeProviders } from '../../main/factories/makeFakeProviders';
 import type { EstadoDoSync, MotorDeSync } from '../../main/sync/MotorDeSync';
 import { redeDeTeste } from '../../test-support/mocks/expoNetwork';
 import { IndicadorDeSync } from '../components/IndicadorDeSync';
-import { PainelDeSync } from '../components/PainelDeSync';
+import { StatusDaNuvem } from '../components/StatusDaNuvem';
 import { AppProviders, NetworkContext, SyncContext, useAuth, useNetwork } from '../hooks/AppProviders';
 
 const ESTADO: EstadoDoSync = {
@@ -19,61 +19,72 @@ const ESTADO: EstadoDoSync = {
   ultimaSincronizacao: null,
 };
 
-async function painel(estado: Partial<EstadoDoSync>, online = true) {
+async function nuvem(estado: Partial<EstadoDoSync> | null, online = true) {
   const sincronizarAgora = jest.fn(async () => {});
   const tentarDeNovo = jest.fn(async () => {});
-  const tela = await render(
+  await render(
     <NetworkContext.Provider value={{ isOnline: online, setOnline: () => {} }}>
-      <SyncContext.Provider value={{ estado: { ...ESTADO, ...estado }, sincronizarAgora, tentarDeNovo }}>
-        <PainelDeSync />
+      <SyncContext.Provider
+        value={{ estado: estado ? { ...ESTADO, ...estado } : null, sincronizarAgora, tentarDeNovo }}
+      >
+        <StatusDaNuvem />
       </SyncContext.Provider>
     </NetworkContext.Provider>,
   );
-  return { tela, sincronizarAgora, tentarDeNovo };
+  return { sincronizarAgora, tentarDeNovo };
 }
 
-describe('PainelDeSync', () => {
+describe('StatusDaNuvem (aviso discreto, sem sincronização manual)', () => {
   it.each([
-    [{}, true, 'Tudo sincronizado.'],
-    [{ pendentes: 3 }, true, '3 alterações aguardando envio.'],
-    [{ pendentes: 1 }, false, 'Sem conexão. 1 alteração aguardando envio.'],
-    [{ sincronizando: true }, true, 'Sincronizando...'],
-    [{ falhas: 2 }, true, '2 alterações recusadas pelo servidor.'],
-    [{ sessaoExpirada: true }, true, 'Sessão expirada. Saia e entre de novo para sincronizar.'],
+    [{}, true, 'Tudo sincronizado'],
+    [{ pendentes: 3 }, true, 'Sincronizando…'],
+    [{ sincronizando: true }, true, 'Sincronizando…'],
+    [{ pendentes: 2 }, false, 'Sem conexão · salvo no aparelho'],
+    [{ falhas: 2 }, true, 'Algo não foi enviado · toque para tentar de novo'],
+    [{ sessaoExpirada: true }, true, 'Entre de novo para sincronizar'],
   ])('%j online=%s → "%s"', async (estado, online, texto) => {
-    await painel(estado, online);
-    expect(await screen.findByTestId('painel-sync-texto')).toHaveTextContent(texto);
+    await nuvem(estado, online);
+    expect(screen.getByTestId('status-nuvem-texto')).toHaveTextContent(texto);
   });
 
-  it('sincronizar agora e tentar de novo chamam o motor', async () => {
-    const { sincronizarAgora, tentarDeNovo } = await painel({ falhas: 1 });
-    await fireEvent.press(await screen.findByTestId('botao-sincronizar'));
-    await fireEvent.press(screen.getByTestId('botao-tentar-de-novo'));
-    expect(sincronizarAgora).toHaveBeenCalled();
-    expect(tentarDeNovo).toHaveBeenCalled();
+  it('não existe botão de sincronizar agora', async () => {
+    await nuvem({ pendentes: 1 });
+    expect(screen.queryByTestId('botao-sincronizar')).toBeNull();
+    expect(screen.queryByText(/sincronizar agora/i)).toBeNull();
   });
 
-  it('offline: sem botão de reenviar e sincronizar desabilitado', async () => {
-    const { sincronizarAgora } = await painel({ falhas: 1 }, false);
-    expect(screen.queryByTestId('botao-tentar-de-novo')).toBeNull();
-    await fireEvent.press(await screen.findByTestId('botao-sincronizar'));
+  it('só o estado de erro é tocável, e tenta de novo', async () => {
+    const { tentarDeNovo } = await nuvem({ falhas: 1 });
+    await fireEvent.press(screen.getByTestId('status-nuvem'));
+    expect(tentarDeNovo).toHaveBeenCalledTimes(1);
+  });
+
+  it('tocar no estado normal não faz nada', async () => {
+    const { tentarDeNovo, sincronizarAgora } = await nuvem({});
+    await fireEvent.press(screen.getByTestId('status-nuvem'));
+    expect(tentarDeNovo).not.toHaveBeenCalled();
     expect(sincronizarAgora).not.toHaveBeenCalled();
   });
 
-  it('sem motor (bag fake) não aparece', async () => {
-    await render(<PainelDeSync />);
-    expect(screen.queryByTestId('painel-sync')).toBeNull();
+  it('sem motor (bag fake) e online: não mostra nada', async () => {
+    await nuvem(null, true);
+    expect(screen.queryByTestId('status-nuvem')).toBeNull();
+  });
+
+  it('sem motor (bag fake) e offline: mostra "Sem conexão"', async () => {
+    await nuvem(null, false);
+    expect(screen.getByTestId('status-nuvem-texto')).toHaveTextContent(/^Sem conexão/);
   });
 });
 
-describe('IndicadorDeSync', () => {
-  it('nada quando sincronizado; selo para pendente e para erro', async () => {
+describe('IndicadorDeSync (selo do card só no erro)', () => {
+  it('nada para sincronizado e pendente; "Não enviado" para erro', async () => {
     const { rerender } = await render(<IndicadorDeSync status="SINCRONIZADO" testID="s" />);
     expect(screen.queryByTestId('s')).toBeNull();
     await rerender(<IndicadorDeSync status="PENDENTE" testID="s" />);
-    expect(screen.getByTestId('s')).toHaveTextContent('Aguardando envio');
+    expect(screen.queryByTestId('s')).toBeNull();
     await rerender(<IndicadorDeSync status="ERRO" testID="s" />);
-    expect(screen.getByTestId('s')).toHaveTextContent('Erro ao enviar');
+    expect(screen.getByTestId('s')).toHaveTextContent('Não enviado');
   });
 });
 

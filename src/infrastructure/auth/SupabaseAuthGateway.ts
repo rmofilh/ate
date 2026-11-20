@@ -33,6 +33,14 @@ export interface ClienteDeAuth {
   }): Resposta<{ session: Session | null }>;
   getSession(): Resposta<{ session: Session | null }>;
   signOut(opcoes: { scope: 'local' }): Promise<{ error: AuthError | null }>;
+  onAuthStateChange?(
+    ouvinte: (evento: string, sessao: Session | null) => void,
+  ): { data: { subscription: { unsubscribe(): void } } };
+}
+
+/** Quem consegue avisar que o servidor encerrou a sessão com o app aberto. */
+export interface ObservadorDeSessao {
+  aoEncerrarSessao(ouvinte: () => void): () => void;
 }
 
 export interface LimitesDeTempo {
@@ -42,7 +50,7 @@ export interface LimitesDeTempo {
 }
 
 /** IAuthGateway real. A conta é criada no dashboard; o app só entra e sai. */
-export class SupabaseAuthGateway implements IAuthGateway {
+export class SupabaseAuthGateway implements IAuthGateway, ObservadorDeSessao {
   constructor(
     private readonly auth: ClienteDeAuth,
     private readonly armazenamento: ArmazenamentoDeSessao,
@@ -107,6 +115,17 @@ export class SupabaseAuthGateway implements IAuthGateway {
     } finally {
       await this.armazenamento.removeItem(this.chaveSessao);
     }
+  }
+
+  /**
+   * onAuthStateChange (aula 3): SIGNED_OUT chega quando o Supabase encerra a sessão, por exemplo
+   * com o refresh token revogado. Falha de rede ao renovar não gera SIGNED_OUT (offline segue logado).
+   */
+  aoEncerrarSessao(ouvinte: () => void): () => void {
+    const assinatura = this.auth.onAuthStateChange?.((evento) => {
+      if (evento === 'SIGNED_OUT') ouvinte();
+    });
+    return () => assinatura?.data.subscription.unsubscribe();
   }
 
   private async sessaoGuardada(): Promise<AuthSession | null> {

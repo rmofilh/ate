@@ -23,6 +23,7 @@ import type { IniciarProducaoUseCase } from '../../core/application/usecases/Ini
 import type { ListarEventosUseCase } from '../../core/application/usecases/ListarEventosUseCase';
 import type { LoginUseCase } from '../../core/application/usecases/LoginUseCase';
 import type { LogoutUseCase } from '../../core/application/usecases/LogoutUseCase';
+import type { SincronizarAreasOfflineUseCase } from '../../core/application/usecases/SincronizarAreasOfflineUseCase';
 import type { RemoverEventoUseCase } from '../../core/application/usecases/RemoverEventoUseCase';
 import type { RemoverObraUseCase } from '../../core/application/usecases/RemoverObraUseCase';
 import type { RemoverUnidadesUseCase } from '../../core/application/usecases/RemoverUnidadesUseCase';
@@ -97,10 +98,14 @@ export interface ProviderBag {
   useCases: CasosDeUso;
   readonly usuarioId: string;
   loadData(): Promise<DadosCarregados>;
+  /** Avisa quando o servidor encerra a sessão com o app aberto; devolve o cancelamento. */
+  aoEncerrarSessao?(ouvinte: () => void): () => void;
   /** Informa a sessão ativa (ou null no logout). Ausente na bag fake. */
   registrarSessao?(sessao: AuthSession | null): void;
   /** Motor de sincronização com o Supabase (ausente sem servidor remoto, como na bag fake). */
   motorDeSync?: MotorDeSync;
+  /** Áreas de mapa offline por evento (ausente sem o MapLibre, como no Expo Go). */
+  areasOffline?: SincronizarAreasOfflineUseCase;
   /** Estado da conexão do aparelho (ausente na bag fake: o app se considera online). */
   rede?: MonitorDeRede;
   /** Ponte para a UI abrir a câmera real (ausente na bag fake, que usa FakeCameraGateway). */

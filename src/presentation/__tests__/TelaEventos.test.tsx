@@ -7,14 +7,14 @@ import { seedFixtures } from '../../infrastructure/seed/fixtures';
 import { Coordenada } from '../../core/domain/value-objects/Coordenada';
 import { FakeGeocodingGateway } from '../../infrastructure/device/FakeGeocodingGateway';
 import { FakeLocationGateway } from '../../infrastructure/device/FakeLocationGateway';
-import { mensagemDaPagina } from '../../test-support/mocks/reactNativeWebview';
+import { toqueNoMapa } from '../../test-support/mocks/maplibre';
 import type { ProviderBag } from '../../main/factories/ProviderBag';
 import { Evento } from '../../core/domain/entities/Evento';
 import { gerarIdTeste } from '../../test-support/ids';
 import { DataContext, NetworkContext, ServicesContext } from '../hooks/AppProviders';
 
 const pinNoMapa = (latitude: number, longitude: number) =>
-  fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'pin', latitude, longitude }));
+  fireEvent(screen.getByTestId('mapa'), 'press', toqueNoMapa(latitude, longitude));
 const textoDoPin = () => screen.getByTestId('coordenada-do-pin');
 const abrirCoordenadas = () => fireEvent.press(screen.getByTestId('alternar-coordenadas-manuais'));
 
@@ -68,11 +68,10 @@ describe('TelaEventos: datas e mapa', () => {
 
     await fireEvent.press(screen.getByTestId('botao-ver-mapa'));
 
-    const html = screen.getByTestId('mapa').props.source.html;
-    expect(html).toContain('Feira Futura');
-    expect(html).not.toContain('Feira Antiga');
+    expect(screen.getByTestId(`anotacao-${futuro.id}`).props.title).toContain('Feira Futura');
+    expect(screen.queryByTestId(`anotacao-${passado.id}`)).toBeNull();
 
-    await fireEvent(screen.getByTestId('mapa'), 'message', mensagemDaPagina({ tipo: 'marcador', id: futuro.id }));
+    await fireEvent.press(screen.getByTestId(`anotacao-${futuro.id}`));
     expect(screen.getByTestId('evento-selecionado')).toHaveTextContent(/Endereço de Feira Futura/);
 
     await fireEvent.press(screen.getByTestId('botao-como-chegar'));
@@ -87,7 +86,7 @@ describe('TelaEventos: datas e mapa', () => {
 
     await fireEvent.press(screen.getByTestId(`ver-mapa-${passado.id}`));
 
-    expect(screen.getByTestId('mapa').props.source.html).toContain('Feira Antiga');
+    expect(screen.getByTestId(`anotacao-${passado.id}`).props.selected).toBe(true);
     expect(screen.getByTestId('evento-selecionado')).toHaveTextContent(/Feira Antiga/);
   });
 

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { act, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { Text } from 'react-native';
 
@@ -44,5 +44,34 @@ describe('restauração da sessão', () => {
     );
 
     await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent('deslogado'));
+  });
+});
+
+describe('sessão encerrada pelo servidor (onAuthStateChange)', () => {
+  it('volta para deslogado e cancela a escuta ao desmontar', async () => {
+    const providers = makeFakeProviders();
+    await providers.gateways.auth.login('artesao@email.com', '123456');
+    let encerrar!: () => void;
+    const parar = jest.fn();
+    const bag = {
+      ...providers,
+      aoEncerrarSessao: (ouvinte: () => void) => {
+        encerrar = ouvinte;
+        return parar;
+      },
+    };
+
+    const tela = await render(
+      <AppProviders providers={bag}>
+        <Sonda />
+      </AppProviders>,
+    );
+    await waitFor(() => expect(screen.getByTestId('estado')).toHaveTextContent(/^logado/));
+
+    await act(async () => encerrar());
+    expect(screen.getByTestId('estado')).toHaveTextContent('deslogado');
+
+    await tela.unmount();
+    expect(parar).toHaveBeenCalled();
   });
 });

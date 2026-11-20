@@ -3,6 +3,7 @@ import type { DrizzleAppDb } from '../../../infrastructure/database/sqlite/Drizz
 import { ExecutorDeTransacao } from '../../../infrastructure/database/sqlite/ExecutorDeTransacao';
 import {
   clientes,
+  eventos,
   filaSync,
   fotos,
   obras,
@@ -259,5 +260,54 @@ describe('sincronização de ponta a ponta (SQLite real + servidor em memória)'
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('evento criado offline fica SINCRONIZADO depois que a rede volta (regressão do aparelho)', async () => {
+    const servidor = new ServidorEmMemoria();
+    const { db, bag } = aparelho(servidor);
+    servidor.semRede = true;
+    const evento = await bag.useCases.cadastrarEvento.execute({
+      usuarioId: USUARIO,
+      nome: 'zoomer',
+      data: new Date('2026-11-25T12:00:00.000Z'),
+      endereco: 'Praça',
+      localizacao: undefined,
+      usarGps: true,
+    });
+    bag.motorDeSync!.parar();
+    await bag.motorDeSync!.sincronizarAgora();
+
+    servidor.semRede = false;
+    await bag.motorDeSync!.sincronizarAgora();
+
+    expect(servidor.linhas('eventos').map((l) => l.id)).toEqual([evento.id]);
+    const [local] = await db.select().from(eventos);
+    expect(local.statusSync).toBe('SINCRONIZADO');
+    const [carregado] = (await bag.loadData()).eventos;
+    expect(carregado.statusSync).toBe('SINCRONIZADO');
+  });
+
+  it('autocorreção: evento no servidor mas preso em PENDENTE no aparelho volta a SINCRONIZADO', async () => {
+    const servidor = new ServidorEmMemoria();
+    const { db, bag } = aparelho(servidor);
+    await bag.useCases.cadastrarEvento.execute({
+      usuarioId: USUARIO,
+      nome: 'zoomer',
+      data: new Date('2026-11-25T12:00:00.000Z'),
+      endereco: 'Praça',
+      usarGps: true,
+    });
+    bag.motorDeSync!.parar();
+    await bag.motorDeSync!.sincronizarAgora();
+    // O estado visto no aparelho: já no servidor, fila vazia, mas a linha ficou PENDENTE.
+    await db.update(eventos).set({ statusSync: 'PENDENTE' });
+    expect(await db.select().from(filaSync)).toEqual([]);
+
+    await bag.motorDeSync!.sincronizarAgora();
+
+    const [local] = await db.select().from(eventos);
+    expect(local.statusSync).toBe('SINCRONIZADO');
+    expect(await db.select().from(filaSync)).toEqual([]);
+    expect(servidor.linhas('eventos')).toHaveLength(1);
   });
 });

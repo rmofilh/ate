@@ -1,9 +1,10 @@
-import { and, eq, exists, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, eq, exists, isNotNull, isNull, ne, notExists, or, sql } from 'drizzle-orm';
 import { File, Paths } from 'expo-file-system';
 
 import type { IEstadoLocalSync } from '../../core/application/gateways/IEstadoLocalSync';
 import type { IIdGenerator } from '../../core/application/gateways/IIdGenerator';
 import {
+  ENTIDADE_POR_TABELA,
   type Cursor,
   type FotoParaBaixar,
   type FotoParaEnviar,
@@ -90,6 +91,35 @@ export class SQLiteEstadoLocalSync implements IEstadoLocalSync {
         const t = tabelaLocal(tabela);
         await this.db.update(t).set({ statusSync: 'PENDENTE' }).where(eq(t.statusSync, 'ERRO'));
       }
+    });
+  }
+
+  reenfileirarOrfas(): Promise<number> {
+    return this.executor.executar(async () => {
+      let total = 0;
+      for (const tabela of TABELAS_SYNC) {
+        const t = tabelaLocal(tabela);
+        const entidade = ENTIDADE_POR_TABELA[tabela];
+        const orfas = await this.db
+          .select({ id: t.id })
+          .from(t)
+          .where(
+            and(
+              eq(t.statusSync, 'PENDENTE'),
+              notExists(
+                this.db
+                  .select({ id: filaSync.id })
+                  .from(filaSync)
+                  .where(and(eq(filaSync.entidade, entidade), eq(filaSync.entidadeId, t.id))),
+              ),
+            ),
+          );
+        for (const orfa of orfas) {
+          await this.enfileirar('EDITAR', entidade, orfa.id, 'reenvio-autocorrecao');
+          total += 1;
+        }
+      }
+      return total;
     });
   }
 
@@ -258,13 +288,18 @@ export class SQLiteEstadoLocalSync implements IEstadoLocalSync {
     for (const pedido of afetados) await this.enfileirar('EDITAR', 'Pedido', pedido.id);
   }
 
-  private async enfileirar(tipo: TipoOperacao, entidade: string, entidadeId: string) {
+  private async enfileirar(
+    tipo: TipoOperacao,
+    entidade: string,
+    entidadeId: string,
+    motivo = 'balcao-duplicado',
+  ) {
     await this.db.insert(filaSync).values({
       id: this.ids.gerar(),
       tipoOperacao: tipo,
       entidade,
       entidadeId,
-      payload: JSON.stringify({ motivo: 'balcao-duplicado' }),
+      payload: JSON.stringify({ motivo }),
       status: 'PENDENTE',
       tentativas: 0,
       criadoEmLocal: this.relogio().toISOString(),

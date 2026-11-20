@@ -20,9 +20,11 @@ import { LogoutUseCase } from '../../core/application/usecases/LogoutUseCase';
 import { RemoverEventoUseCase } from '../../core/application/usecases/RemoverEventoUseCase';
 import { RemoverObraUseCase } from '../../core/application/usecases/RemoverObraUseCase';
 import { RemoverUnidadesUseCase } from '../../core/application/usecases/RemoverUnidadesUseCase';
+import { SincronizarAreasOfflineUseCase } from '../../core/application/usecases/SincronizarAreasOfflineUseCase';
 import { SincronizarUseCase } from '../../core/application/usecases/SincronizarUseCase';
 import { ResolverClienteBalcaoUseCase } from '../../core/application/usecases/ResolverClienteBalcaoUseCase';
 import { VendaDiretaUseCase } from '../../core/application/usecases/VendaDiretaUseCase';
+import type { ObservadorDeSessao } from '../../infrastructure/auth/SupabaseAuthGateway';
 import { DonoDosDadosLocais } from '../../infrastructure/database/sqlite/DonoDosDadosLocais';
 import type { DrizzleAppDb } from '../../infrastructure/database/sqlite/DrizzleDb';
 import {
@@ -36,6 +38,7 @@ import { SQLitePedidoRepository } from '../../infrastructure/database/sqlite/SQL
 import { ExpoCameraGateway } from '../../infrastructure/device/camera/ExpoCameraGateway';
 import { ExpoGeocodingGateway } from '../../infrastructure/device/location/ExpoGeocodingGateway';
 import { ExpoLocationGateway } from '../../infrastructure/device/location/ExpoLocationGateway';
+import { MapaOfflineMapLibre } from '../../infrastructure/device/mapa/MapaOfflineMapLibre';
 import { MonitorDeRedeExpo } from '../../infrastructure/device/rede/MonitorDeRedeExpo';
 import { UuidIdGenerator } from '../../infrastructure/device/UuidIdGenerator';
 import { ArmazenamentoDeFotos } from '../../infrastructure/fileSystem/ArmazenamentoDeFotos';
@@ -137,12 +140,17 @@ export function makeSqliteProviders(
     removerEvento: tx(new RemoverEventoUseCase(eventos, sync)),
   };
 
+  // Áreas de mapa offline dos eventos (só no app instalado; no Expo Go não há MapLibre).
+  const mapaOffline = MapaOfflineMapLibre.criar();
+  const areasOffline = mapaOffline ? new SincronizarAreasOfflineUseCase(mapaOffline) : undefined;
+
   const bag = {
     gateways: { auth, camera, location, geocodificador, sync },
     repositories: { clientes, pedidos, obras, eventos },
     useCases,
     ponteDaCamera: camera,
     motorDeSync,
+    areasOffline,
     rede: new MonitorDeRedeExpo(),
     async aoIniciar(): Promise<void> {
       await armazenamentoDeFotos.limparOrfas();
@@ -163,6 +171,13 @@ export function makeSqliteProviders(
     get usuarioId(): string {
       if (!sessao) throw new SessaoNaoDisponivelError();
       return sessao.userId;
+    },
+    /** Sessão encerrada pelo servidor com o app aberto (onAuthStateChange → SIGNED_OUT). */
+    aoEncerrarSessao(ouvinte: () => void): () => void {
+      const observador = authBruto as Partial<ObservadorDeSessao>;
+      return typeof observador.aoEncerrarSessao === 'function'
+        ? observador.aoEncerrarSessao(ouvinte)
+        : () => {};
     },
     registrarSessao(nova: AuthSession | null): void {
       sessao = nova;

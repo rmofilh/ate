@@ -29,6 +29,19 @@ export class ExpoLocationGateway implements ILocationGateway {
     return new Coordenada(posicao.coords.latitude, posicao.coords.longitude);
   }
 
+  async ultimaConhecida(): Promise<Coordenada | null> {
+    try {
+      // Só consulta a permissão (sem pedir): abrir o mapa nunca dispara o diálogo do sistema.
+      const permissao = await Location.getForegroundPermissionsAsync();
+      if (!permissao.granted) return null;
+      const posicao = await Location.getLastKnownPositionAsync();
+      if (!posicao) return null;
+      return new Coordenada(posicao.coords.latitude, posicao.coords.longitude);
+    } catch {
+      return null;
+    }
+  }
+
   private async lerPosicao(): Promise<Location.LocationObject> {
     try {
       return await comLimiteDeTempo(

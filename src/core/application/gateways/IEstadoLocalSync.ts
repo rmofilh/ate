@@ -15,6 +15,12 @@ export interface IEstadoLocalSync {
   marcarErro(tabela: TabelaSync, id: string): Promise<void>;
   /** Linhas ERRO voltam a PENDENTE (acompanha `reenviarFalhas` da fila). */
   reenviarErros(): Promise<void>;
+  /**
+   * Autocorreção: linha PENDENTE sem nenhuma entrada na fila nunca seria enviada (ex.: o envio deu
+   * certo, mas marcar SINCRONIZADO falhou no aparelho). Recoloca na fila; reenviar é idempotente.
+   * Devolve quantas linhas voltaram para a fila.
+   */
+  reenfileirarOrfas(): Promise<number>;
 
   cursor(tabela: TabelaSync): Promise<Cursor | null>;
   /**

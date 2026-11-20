@@ -224,7 +224,11 @@ function FormularioEditarEvento({
         busy={loading}
       />
       </View>
-      <SeletorDeLocal {...mapa.seletor} lerGps={lerGps} />
+      <SeletorDeLocal
+        {...mapa.seletor}
+        lerGps={lerGps}
+        lerUltimaPosicao={services ? () => services.gateways.location.ultimaConhecida() : undefined}
+      />
     </FormScreen>
   );
 }

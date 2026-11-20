@@ -9,6 +9,14 @@ const TABELA_POR_ENTIDADE: Record<string, TabelaSync> = {
   Evento: 'eventos',
 };
 
+/** Tabela sincronizada → nome da entidade gravado na fila. */
+export const ENTIDADE_POR_TABELA: Record<TabelaSync, string> = {
+  clientes: 'Cliente',
+  obras: 'Obra',
+  pedidos: 'Pedido',
+  eventos: 'Evento',
+};
+
 /** Nome da entidade gravado na fila (`Cliente`, `Pedido`...) → tabela sincronizada. */
 export function tabelaDaEntidade(entidade: string): TabelaSync | null {
   return TABELA_POR_ENTIDADE[entidade] ?? null;

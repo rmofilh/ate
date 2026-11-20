@@ -144,6 +144,26 @@ describe('adaptadores SQLite do sync', () => {
       expect(await db.select().from(syncMeta)).toHaveLength(1);
     });
 
+    it('reenfileirarOrfas: PENDENTE sem fila volta para a fila; com fila, ERRO e SINCRONIZADO não', async () => {
+      await cliente('orfa', 'PENDENTE');
+      await cliente('com-fila', 'PENDENTE');
+      await entrada('f1', { entidadeId: 'com-fila' });
+      await cliente('erro', 'ERRO');
+      await cliente('ok', 'SINCRONIZADO');
+
+      expect(await estado.reenfileirarOrfas()).toBe(1);
+
+      const fila = await db.select().from(filaSync);
+      expect(fila.map((e) => e.entidadeId).sort()).toEqual(['com-fila', 'orfa']);
+      expect(fila.find((e) => e.entidadeId === 'orfa')).toMatchObject({
+        tipoOperacao: 'EDITAR',
+        entidade: 'Cliente',
+        status: 'PENDENTE',
+      });
+      // Rodar de novo não duplica.
+      expect(await estado.reenfileirarOrfas()).toBe(0);
+    });
+
     it('marcarErro e reenviarErros', async () => {
       await cliente('c1');
       await estado.marcarErro('clientes', 'c1');

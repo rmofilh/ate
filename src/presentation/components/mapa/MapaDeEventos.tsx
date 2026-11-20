@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { spacing } from '@/constants/theme';
 import type { Evento } from '@/core/domain/entities/Evento';
 import { ActionButton } from '@/presentation/components/ActionButton';
-import { MapaLeaflet, type MarcadorNoMapa } from '@/presentation/components/mapa/MapaLeaflet';
+import { MapaNativo, type MarcadorNoMapa } from '@/presentation/components/mapa/MapaNativo';
 import { createThemedStyles } from '@/presentation/hooks/useDesignTheme';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import { formatCalendarDate } from '@/presentation/utils/date';
@@ -71,7 +71,7 @@ function ConteudoDoMapa({ eventos, focoId = null, onFechar }: Omit<MapaDeEventos
         <Text style={uiStyles.muted}>Toque em um pin para ver o evento.</Text>
       </View>
       {centro ? (
-        <MapaLeaflet
+        <MapaNativo
           centroInicial={centro}
           zoomInicial={ZOOM_DO_EVENTO}
           somenteLeitura

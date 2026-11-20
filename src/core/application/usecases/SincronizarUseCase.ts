@@ -117,6 +117,7 @@ export class SincronizarUseCase {
   private async enviarFila(resultado: ResultadoSync): Promise<boolean> {
     const { fila, estado, servidor } = this.deps;
     const agora = this.relogio();
+    await estado.reenfileirarOrfas();
     for (const grupo of organizarFila(await fila.elegiveis(agora))) {
       const ids = grupo.entradas.map((entrada) => entrada.id);
       const registro = await estado.lerParaEnvio(grupo.tabela, grupo.entidadeId);

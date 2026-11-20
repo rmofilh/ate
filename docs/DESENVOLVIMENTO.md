@@ -63,7 +63,7 @@ npx expo export --platform ios
 - `jest.setup.js` mocka `expo-crypto.getRandomBytes` para devolver bytes determinísticos (UUIDs v4) e
   troca o AES-GCM nativo pelo do Node; também registra os dublês de `expo-file-system`,
   `expo-image-manipulator`, `expo-camera`, `expo-location`, `expo-network`, `expo-secure-store`,
-  `expo-sqlite/kv-store` e `react-native-webview` (`src/test-support/mocks/`).
+  `expo-sqlite/kv-store` e `@maplibre/maplibre-react-native` (`src/test-support/mocks/`).
 - Repositórios e sync usam SQLite real em memória (`bancoDeTeste()`, better-sqlite3) com as mesmas
   migrations; o sync de ponta a ponta usa `ServidorEmMemoria` no lugar do Supabase.
 - `jest.config.js` inclui `uuid` no `transformIgnorePatterns` porque o `jest-expo` não transforma
@@ -76,7 +76,11 @@ npx expo export --platform ios
   mesma transação. Nada espera a rede.
 - Login real no Supabase Auth; sessão cifrada (chave no SecureStore, cifra no kv-store do
   expo-sqlite). Abre offline com a sessão guardada.
-- Câmera, GPS, busca de endereço e mapa reais. Fotos comprimidas em `fotos/` no aparelho.
+- Câmera, GPS e busca de endereço reais. Fotos comprimidas em `fotos/` no aparelho.
+- Mapa nativo MapLibre + OpenFreeMap, com uma área baixada por evento para uso offline. Exige o
+  app instalado (development build/APK): o pacote não existe no Expo Go, onde a tela do mapa mostra um
+  aviso. O MapLibre é carregado sob demanda (`infrastructure/device/mapa/mapLibre.ts`) porque o módulo
+  lança erro já na importação quando o nativo não existe.
 - Sincronização com o Supabase: fotos (bucket privado), fila (push) e mudanças do servidor (pull por
   cursor), disparada ao entrar, ao reconectar, ao voltar o app e após cada escrita. Detalhes em
   `docs/ate-fase4.md`.

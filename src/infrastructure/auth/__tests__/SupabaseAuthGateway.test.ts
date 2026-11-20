@@ -204,3 +204,32 @@ describe('SupabaseAuthGateway.logout', () => {
     expect(guardado.has(CHAVE)).toBe(false);
   });
 });
+
+describe('SupabaseAuthGateway.aoEncerrarSessao (onAuthStateChange)', () => {
+  it('avisa só no SIGNED_OUT e cancela a assinatura', () => {
+    const unsubscribe = jest.fn();
+    let emitir!: (evento: string) => void;
+    const auth = {
+      onAuthStateChange: jest.fn((ouvinte: (evento: string) => void) => {
+        emitir = ouvinte;
+        return { data: { subscription: { unsubscribe } } };
+      }),
+    };
+    const gateway = new SupabaseAuthGateway(auth as unknown as ClienteDeAuth, {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }, CHAVE);
+    const ouvinte = jest.fn();
+
+    const parar = gateway.aoEncerrarSessao(ouvinte);
+    emitir('TOKEN_REFRESHED');
+    emitir('SIGNED_IN');
+    expect(ouvinte).not.toHaveBeenCalled();
+    emitir('SIGNED_OUT');
+    expect(ouvinte).toHaveBeenCalledTimes(1);
+
+    parar();
+    expect(unsubscribe).toHaveBeenCalled();
+  });
+});
