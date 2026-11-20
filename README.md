@@ -40,7 +40,7 @@ npx expo start
 
 O mapa nativo (MapLibre) só roda no app instalado (development build ou APK); no Expo Go o resto do app funciona e a tela do mapa mostra um aviso.
 
-O backend é um projeto Supabase: o SQL (tabelas, RLS e bucket) está em [supabase/](supabase/) e o passo a passo em [supabase/LEIA-ME.md](supabase/LEIA-ME.md). A conta do artesão é criada no painel do Supabase; o app não tem cadastro. Sem `.env` o app mostra "Configuração incompleta".
+O backend é um projeto Supabase: o SQL (tabelas, RLS e bucket) está em [supabase/](supabase/) e o passo a passo em [supabase/README.md](supabase/README.md). A conta do artesão é criada no painel do Supabase; o app não tem cadastro. Sem `.env` o app mostra "Configuração incompleta".
 
 ## Testes
 

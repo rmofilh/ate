@@ -14,7 +14,7 @@ Base: plano didático (aulas de 03/11, 06/11 e 10/11), roteiro `docs/superpowers
 - Projeto `mogzqhuwdztyrbmmyxul`, região São Paulo, plano Free.
 - Uma conta (a do artesão), criada no painel com "Auto Confirm". O cadastro público está desligado (o app não tem tela de cadastro).
 - "Automatic RLS" ligado: toda tabela nova em `public` já nasce com RLS.
-- O SQL é versionado em `supabase/migrations/` e foi aplicado pelo **MCP oficial do Supabase** no Claude Code (`apply_migration`). O MCP fica restrito ao projeto pelo `project_ref`, só com os grupos `database`, `development`, `debugging`, `docs` e `storage`, e cada chamada pede aprovação. O passo a passo para refazer sem MCP está em `supabase/LEIA-ME.md`.
+- O SQL é versionado em `supabase/migrations/` e foi aplicado pelo **MCP oficial do Supabase** no Claude Code (`apply_migration`). O MCP fica restrito ao projeto pelo `project_ref`, só com os grupos `database`, `development`, `debugging`, `docs` e `storage`, e cada chamada pede aprovação. O passo a passo para refazer sem MCP está em `supabase/README.md`.
 
 | Migration | Conteúdo |
 |---|---|
