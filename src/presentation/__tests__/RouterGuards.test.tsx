@@ -11,6 +11,7 @@ import Index from '../../app/index';
 import AuthLayout from '../../app/(auth)/_layout';
 import Login from '../../app/(auth)/login';
 import Kanban from '../../app/(tabs)/kanban';
+import Clientes from '../../app/(tabs)/clientes';
 // O Drawer real depende de reanimated animado (sem suporte no Jest):
 // no teste de rotas ele é substituído por um stub que preserva
 // a estrutura de navegação + logout.
@@ -61,6 +62,7 @@ const routes = {
   '(auth)/_layout': AuthLayout, '(auth)/login': Login,
   '(tabs)/_layout': StubTabsLayout, '(tabs)/kanban': () => <Kanban />,
   '(tabs)/estoque': () => <Estoque />, '(tabs)/eventos': () => <Eventos />,
+  '(tabs)/clientes': () => <Clientes />,
   'pedido/novo': () => <NovoPedido />, 'cliente/novo': () => <NovoCliente />,
   'obra/nova': () => <NovaObra />, 'evento/novo': () => <NovoEvento />,
   'cliente/[id]': () => <TelaEditarCliente />,

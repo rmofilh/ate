@@ -79,6 +79,8 @@ export default function TabsLayout() {
   }}>
     <Drawer.Screen name="kanban" options={{ title: 'Pedidos', drawerLabel: 'Pedidos',
       drawerIcon: ({ color }) => <AppIcon name="board" color={color} /> }} />
+    <Drawer.Screen name="clientes" options={{ title: 'Clientes', drawerLabel: 'Clientes',
+      drawerIcon: ({ color }) => <AppIcon name="person" color={color} /> }} />
     <Drawer.Screen name="estoque" options={{ title: 'Estoque', drawerLabel: 'Estoque',
       drawerIcon: ({ color }) => <AppIcon name="stock" color={color} /> }} />
     <Drawer.Screen name="eventos" options={{ title: 'Eventos', drawerLabel: 'Eventos',
