@@ -5,14 +5,17 @@ import { Coordenada } from '@/core/domain/value-objects/Coordenada';
 import { ActionButton } from '@/presentation/components/ActionButton';
 import { DateField } from '@/presentation/components/DateField';
 import { FormScreen } from '@/presentation/components/FormScreen';
+import { CampoDeEndereco } from '@/presentation/components/mapa/CampoDeEndereco';
 import { CoordenadasManuais } from '@/presentation/components/mapa/CoordenadasManuais';
 import { SeletorDeLocal } from '@/presentation/components/mapa/SeletorDeLocal';
 import { StyledTextInput as TextInput } from '@/presentation/components/StyledTextInput';
+import { useEnderecoDoEvento } from '@/presentation/hooks/useEnderecoDoEvento';
 import { useLocalizarNoMapa } from '@/presentation/hooks/useLocalizarNoMapa';
 import { useUIStyles } from '@/presentation/styles/uiStyles';
 import {
   useAppNavigation,
   useData,
+  useNetwork,
   useServices,
 } from '@/presentation/hooks/AppProviders';
 import { parseCalendarDate } from '@/presentation/utils/date';
@@ -57,7 +60,17 @@ export default function TelaNovoEvento({
     buscarEndereco:
       onBuscarEndereco ??
       (services ? (texto: string) => services.gateways.geocodificador.buscar(texto) : undefined),
-    aoEscolher: aplicarPonto,
+    aoEscolher: (coordenada: Coordenada) => {
+      aplicarPonto(coordenada);
+      enderecoDoEvento.aoMarcarNoMapa(coordenada);
+    },
+  });
+  const { isOnline } = useNetwork();
+  const enderecoDoEvento = useEnderecoDoEvento({
+    endereco,
+    setEndereco,
+    enderecos: services?.gateways.geocodificador,
+    online: isOnline,
   });
 
   function aplicarPonto(coordenada: Coordenada) {
@@ -155,11 +168,15 @@ export default function TelaNovoEvento({
       </View>
       <View style={uiStyles.field}>
       <Text style={uiStyles.label}>Endereço</Text>
-      <TextInput
-        accessibilityLabel="Endereço"
-        testID="campo-endereco-evento"
-        value={endereco}
-        onChangeText={setEndereco}
+      <CampoDeEndereco
+        valor={endereco}
+        onDigitar={enderecoDoEvento.digitar}
+        sugestoes={enderecoDoEvento.sugestoes}
+        onEscolher={(sugestao) => aplicarPonto(enderecoDoEvento.escolher(sugestao))}
+        enderecoDoPonto={enderecoDoEvento.enderecoDoPonto}
+        onUsarEnderecoDoPonto={enderecoDoEvento.usarEnderecoDoPonto}
+        online={isOnline}
+        editavel={!loading}
       />
       </View>
       <ActionButton

@@ -2,11 +2,17 @@ import {
   LocalizacaoIndisponivelError,
   type MotivoLocalizacaoIndisponivel,
 } from '../../core/application/errors/LocalizacaoIndisponivelError';
-import type { IGeocodingGateway } from '../../core/application/gateways/IGeocodingGateway';
+import type {
+  IGeocodingGateway,
+  SugestaoDeEndereco,
+} from '../../core/application/gateways/IGeocodingGateway';
 import { Coordenada } from '../../core/domain/value-objects/Coordenada';
 
 export class FakeGeocodingGateway implements IGeocodingGateway {
   readonly buscas: string[] = [];
+  readonly pedidosDeSugestao: string[] = [];
+  sugestoes: SugestaoDeEndereco[] = [];
+  enderecoDoPonto: string | null = null;
 
   constructor(
     private readonly resultado: Coordenada | null = new Coordenada(-23.5614, -46.6558),
@@ -17,5 +23,14 @@ export class FakeGeocodingGateway implements IGeocodingGateway {
     this.buscas.push(endereco);
     if (this.falha) throw new LocalizacaoIndisponivelError(this.falha);
     return this.resultado;
+  }
+
+  async sugerir(texto: string): Promise<SugestaoDeEndereco[]> {
+    this.pedidosDeSugestao.push(texto);
+    return this.sugestoes;
+  }
+
+  async enderecoDe(_coordenada: Coordenada): Promise<string | null> {
+    return this.enderecoDoPonto;
   }
 }

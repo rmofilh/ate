@@ -2,20 +2,37 @@ import * as Location from 'expo-location';
 import { Platform } from 'react-native';
 
 import { LocalizacaoIndisponivelError } from '../../../core/application/errors/LocalizacaoIndisponivelError';
-import type { IGeocodingGateway } from '../../../core/application/gateways/IGeocodingGateway';
+import type {
+  IGeocodingGateway,
+  SugestaoDeEndereco,
+} from '../../../core/application/gateways/IGeocodingGateway';
 import { Coordenada } from '../../../core/domain/value-objects/Coordenada';
-import { TEMPO_LIMITE_GPS_MS } from './ExpoLocationGateway';
+import { ExpoLocationGateway, TEMPO_LIMITE_GPS_MS } from './ExpoLocationGateway';
+import { PhotonEnderecos } from './PhotonEnderecos';
 import { comLimiteDeTempo } from '../../shared/limiteDeTempo';
 
 /**
- * IGeocodingGateway com o geocoder nativo do aparelho (expo-location): grátis, sem chave,
- * precisa de internet. No Android o geocoder exige a permissão de localização.
+ * IGeocodingGateway: `buscar` usa o geocoder nativo do aparelho (expo-location; grátis, sem
+ * chave, precisa de internet; no Android exige a permissão de localização). Sugestões ao digitar
+ * e endereço a partir do pin vêm do Photon (OpenStreetMap), que não pede permissão.
  */
 export class ExpoGeocodingGateway implements IGeocodingGateway {
   constructor(
     private readonly plataforma: string = Platform.OS,
     private readonly tempoLimiteMs = TEMPO_LIMITE_GPS_MS,
+    private readonly enderecos: Pick<PhotonEnderecos, 'sugerir' | 'enderecoDe'> = new PhotonEnderecos(
+      undefined,
+      () => new ExpoLocationGateway().ultimaConhecida(),
+    ),
   ) {}
+
+  sugerir(texto: string): Promise<SugestaoDeEndereco[]> {
+    return this.enderecos.sugerir(texto);
+  }
+
+  enderecoDe(coordenada: Coordenada): Promise<string | null> {
+    return this.enderecos.enderecoDe(coordenada);
+  }
 
   async buscar(endereco: string): Promise<Coordenada | null> {
     const texto = endereco.trim();
