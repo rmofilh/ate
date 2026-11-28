@@ -135,7 +135,7 @@ describe('Obra use cases', () => {
     expect(await obras.findById(obra.id)).toBeNull();
   });
 
-  it('RF25 exige confirmado + duplaConfirmacao', async () => {
+  it('RF25 exige confirmação explícita (uma só, com a quantidade)', async () => {
     const obras = new InMemoryObraRepository();
     const sync = new FakeSyncGateway();
     const cadastrar = new CadastrarObraUseCase(obras, sync, idsTeste);
@@ -148,17 +148,9 @@ describe('Obra use cases', () => {
     const useCase = new RemoverUnidadesUseCase(obras, sync);
 
     await expect(
-      useCase.execute({ obraId: obra.id, qtd: 1, confirmado: false, duplaConfirmacao: true }),
+      useCase.execute({ obraId: obra.id, qtd: 1, confirmado: false }),
     ).rejects.toThrow(/confirma/i);
-    await expect(
-      useCase.execute({ obraId: obra.id, qtd: 1, confirmado: true, duplaConfirmacao: false }),
-    ).rejects.toThrow(/dupla/i);
-    const atual = await useCase.execute({
-      obraId: obra.id,
-      qtd: 2,
-      confirmado: true,
-      duplaConfirmacao: true,
-    });
+    const atual = await useCase.execute({ obraId: obra.id, qtd: 2, confirmado: true });
 
     expect(atual.quantidade).toBe(3);
   });

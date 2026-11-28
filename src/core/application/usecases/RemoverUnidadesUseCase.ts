@@ -11,13 +11,10 @@ export class RemoverUnidadesUseCase {
   async execute(args: {
     obraId: string;
     qtd: number;
+    /** RF25 (revisado em 28/11): uma confirmação explícita, com a quantidade à vista. */
     confirmado: boolean;
-    duplaConfirmacao: boolean;
   }): Promise<Obra> {
     if (!args.confirmado) throw new Error('Remocao nao confirmada');
-    if (!args.duplaConfirmacao) {
-      throw new Error('Dupla confirmacao obrigatoria para baixa manual');
-    }
 
     const obra = await this.obras.findById(args.obraId);
     if (!obra) throw new Error('Obra nao encontrada');

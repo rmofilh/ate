@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -10,27 +10,22 @@ import { ActionButton } from './ActionButton';
 export function ConfirmDialog({
   titulo,
   onConfirm,
-  onFirstConfirm,
   onCancel,
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
-  requireDouble = false,
   loading = false,
   appearance,
   style,
 }: {
   titulo: string;
   onConfirm(): void;
-  onFirstConfirm?(): boolean;
   onCancel(): void;
   confirmLabel?: string;
   cancelLabel?: string;
-  requireDouble?: boolean;
   loading?: boolean;
   appearance?: 'panel';
   style?: StyleProp<ViewStyle>;
 }) {
-  const [confirmedOnce, setConfirmedOnce] = useState(false);
   const styles = useStyles();
 
   return (
@@ -40,9 +35,6 @@ export function ConfirmDialog({
       accessibilityRole="alert"
       style={[appearance === 'panel' && styles.panel, style]}
     >
-      {requireDouble ? <Text accessibilityLiveRegion="polite" style={styles.step}>
-        Etapa {confirmedOnce ? '2' : '1'} de 2
-      </Text> : null}
       <Text style={styles.title}>{titulo}</Text>
       <ActionButton
         label="dialog-cancel"
@@ -51,32 +43,13 @@ export function ConfirmDialog({
         disabled={loading}
         appearance={appearance === 'panel' ? 'secondary' : undefined}
       />
-      {!requireDouble || !confirmedOnce ? (
-        <ActionButton
-          label="dialog-confirm-btn"
-          title={confirmLabel}
-          onPress={() => {
-            if (requireDouble) {
-              if (onFirstConfirm && !onFirstConfirm()) return;
-              setConfirmedOnce(true);
-            }
-            else onConfirm();
-          }}
-          disabled={loading}
-          appearance={appearance === 'panel' ? 'danger' : undefined}
-        />
-      ) : (
-        <>
-          <Text style={appearance === 'panel' && styles.body}>Confirme novamente para fazer a baixa definitiva.</Text>
-          <ActionButton
-            label="dialog-confirm-dupla"
-            title={loading ? 'Salvando...' : 'Confirmar de novo (baixa definitiva)'}
-            onPress={onConfirm}
-            disabled={loading}
-            appearance={appearance === 'panel' ? 'danger' : undefined}
-          />
-        </>
-      )}
+      <ActionButton
+        label="dialog-confirm-btn"
+        title={loading ? 'Salvando...' : confirmLabel}
+        onPress={onConfirm}
+        disabled={loading}
+        appearance={appearance === 'panel' ? 'danger' : undefined}
+      />
     </View>
   );
 }
@@ -97,5 +70,4 @@ const useStyles = createThemedStyles((colors) => ({
     ...textStyles.body,
     color: colors.text,
   },
-  step: { ...textStyles.label, color: colors.error },
 }));

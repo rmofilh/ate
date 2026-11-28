@@ -27,6 +27,12 @@ interface TelaEstoqueProps {
   onRemoverObra?(obraId: string): Promise<void>;
 }
 
+/** Uma confirmação só, com a quantidade no botão: evita o toque acidental sem burocracia (RF25). */
+function rotuloDaBaixa(quantidade: number | null): string {
+  if (!quantidade) return 'Baixar';
+  return `Baixar ${quantidade} ${quantidade === 1 ? 'unidade' : 'unidades'}`;
+}
+
 function quantidadeValida(texto: string): number | null {
   const quantidade = Number(texto);
   return Number.isInteger(quantidade) && quantidade > 0 ? quantidade : null;
@@ -55,7 +61,6 @@ export default function TelaEstoque({
   const [vendaLoading, setVendaLoading] = useState(false);
   const [alvoUnidades, setAlvoUnidades] = useState<string | null>(null);
   const [qtdRemover, setQtdRemover] = useState('1');
-  const [qtdRemoverConfirmada, setQtdRemoverConfirmada] = useState<number | null>(null);
   const [alvoObra, setAlvoObra] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -125,7 +130,7 @@ export default function TelaEstoque({
     if (!alvoUnidades) return;
 
     const id = alvoUnidades;
-    const quantidade = qtdRemoverConfirmada;
+    const quantidade = quantidadeValida(qtdRemover);
     const obra = obras.find((item) => item.id === id);
     if (!quantidade || !obra || quantidade > obra.quantidade) {
       setErro('Informe uma quantidade disponível maior que zero');
@@ -142,31 +147,14 @@ export default function TelaEstoque({
             obraId: id,
             qtd: quantidade,
             confirmado: true,
-            duplaConfirmacao: true,
           });
         }
         await reload();
       });
       setAlvoUnidades(null);
-      setQtdRemoverConfirmada(null);
     } catch (error) {
       setErro(error instanceof Error ? error.message : 'Não foi possível remover as unidades');
     }
-  }
-
-  function prepararRemocaoUnidades(): boolean {
-    if (!alvoUnidades) return false;
-
-    const quantidade = quantidadeValida(qtdRemover);
-    const obra = obras.find((item) => item.id === alvoUnidades);
-    if (!quantidade || !obra || quantidade > obra.quantidade) {
-      setErro('Informe uma quantidade disponível maior que zero');
-      return false;
-    }
-
-    setErro(null);
-    setQtdRemoverConfirmada(quantidade);
-    return true;
   }
 
   async function confirmarRemocaoObra() {
@@ -219,7 +207,6 @@ export default function TelaEstoque({
           onRemoverUnidades={() => {
             setErro(null);
             setQtdRemover('1');
-            setQtdRemoverConfirmada(null);
             setAlvoUnidades(obra.id);
           }}
           onRemoverObra={() => {
@@ -233,7 +220,6 @@ export default function TelaEstoque({
       <ConfirmationLayer busy={vendaLoading || (alvoUnidades !== null && loadingObraId === alvoUnidades)} onDismiss={() => {
         setAlvoVenda(null);
         setAlvoUnidades(null);
-        setQtdRemoverConfirmada(null);
         setAlvoObra(null);
         setErro(null);
       }}>
@@ -271,30 +257,21 @@ export default function TelaEstoque({
       ) : null}
       {alvoUnidades ? (
         <View style={styles.panel}>
-          <Text style={uiStyles.label}>Quantidade a remover</Text>
+          <Text style={uiStyles.label}>Quantidade a baixar</Text>
           <TextInput
-            accessibilityLabel="Quantidade a remover"
+            accessibilityLabel="Quantidade a baixar"
             testID="campo-qtd-remover"
             value={qtdRemover}
-            onChangeText={(value) => {
-              if (qtdRemoverConfirmada === null) setQtdRemover(value);
-            }}
+            onChangeText={setQtdRemover}
             keyboardType="number-pad"
-            editable={
-              loadingObraId !== alvoUnidades && qtdRemoverConfirmada === null
-            }
+            editable={loadingObraId !== alvoUnidades}
           />
           <ConfirmDialog
             key={alvoUnidades}
-            titulo="Remover unidades? A baixa será definitiva no estoque."
-            confirmLabel="Continuar para segunda confirmação"
-            requireDouble
+            titulo="Baixar unidades do estoque?"
+            confirmLabel={rotuloDaBaixa(quantidadeValida(qtdRemover))}
             loading={loadingObraId === alvoUnidades}
-            onCancel={() => {
-              setAlvoUnidades(null);
-              setQtdRemoverConfirmada(null);
-            }}
-            onFirstConfirm={prepararRemocaoUnidades}
+            onCancel={() => setAlvoUnidades(null)}
             onConfirm={() => void confirmarRemocaoUnidades()}
             appearance="panel"
             style={styles.panelContent}

@@ -87,17 +87,16 @@ describe('TelaEstoque', () => {
 
     await fireEvent.press(screen.getByTestId(`remover-unidades-${serie.id}`));
     expect(screen.getByTestId('dialog-confirm')).toBeTruthy();
+    expect(screen.getByTestId('dialog-confirm-btn')).toHaveTextContent('Baixar 1 unidade');
     await fireEvent.changeText(screen.getByTestId('campo-qtd-remover'), '2');
+    expect(screen.getByTestId('dialog-confirm-btn')).toHaveTextContent('Baixar 2 unidades');
+    expect(onRemoverUnidades).not.toHaveBeenCalled();
+
+    // Uma confirmação só (RF25 revisado): o botão já mostra a quantidade.
     await fireEvent.press(screen.getByTestId('dialog-confirm-btn'));
 
-    expect(onRemoverUnidades).not.toHaveBeenCalled();
-    expect(screen.getByTestId('dialog-confirm-dupla')).toBeTruthy();
-
-    await fireEvent.changeText(screen.getByTestId('campo-qtd-remover'), '3');
-
-    await fireEvent.press(screen.getByTestId('dialog-confirm-dupla'));
-
     await waitFor(() => expect(onRemoverUnidades).toHaveBeenCalledWith(serie.id, 2));
+    expect(screen.queryByTestId('dialog-confirm-dupla')).toBeNull();
   });
 
   it('remoção bloqueada (RF22) exibe o erro sem travar', async () => {
@@ -201,12 +200,12 @@ describe('TelaEstoque', () => {
   });
 });
 
-it('somente a segunda confirmação baixa estoque uma vez, inclusive offline', async () => {
+it('uma confirmação baixa o estoque uma vez, inclusive offline', async () => {
   const providers = makeFakeProviders();
   const serie = providers.obras.find((obra) => obra.tipo === 'SERIE')!;
   const original = serie.quantidade;
   const onRemoverUnidades = jest.fn(async (obraId: string, qtd: number) => {
-    await providers.useCases.removerUnidades.execute({ obraId, qtd, confirmado: true, duplaConfirmacao: true });
+    await providers.useCases.removerUnidades.execute({ obraId, qtd, confirmado: true });
   });
   await render(
     <NetworkContext.Provider value={{ isOnline: false, setOnline: () => {} }}>
@@ -216,10 +215,9 @@ it('somente a segunda confirmação baixa estoque uma vez, inclusive offline', a
     </NetworkContext.Provider>,
   );
   await fireEvent.press(screen.getByTestId(`remover-unidades-${serie.id}`));
-  await fireEvent.press(screen.getByTestId('dialog-confirm-btn'));
   expect(onRemoverUnidades).not.toHaveBeenCalled();
   expect((await providers.repositories.obras.findById(serie.id))?.quantidade).toBe(original);
-  await fireEvent.press(screen.getByTestId('dialog-confirm-dupla'));
+  await fireEvent.press(screen.getByTestId('dialog-confirm-btn'));
   expect(onRemoverUnidades).toHaveBeenCalledTimes(1);
   expect((await providers.repositories.obras.findById(serie.id))?.quantidade).toBe(original - 1);
   expect(screen.getByTestId('banner-offline')).toBeTruthy();
