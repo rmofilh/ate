@@ -331,5 +331,9 @@ Depois da apresentação final (bem recebida, com o APK funcionando), o uso do a
   - `npm run build:apk` gera o APK (`preview`);
   - `npm run update:apk -- --message "..."` publica uma atualização só de código.
 - `.gitignore`: passou a ignorar `.claude/settings.local.json` (configuração pessoal).
+- **Lição do primeiro build (falhou):** no `.easignore`, um nome sem `/` no início vale para **qualquer pasta com esse nome**. `supabase` excluiu também `src/infrastructure/supabase/` (código do app), e o build quebrou no empacotamento do JavaScript ("Unable to resolve module …/supabase/cliente"). As exclusões agora são ancoradas na raiz (`/supabase`, `/docs`…). Antes de cada build, a conferência é feita assim:
+  - montar o pacote com `eas build:inspect --stage archive`;
+  - comparar a lista de arquivos de `src`, `assets` e `drizzle` com a do Git;
+  - rodar `expo export --platform android` dentro do pacote.
 
 Baseline: 91 suítes e 650 testes passando, `typecheck` limpo e `lint` com 0 erros (11 avisos herdados).

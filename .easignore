@@ -4,7 +4,7 @@
 node_modules/
 
 # Expo
-.expo
+/.expo
 dist/
 web-build/
 expo-env.d.ts
@@ -57,23 +57,23 @@ __pycache__/
 # ---------------------------------------------------------------------------
 
 # documentação, apresentações e capturas de tela
-docs
-README.md
-AGENTS.md
+/docs
+/README.md
+/AGENTS.md
 
 # backend (SQL aplicado no Supabase, não faz parte do app)
-supabase
+/supabase
 
 # ferramentas de desenvolvimento e assistentes
-.claude
-.opencode
-.vscode
-skills-lock.json
-drizzle.config.ts
-eslint.config.js
+/.claude
+/.opencode
+/.vscode
+/skills-lock.json
+/drizzle.config.ts
+/eslint.config.js
 
 # testes (rodam só no computador)
 **/__tests__/
-src/test-support/
-jest.config.js
-jest.setup.js
+/src/test-support/
+/jest.config.js
+/jest.setup.js
