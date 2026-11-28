@@ -47,3 +47,6 @@ __pycache__/
 # generated native folders
 /ios
 /android
+
+# configuração pessoal do Claude Code (não vai para o repositório)
+.claude/settings.local.json

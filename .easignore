@@ -1,0 +1,79 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# test coverage
+coverage/
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# python
+__pycache__/
+*.pyc
+
+# generated native folders
+/ios
+/android
+
+# ---------------------------------------------------------------------------
+# Só para o EAS Build (o .easignore substitui o .gitignore no envio ao Expo).
+# O build precisa apenas do código do app (src/), assets/, drizzle/ (migrations
+# do SQLite embutidas no app) e das configurações. O resto fica no GitHub, mas
+# não vai para o servidor de build. Nada disto entra no APK de qualquer forma:
+# o APK só leva o código compilado e as imagens que o app usa.
+# ---------------------------------------------------------------------------
+
+# documentação, apresentações e capturas de tela
+docs
+README.md
+AGENTS.md
+
+# backend (SQL aplicado no Supabase, não faz parte do app)
+supabase
+
+# ferramentas de desenvolvimento e assistentes
+.claude
+.opencode
+.vscode
+skills-lock.json
+drizzle.config.ts
+eslint.config.js
+
+# testes (rodam só no computador)
+**/__tests__/
+src/test-support/
+jest.config.js
+jest.setup.js

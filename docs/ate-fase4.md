@@ -188,26 +188,26 @@ Complementa o Apêndice A.3 de `docs/ate-fase2.md` com as suítes reais (todas e
 | RF03 Kanban | UC03 | `TelaKanban`, `KanbanPresentation`, `DeliveryOrder` |
 | RF04 Mover card | UC04, UC05 | `Pedido`, `PedidoClose`, `TelaKanban` |
 | RF05 Foto obrigatória | UC05, UC06 | `Pedido`, `PedidoClose`, `CameraModal`, `CameraHost`, `ExpoCameraGateway`, `ArmazenamentoDeFotos`, `MigrationsSupabase` (`CHECK` remoto), `SincronizacaoPontaAPonta` |
-| RF06 Cadastrar cliente | UC09 | `Cliente`, `ClienteUseCases`, `SQLiteClienteRepository`, `ClientSelection` |
+| RF06 Cadastrar cliente | UC09 | `Cliente`, `ClienteUseCases`, `SQLiteClienteRepository`, `ClientSelection`, `TelaClientes` |
 | RF07 Registrar pedido | UC07, UC08 | `PedidoWrite`, `TelaNovoPedido`, `ClientSelection` |
 | RF08 Consultar estoque | UC11 | `ObraUseCases`, `TelaEstoque`, `StockSections` |
 | RF09 Cadastrar obra | UC12 | `Obra`, `ObraUseCases`, `FotoCatalogo` |
 | RF10 Baixa de estoque | UC10 | `Obra`, `PedidoWrite`, `PedidoClose`, `makeSqliteProviders` (rollback) |
 | RF11 Vincular obra | UC10 | `WorkSelection`, `PedidoWrite` |
-| RF12 Cadastrar evento | UC13, UC14 | `Evento`, `Coordenada`, `EventoUseCases`, `ExpoLocationGateway` (inclui `ultimaConhecida`), `ExpoGeocodingGateway`, `SeletorDeLocal`, `GeolocalizacaoPersistencia` |
+| RF12 Cadastrar evento | UC13, UC14 | `Evento`, `Coordenada`, `EventoUseCases`, `ExpoLocationGateway` (inclui `ultimaConhecida`), `ExpoGeocodingGateway`, `SeletorDeLocal`, `GeolocalizacaoPersistencia`, `PhotonEnderecos`, `EnderecoDoEvento` |
 | RF13 Mapa de eventos | UC15 | `MapaNativo`, `TelaEventos`, `MapaOfflineMapLibre`, `AreasOffline` (regra e caso de uso), `geometria` |
 | RF14 Operar offline | UC07, UC09, UC11, UC12 | repositórios `SQLite*`, `ExecutorDeTransacao`, `OutboxSyncGateway`, `makeSqliteProviders`, `SincronizacaoPontaAPonta` (modo avião) |
 | RF15 Fila e sync | UC16 | `SincronizarUseCase`, `SyncRegras`, `SQLiteSync`, `SupabaseSync`, `SincronizacaoPontaAPonta` |
 | RF16 Upload de imagens | UC17 | `SincronizarUseCase` (fotos), `SupabaseSync` (Storage), `SQLiteSync`, `SincronizacaoPontaAPonta`, `ArmazenamentoDeFotos` (compressão) |
 | RF17 Banner de conectividade | UC18 | `Shell` (`OfflineBanner`), `Sincronizacao` (`StatusDaNuvem`, `IndicadorDeSync`, `NetworkProvider`) |
-| RF18 Editar cliente | UC19 | `ClienteUseCases`, `TelaEditarCliente` |
+| RF18 Editar cliente | UC19 | `ClienteUseCases`, `TelaEditarCliente`, `TelaClientes` |
 | RF19 Editar pedido | UC20 | `PedidoWrite`, `TelaEditarPedido`, `RoteamentoEdicao` |
 | RF20 Cancelar pedido | UC21 | `PedidoClose`, `TelaKanban` |
 | RF21 Adicionar unidades | UC22 | `Obra`, `ObraUseCases`, `SQLiteObraRepository` |
 | RF22 Remover obra | UC23 | `ObraUseCases`, `TelaEstoque` |
-| RF23 Editar evento | UC24 | `EventoUseCases`, `TelaEditarEvento`, `GeolocalizacaoPersistencia` |
+| RF23 Editar evento | UC24 | `EventoUseCases`, `TelaEditarEvento`, `GeolocalizacaoPersistencia`, `TelaEventos` (realizado sem Editar) |
 | RF24 Remover evento | UC25 | `EventoUseCases`, `TelaEventos` |
-| RF25 Remover unidades | UC26 | `Obra`, `ObraUseCases`, `TelaEstoque` |
+| RF25 Remover unidades | UC26 | `Obra`, `ObraUseCases`, `TelaEstoque` (uma confirmação, revisado em 28/11) |
 | RF26 Venda direta | UC27 | `VendaDireta`, `TelaEstoque`, `SincronizacaoPontaAPonta` (balcão) |
 
 RNFs com teste automatizado:
@@ -295,4 +295,41 @@ Baseline: 88 suítes e 629 testes passando; `typecheck` limpo; `lint` com 0 erro
 
 - Repetir o smoke test completo no APK final instalado: login, pedidos com foto, estoque, eventos com mapa online e em modo avião, sincronização.
 - Na véspera da apresentação, abrir o app para o Supabase não pausar e conferir o login.
-- Ajustes só de código depois do APK: `eas update --channel preview --environment preview`. Ajustes nativos: novo `eas build --profile preview`.
+- Ajustes só de código depois do APK: `npm run update:apk -- --message "..."`. Ajustes nativos: `npm run build:apk`.
+
+## 8. Ajustes finais pós-apresentação (28/11/2026)
+
+Depois da apresentação final (bem recebida, com o APK funcionando), o uso do app trouxe 5 pontos. Cada um foi avaliado contra o que estava documentado antes de mudar.
+
+| # | Ponto | O que estava documentado | Decisão |
+|---|---|---|---|
+| 1 | "Editar" em eventos já realizados | RF23/UC24 não restringia por data | Evento realizado é histórico: sem "Editar", com "Ver no mapa" e "Remover". Um erro se corrige removendo e recriando com a data passada (o app aceita). Só a UI muda (`EventoCard`) |
+| 2 | Endereço pouco aproveitado: não dava para saber que o texto posicionava o mapa, e o pin não trazia endereço | `IGeocodingGateway.buscar` (geocoder do `expo-location`) e o botão "Localizar no mapa" | Sugestões ao digitar (autocomplete) e endereço a partir do pin (geocoding reverso), mais uma dica discreta no campo. Detalhes abaixo |
+| 3 | Baixa de unidades com 2 confirmações e um botão "Continuar para segunda confirmação" | RF25 pedia "dupla confirmação explícita", implementada no caso de uso (`duplaConfirmacao`) | **RF25 revisado:** uma confirmação explícita, com a quantidade no botão ("Baixar 2 unidades"). A intenção era evitar o toque acidental, não criar burocracia. O "+1" segue sem confirmação, porque é reversível pela própria baixa |
+| 4 | Faltava uma tela de clientes | Nenhum UC listava clientes: o cliente só aparecia dentro do pedido (UC08/09/19) | Tela **Clientes** no menu: lista em ordem alfabética (sem o Cliente Avulso, que é interno), pedidos em aberto de cada um, tocar para editar e botão "Novo". Reaproveita as telas `cliente/novo` e `cliente/[id]` |
+| 5 | Pastas `docs`, `.claude`, `.opencode`, `.vscode` "indo junto" | — | Elas **nunca estiveram dentro do APK** (ele só leva o código compilado e as imagens), mas iam no **pacote enviado ao servidor de build**. Agora o build usa `.easignore` + `EAS_NO_VCS=1` |
+
+### Endereço: sugestões e caminho inverso (ponto 2)
+
+- A porta `IGeocodingGateway` ganhou `sugerir(texto)` e `enderecoDe(coordenada)`, que nunca lançam: sem rede, devolvem nada.
+- O adaptador `PhotonEnderecos` usa o **Photon** (komoot), uma busca sobre o OpenStreetMap, sem chave e sem cadastro. É coerente com o mapa MapLibre + OpenFreeMap e com a decisão de não usar Google (é o equivalente aberto do Places Autocomplete da aula 2).
+  - As sugestões são puxadas para perto da última posição conhecida, sem pedir permissão, e ficam só no Brasil.
+  - O rótulo segue o formato "Rua, nº – Bairro, Cidade - UF".
+  - O limite é de 5 s, e o User-Agent identifica o app.
+- `useEnderecoDoEvento` + `CampoDeEndereco`:
+  - debounce de 400 ms, a partir de 3 letras, só com internet;
+  - escolher uma sugestão preenche o endereço **e** marca o local;
+  - ao confirmar o pin no mapa, o endereço do ponto preenche o campo se ele estiver vazio; se o usuário já digitou algo, vira a oferta "Endereço do ponto: … · Usar este", e o texto nunca é trocado sem ele pedir.
+- O "Localizar no mapa" (geocoder nativo) e as coordenadas manuais continuam valendo.
+
+### Build limpo (ponto 5)
+
+- O `.easignore` repete o `.gitignore` e acrescenta `docs`, `supabase`, `.claude`, `.opencode`, `.vscode`, `README.md`, `AGENTS.md`, `skills-lock.json`, os testes (`__tests__`, `src/test-support`, configs do Jest) e as configs de ferramentas.
+- Mesmo com o `.easignore`, o modo padrão (via Git) envia a pasta `.git`. Ela carrega o histórico, inclusive os PDFs das apresentações. Com `EAS_NO_VCS=1`, o pacote é montado direto da pasta e respeita o `.easignore`.
+- Resultado (conferido com `eas build:inspect --stage archive`): **de 43,2 MB para 2,2 MB**, só com `src`, `assets`, `drizzle` e as configurações. `.env`, testes e documentação ficam de fora.
+- Comandos prontos no `package.json`:
+  - `npm run build:apk` gera o APK (`preview`);
+  - `npm run update:apk -- --message "..."` publica uma atualização só de código.
+- `.gitignore`: passou a ignorar `.claude/settings.local.json` (configuração pessoal).
+
+Baseline: 91 suítes e 650 testes passando, `typecheck` limpo e `lint` com 0 erros (11 avisos herdados).

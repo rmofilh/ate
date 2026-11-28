@@ -63,7 +63,9 @@
     "test": "jest --runInBand",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "build:apk": "EAS_NO_VCS=1 npx eas-cli@latest build --profile preview --platform android",
+    "update:apk": "EAS_NO_VCS=1 npx eas-cli@latest update --channel preview --environment preview"
   },
   "private": true
 }
