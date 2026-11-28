@@ -52,6 +52,15 @@ describe('TelaEventos: datas e mapa', () => {
     expect(screen.getByTestId('secao-eventos-realizados')).toBeTruthy();
     expect(screen.getByTestId(`realizado-${passado.id}`)).toHaveTextContent('Realizado');
     expect(screen.queryByTestId(`realizado-${futuro.id}`)).toBeNull();
+  });
+
+  it('evento realizado não tem "Editar" (é histórico); continua com mapa e remover', async () => {
+    await renderizarLista([passado, futuro]);
+
+    expect(screen.queryByTestId(`editar-evento-${passado.id}`)).toBeNull();
+    expect(screen.getByTestId(`ver-mapa-${passado.id}`)).toBeTruthy();
+    expect(screen.getByTestId(`remover-${passado.id}`)).toBeTruthy();
+    expect(screen.getByTestId(`editar-evento-${futuro.id}`)).toBeTruthy();
     expect(screen.queryByText(/-23\.5/)).toBeNull();
   });
 

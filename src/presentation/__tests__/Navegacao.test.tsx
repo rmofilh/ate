@@ -7,6 +7,8 @@ import TelaKanban from '../../app/(tabs)/kanban';
 import TelaNovoPedido from '../../app/pedido/novo';
 import TelaNovoCliente from '../../app/cliente/novo';
 import { Cliente } from '../../core/domain/entities/Cliente';
+import { Evento } from '../../core/domain/entities/Evento';
+import { Coordenada } from '../../core/domain/value-objects/Coordenada';
 import { Pedido } from '../../core/domain/entities/Pedido';
 import { seedFixtures } from '../../infrastructure/seed/fixtures';
 import { makeFakeProviders } from '../../main/factories/makeFakeProviders';
@@ -98,12 +100,21 @@ describe('ações de navegação', () => {
     expect(navigation.editarCliente).toHaveBeenCalledWith(cliente.id);
   });
 
-  it('Estoque e Eventos expõem criar e editar', async () => {
+  it('Estoque e Eventos expõem criar e editar (evento futuro)', async () => {
     const seed = seedFixtures();
+    // Evento futuro: os realizados não têm "Editar" (e a data dos fixtures já passou).
+    const futuro = Evento.criar({
+      id: gerarIdTeste(),
+      usuarioId: seed.usuarioId,
+      nome: 'Feira futura',
+      data: new Date('2099-01-01T12:00:00.000Z'),
+      endereco: 'Praça',
+      localizacao: new Coordenada(-23.5, -46.6),
+    });
     const navigation = makeNavigation();
     await render(
       <NavigationContext.Provider value={navigation}>
-        <DataContext.Provider value={{ ...seed, reload: async () => {} }}>
+        <DataContext.Provider value={{ ...seed, eventos: [...seed.eventos, futuro], reload: async () => {} }}>
           <TelaEstoque
             onVenda={async () => {}}
             onAdicionar={async () => {}}
@@ -117,11 +128,11 @@ describe('ações de navegação', () => {
 
     await fireEvent.press(screen.getByTestId('nova-obra'));
     await fireEvent.press(screen.getByTestId('novo-evento'));
-    await fireEvent.press(screen.getByTestId(`editar-evento-${seed.eventos[0].id}`));
+    await fireEvent.press(screen.getByTestId(`editar-evento-${futuro.id}`));
 
     expect(navigation.novaObra).toHaveBeenCalledTimes(1);
     expect(navigation.novoEvento).toHaveBeenCalledTimes(1);
-    expect(navigation.editarEvento).toHaveBeenCalledWith(seed.eventos[0].id);
+    expect(navigation.editarEvento).toHaveBeenCalledWith(futuro.id);
   });
 
   it('Novo Pedido oferece cadastrar cliente', async () => {

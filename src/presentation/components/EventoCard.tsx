@@ -41,8 +41,9 @@ export function EventoCard({ evento, onEditar, onRemover, onVerNoMapa, loading, 
     </View>
     {evento.observacoes ? <Text style={styles.notes}>{evento.observacoes}</Text> : null}
     <View style={styles.actions}>
-      <ActionButton label={`editar-evento-${evento.id}`} title="Editar evento" displayTitle="Editar" icon="edit"
-        onPress={onEditar} disabled={loading} appearance="secondary" />
+      {/* Evento realizado é histórico: corrige-se removendo e recriando com a data passada. */}
+      {!realizado ? <ActionButton label={`editar-evento-${evento.id}`} title="Editar evento" displayTitle="Editar"
+        icon="edit" onPress={onEditar} disabled={loading} appearance="secondary" /> : null}
       <ActionButton label={`ver-mapa-${evento.id}`} title="Ver no mapa" icon="pin"
         onPress={onVerNoMapa} disabled={loading} appearance="secondary" />
       <View style={styles.spacer} />
